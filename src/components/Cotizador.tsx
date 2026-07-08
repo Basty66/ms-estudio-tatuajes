@@ -1,5 +1,17 @@
 import { useState } from "react"
-import { Upload, Calculator, Send } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  User,
+  DeviceMobile,
+  PaintBrush,
+  MapPinArea,
+  Ruler,
+  UploadSimple,
+  Calculator,
+  PaperPlaneRight,
+  CheckCircle,
+  ArrowClockwise,
+} from "@phosphor-icons/react"
 import { calcularEstimacion, formatPrecio } from "../lib/precios"
 
 const estilos = [
@@ -25,9 +37,9 @@ const zonas = [
 ]
 
 const tamanos = [
-  { value: "pequeno", label: "Pequeño (< 7 cm)" },
-  { value: "mediano", label: "Mediano (8-15 cm)" },
-  { value: "grande", label: "Grande (> 15 cm)" },
+  { value: "pequeno", label: "Pequeño < 7cm" },
+  { value: "mediano", label: "Mediano 8-15cm" },
+  { value: "grande", label: "Grande > 15cm" },
   { value: "manga", label: "Manga Completa" },
 ]
 
@@ -50,8 +62,7 @@ export default function Cotizador() {
 
   const handleCalcular = () => {
     if (!form.tamano || !form.estilo) return
-    const result = calcularEstimacion(form.tamano, form.estilo)
-    setEstimacion(result)
+    setEstimacion(calcularEstimacion(form.tamano, form.estilo))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,157 +105,218 @@ export default function Cotizador() {
 
   if (enviado) {
     return (
-      <section id="cotizador" className="py-24">
-        <div className="max-w-xl mx-auto px-4 text-center">
-          <div className="neon-card rounded-xl p-12">
-            <p className="text-cyan-400 text-5xl mb-4">✓</p>
-            <h3 className="section-title text-2xl mb-2">¡COTIZACIÓN ENVIADA!</h3>
-            <p className="text-gray-400 text-sm mb-6">
+      <section id="cotizador" className="relative py-32">
+        <div className="max-w-lg mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass rounded-3xl p-12 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="w-20 h-20 rounded-full bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mx-auto mb-6"
+            >
+              <CheckCircle size={40} className="text-cyan-400" weight="fill" />
+            </motion.div>
+            <h3 className="section-title text-3xl premium-gradient mb-3">¡COTIZACIÓN ENVIADA!</h3>
+            <p className="text-gray-500 text-sm mb-8 tracking-wider">
               Te contactaremos por WhatsApp para confirmar los detalles.
             </p>
             <button
               onClick={() => setEnviado(false)}
-              className="neon-button-primary px-6 py-3 rounded-lg text-sm tracking-wider"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm tracking-widest hover:bg-cyan-400/20 transition-all"
             >
+              <ArrowClockwise size={16} weight="bold" />
               NUEVA COTIZACIÓN
             </button>
-          </div>
+          </motion.div>
         </div>
       </section>
     )
   }
 
   return (
-    <section id="cotizador" className="py-24 relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,229,255,0.03)_0%,transparent_70%)] pointer-events-none" />
-      <div className="max-w-2xl mx-auto px-4 relative z-10">
-        <p className="section-subtitle text-center mb-2">COTIZA TU DISEÑO</p>
-        <h2 className="section-title text-4xl md:text-5xl text-center mb-12 neon-text">
-          COTIZADOR
-        </h2>
+    <section id="cotizador" className="relative py-32 overflow-hidden">
+      <div className="ambient-glow bottom-0 right-0 translate-x-1/2 translate-y-1/2 bg-cyan-400/5" />
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm text-cyan-400/80 mb-1 tracking-wider">NOMBRE</label>
-            <input
-              name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
-              placeholder="Tu nombre"
-              required
-              className="neon-input rounded-lg px-4 py-3 w-full text-sm"
-            />
-          </div>
+      <div className="max-w-7xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-16"
+        >
+          <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
+            Cotiza tu diseño
+          </span>
+          <h2 className="section-title text-5xl md:text-7xl text-white mb-4">
+            COTIZADOR
+            <br />
+            <span className="premium-gradient">INSTANTÁNEO</span>
+          </h2>
+          <div className="w-12 h-[1px] bg-cyan-400/30 mx-auto mt-6" />
+        </motion.div>
 
-          <div>
-            <label className="block text-sm text-cyan-400/80 mb-1 tracking-wider">WHATSAPP</label>
-            <input
-              name="whatsapp"
-              value={form.whatsapp}
-              onChange={handleChange}
-              placeholder="+56 9 XXXX XXXX"
-              required
-              className="neon-input rounded-lg px-4 py-3 w-full text-sm"
-            />
-          </div>
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="max-w-2xl mx-auto"
+        >
+          <form onSubmit={handleSubmit} className="glass rounded-3xl p-8 md:p-10 space-y-6">
+            <div className="grid md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                  <User size={14} className="text-cyan-400" />
+                  Nombre
+                </label>
+                <input
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  placeholder="Tu nombre"
+                  required
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm"
+                />
+              </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-cyan-400/80 mb-1 tracking-wider">ESTILO</label>
-              <select
-                name="estilo"
-                value={form.estilo}
-                onChange={handleChange}
-                required
-                className="neon-input rounded-lg px-4 py-3 w-full text-sm appearance-none"
-              >
-                <option value="">Seleccionar</option>
-                {estilos.map((e) => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                  <DeviceMobile size={14} className="text-cyan-400" />
+                  WhatsApp
+                </label>
+                <input
+                  name="whatsapp"
+                  value={form.whatsapp}
+                  onChange={handleChange}
+                  placeholder="+56 9 XXXX XXXX"
+                  required
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-cyan-400/80 mb-1 tracking-wider">ZONA</label>
-              <select
-                name="zona"
-                value={form.zona}
-                onChange={handleChange}
-                required
-                className="neon-input rounded-lg px-4 py-3 w-full text-sm appearance-none"
-              >
-                <option value="">Seleccionar</option>
-                {zonas.map((z) => (
-                  <option key={z.value} value={z.value}>{z.label}</option>
-                ))}
-              </select>
+            <div className="grid md:grid-cols-3 gap-5">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                  <PaintBrush size={14} className="text-cyan-400" />
+                  Estilo
+                </label>
+                <select
+                  name="estilo"
+                  value={form.estilo}
+                  onChange={handleChange}
+                  required
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm appearance-none"
+                >
+                  <option value="">Seleccionar</option>
+                  {estilos.map((e) => (
+                    <option key={e.value} value={e.value}>{e.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                  <MapPinArea size={14} className="text-cyan-400" />
+                  Zona
+                </label>
+                <select
+                  name="zona"
+                  value={form.zona}
+                  onChange={handleChange}
+                  required
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm appearance-none"
+                >
+                  <option value="">Seleccionar</option>
+                  {zonas.map((z) => (
+                    <option key={z.value} value={z.value}>{z.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                  <Ruler size={14} className="text-cyan-400" />
+                  Tamaño
+                </label>
+                <select
+                  name="tamano"
+                  value={form.tamano}
+                  onChange={handleChange}
+                  required
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm appearance-none"
+                >
+                  <option value="">Seleccionar</option>
+                  {tamanos.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-cyan-400/80 mb-1 tracking-wider">TAMAÑO</label>
-              <select
-                name="tamano"
-                value={form.tamano}
-                onChange={handleChange}
-                required
-                className="neon-input rounded-lg px-4 py-3 w-full text-sm appearance-none"
-              >
-                <option value="">Seleccionar</option>
-                {tamanos.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                <UploadSimple size={14} className="text-cyan-400" />
+                Imagen de referencia (opcional)
+              </label>
+              <label className="neon-input rounded-xl px-5 py-3.5 w-full flex items-center gap-3 cursor-pointer text-sm text-gray-400 hover:border-cyan-400/30 transition-colors">
+                <UploadSimple size={18} className="text-cyan-400 shrink-0" />
+                <span className="truncate">{file ? file.name : "Subir imagen..."}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm text-cyan-400/80 mb-1 tracking-wider">
-              IMAGEN DE REFERENCIA (OPCIONAL)
-            </label>
-            <label className="neon-input rounded-lg px-4 py-3 w-full flex items-center gap-3 cursor-pointer text-sm text-gray-400 hover:border-cyan-400/40 transition-colors">
-              <Upload size={18} className="text-cyan-400" />
-              {file ? file.name : "Subir imagen..."}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-            </label>
-          </div>
+            <button
+              type="button"
+              onClick={handleCalcular}
+              className="neon-button w-full rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 text-sm tracking-widest"
+            >
+              <Calculator size={18} weight="bold" />
+              CALCULAR ESTIMACIÓN
+            </button>
 
-          <button
-            type="button"
-            onClick={handleCalcular}
-            className="neon-button w-full rounded-lg px-6 py-3 flex items-center justify-center gap-2 text-sm tracking-wider"
-          >
-            <Calculator size={18} />
-            CALCULAR ESTIMACIÓN
-          </button>
+            <AnimatePresence>
+              {estimacion && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="glass-cyan rounded-2xl p-6 text-center overflow-hidden"
+                >
+                  <p className="text-xs tracking-[0.2em] text-cyan-400/60 uppercase mb-2">
+                    Precio estimado
+                  </p>
+                  <p className="text-3xl md:text-4xl font-bold section-title premium-gradient">
+                    {formatPrecio(estimacion.minimo)} - {formatPrecio(estimacion.maximo)}
+                  </p>
+                  <p className="text-gray-600 text-xs mt-3 tracking-wider">
+                    Estimación automática. El valor final puede variar según los detalles del
+                    diseño y será confirmado por el artista vía WhatsApp.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {estimacion && (
-            <div className="neon-card rounded-xl p-6 text-center">
-              <p className="text-cyan-400 text-sm tracking-wider mb-1">PRECIO ESTIMADO</p>
-              <p className="text-2xl md:text-3xl font-bold text-white neon-text">
-                {formatPrecio(estimacion.minimo)} - {formatPrecio(estimacion.maximo)}
-              </p>
-              <p className="text-gray-500 text-xs mt-2">
-                Estimación automática. El valor final puede variar según los detalles del diseño y
-                será confirmado por el artista vía WhatsApp.
-              </p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={enviando}
-            className="neon-button-primary w-full rounded-lg px-6 py-3 flex items-center justify-center gap-2 text-sm tracking-wider disabled:opacity-50"
-          >
-            <Send size={18} />
-            {enviando ? "ENVIANDO..." : "ENVIAR COTIZACIÓN"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={enviando}
+              className="neon-button-primary w-full rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 text-sm tracking-widest disabled:opacity-50"
+            >
+              <PaperPlaneRight size={18} weight="bold" />
+              {enviando ? "ENVIANDO..." : "ENVIAR COTIZACIÓN"}
+            </button>
+          </form>
+        </motion.div>
       </div>
     </section>
   )

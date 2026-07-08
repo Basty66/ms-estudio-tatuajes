@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.110.1",
     "@tailwindcss/vite": "^4.3.2",
     "firebase": "^12.15.0",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
