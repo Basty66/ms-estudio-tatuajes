@@ -78,11 +78,16 @@ export default function Gallery() {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-50px" }}
                 whileHover={{ y: -8 }}
-                className="group relative rounded-2xl overflow-hidden min-h-[320px] md:min-h-[480px] glass-card cursor-pointer bg-cover bg-center"
-                style={{ backgroundImage: `url(${cat.image})` }}
+                className="group relative rounded-2xl overflow-hidden min-h-[400px] md:min-h-[520px] glass-card cursor-pointer"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/30 group-hover:via-black/40 transition-all duration-700" />
-
+                <img
+                  src={cat.image}
+                  alt={cat.title}
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/60 transition-all duration-700" />
+              
                 <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                   style={{
                     background:
