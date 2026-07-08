@@ -60,15 +60,27 @@ export default function Cotizador() {
 
     setEnviando(true)
 
-    const formData = new FormData()
-    formData.append("nombre", form.nombre)
-    formData.append("whatsapp", form.whatsapp)
-    formData.append("estilo", form.estilo)
-    formData.append("zona", form.zona)
-    formData.append("tamano", form.tamano)
-    if (file) formData.append("imagen", file)
+    let imagenBase64 = ""
+    if (file) {
+      const reader = new FileReader()
+      imagenBase64 = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
+    }
 
-    const res = await fetch("/api/cotizar", { method: "POST", body: formData })
+    const res = await fetch("/api/cotizar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: form.nombre,
+        whatsapp: form.whatsapp,
+        estilo: form.estilo,
+        zona: form.zona,
+        tamano: form.tamano,
+        imagenBase64,
+      }),
+    })
     const data = await res.json()
 
     setEnviando(false)
