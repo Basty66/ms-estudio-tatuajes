@@ -53,27 +53,27 @@ export default function Hero() {
           animate="visible"
           className="text-center"
         >
-          <motion.p
-            variants={itemVariants}
-            className="text-xs md:text-sm tracking-[0.3em] text-cyan-400/60 mb-6 uppercase"
-          >
-            MS Estudio de Tatuajes · Melipilla
-          </motion.p>
+            <motion.p
+              variants={itemVariants}
+              className="font-tech text-xs md:text-sm tracking-[0.3em] text-cyan-400/60 mb-6 uppercase"
+            >
+              MS Estudio de Tatuajes · Melipilla
+            </motion.p>
 
             <motion.h1
               variants={itemVariants}
-              className="text-4xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold section-title leading-[0.85] mb-6"
+              className="text-4xl sm:text-8xl md:text-9xl lg:text-[10rem] section-title leading-[0.85] mb-6"
             >
               <span className="premium-gradient">CONCURSO</span>
               <br />
-              <span className="text-white text-xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.08em] sm:tracking-[0.15em] block mt-2 sm:mt-4 font-sans font-light">
+              <span className="font-tech text-cyan-400 text-xl sm:text-4xl md:text-5xl lg:text-6xl tracking-[0.25em] block mt-2 sm:mt-4 uppercase">
                 PARTICIPA Y GANA
               </span>
             </motion.h1>
 
           <motion.p
             variants={itemVariants}
-            className="text-gray-600 max-w-lg mx-auto text-xs md:text-sm tracking-[0.2em] mb-10 md:mb-16"
+            className="font-tech text-gray-600 max-w-lg mx-auto text-xs md:text-sm tracking-[0.2em] mb-10 md:mb-16 uppercase"
           >
             CONCURSO EXCLUSIVO PARA SEGUIDORES
           </motion.p>
@@ -101,7 +101,7 @@ export default function Hero() {
                   <span className="text-2xl md:text-4xl font-bold section-title text-cyan-400">
                     {step.title}
                   </span>
-                  <span className="text-[10px] md:text-[11px] text-gray-500 tracking-[0.2em] text-center leading-relaxed">
+                  <span className="font-tech text-[10px] md:text-[11px] text-gray-500 tracking-[0.2em] text-center leading-relaxed uppercase">
                     {step.desc}
                   </span>
                 </motion.div>
@@ -128,7 +128,7 @@ export default function Hero() {
                   <p className="text-2xl md:text-4xl font-bold section-title premium-gradient">
                     ¡UN GANADOR!
                   </p>
-                  <p className="text-base md:text-2xl text-white font-bold tracking-wider">
+                  <p className="font-tech text-base md:text-2xl text-white font-bold tracking-[0.15em]">
                     TATUAJE GRATIS VALORADO EN $80.000
                   </p>
                 </div>
@@ -148,7 +148,7 @@ export default function Hero() {
                   navigate("#galeria", { replace: true })
                 }
               }}
-              className="group flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors duration-300 tracking-widest text-xs uppercase"
+              className="font-tech group flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors duration-300 tracking-[0.25em] text-xs uppercase"
               whileHover={{ x: 5 }}
             >
               Descubre nuestros estilos

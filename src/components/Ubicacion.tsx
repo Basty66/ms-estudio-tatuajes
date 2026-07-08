@@ -25,7 +25,7 @@ export default function Ubicacion() {
           transition={{ duration: 0.7 }}
           className="text-center mb-16"
         >
-          <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
+          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Encuéntranos
           </span>
                 <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
@@ -107,7 +107,7 @@ export default function Ubicacion() {
                 <div className="w-14 h-14 rounded-2xl bg-cyan-400/5 border border-cyan-400/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-cyan-400/10 transition-all">
                   <Icon size={28} className="text-cyan-400" weight="duotone" />
                 </div>
-                <h4 className="text-white font-bold text-sm tracking-widest mb-3">{p.title}</h4>
+                <h4 className="font-tech text-white font-bold text-sm tracking-[0.2em] mb-3">{p.title}</h4>
                 <p className="text-gray-500 text-xs tracking-wider leading-relaxed">{p.desc}</p>
               </motion.div>
             )

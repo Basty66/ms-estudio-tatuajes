@@ -55,7 +55,7 @@ export default function Gallery() {
           transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
           className="text-center mb-16"
         >
-          <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
+          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Nuestro trabajo
           </span>
                 <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
@@ -103,7 +103,7 @@ export default function Gallery() {
                     <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-wider">
                       {cat.title}
                     </h3>
-                    <p className="text-cyan-400/80 text-sm font-medium tracking-wider mb-3">
+                    <p className="font-tech text-cyan-400/80 text-sm font-medium tracking-widest mb-3 uppercase">
                       {cat.subtitle}
                     </p>
                     <p className="text-gray-500 text-sm leading-relaxed">
@@ -115,12 +115,12 @@ export default function Gallery() {
                     <p className="text-gray-400 text-xs leading-relaxed mb-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-100">
                       {cat.info}
                     </p>
-                    <p className="text-cyan-400/50 text-[10px] tracking-widest uppercase opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-200">
+                    <p className="font-tech text-cyan-400/50 text-[10px] tracking-widest uppercase opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-200">
                       Ideal para: {cat.ideal}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-cyan-400/60 group-hover:text-cyan-400 transition-colors duration-300 text-xs tracking-widest uppercase mt-3">
+                  <div className="flex items-center gap-2 text-cyan-400/60 group-hover:text-cyan-400 transition-colors duration-300 font-tech text-xs tracking-[0.25em] uppercase mt-3">
                     <span className="md:hidden">Más info</span>
                     <span className="hidden md:inline">Ver estilo</span>
                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />

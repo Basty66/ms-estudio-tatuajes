@@ -18,8 +18,9 @@
   --color-glass: rgba(255, 255, 255, 0.03);
   --color-glass-border: rgba(255, 255, 255, 0.06);
   --color-glass-cyan: rgba(0, 229, 255, 0.08);
-  --font-display: "Bebas Neue", "Impact", sans-serif;
-  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Bebas Neue", "Anton", "Impact", sans-serif;
+  --font-sans: "Inter", "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-tech: "Rajdhani", "Orbitron", sans-serif;
 }
 
 @layer base {
@@ -205,7 +206,12 @@
 
 .section-title {
   font-family: var(--font-display);
-  letter-spacing: 4px;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.08);
+}
+
+.text-neon-glow {
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6), 0 0 20px rgba(0, 229, 255, 0.3);
 }
 
 .ambient-glow {

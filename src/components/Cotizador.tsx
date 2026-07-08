@@ -168,7 +168,7 @@ export default function Cotizador() {
           transition={{ duration: 0.7 }}
           className="text-center mb-16"
         >
-          <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
+          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Cotiza tu diseño
           </span>
                 <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
@@ -189,7 +189,7 @@ export default function Cotizador() {
           <form onSubmit={handleSubmit} className="glass rounded-2xl md:rounded-3xl p-5 md:p-10 space-y-5 md:space-y-6">
             <div className="grid md:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                <label className="font-tech flex items-center gap-2 text-xs tracking-[0.2em] text-cyan-400/60 uppercase">
                   <User size={14} className="text-cyan-400" />
                   Nombre
                 </label>
@@ -204,7 +204,7 @@ export default function Cotizador() {
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                <label className="font-tech flex items-center gap-2 text-xs tracking-[0.2em] text-cyan-400/60 uppercase">
                   <DeviceMobile size={14} className="text-cyan-400" />
                   WhatsApp
                 </label>
@@ -221,7 +221,7 @@ export default function Cotizador() {
 
             <div className="grid md:grid-cols-3 gap-5">
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                <label className="font-tech flex items-center gap-2 text-xs tracking-[0.2em] text-cyan-400/60 uppercase">
                   <PaintBrush size={14} className="text-cyan-400" />
                   Estilo
                 </label>
@@ -240,7 +240,7 @@ export default function Cotizador() {
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                <label className="font-tech flex items-center gap-2 text-xs tracking-[0.2em] text-cyan-400/60 uppercase">
                   <MapPinArea size={14} className="text-cyan-400" />
                   Zona
                 </label>
@@ -259,7 +259,7 @@ export default function Cotizador() {
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">
+                <label className="font-tech flex items-center gap-2 text-xs tracking-[0.2em] text-cyan-400/60 uppercase">
                   <Ruler size={14} className="text-cyan-400" />
                   Tamaño
                 </label>
@@ -298,7 +298,7 @@ export default function Cotizador() {
             <button
               type="button"
               onClick={handleCalcular}
-              className="neon-button w-full rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 text-sm tracking-widest"
+              className="font-tech neon-button w-full rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 text-sm tracking-[0.2em]"
             >
               <Calculator size={18} weight="bold" />
               CALCULAR ESTIMACIÓN
@@ -327,13 +327,13 @@ export default function Cotizador() {
             </AnimatePresence>
 
             {error && (
-              <p className="text-xs text-red-400 tracking-wider text-center">{error}</p>
+              <p className="font-tech text-xs text-red-400 tracking-wider text-center">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={enviando}
-              className="neon-button-primary w-full rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 text-sm tracking-widest disabled:opacity-50"
+              className="font-tech neon-button-primary w-full rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 text-sm tracking-[0.2em] disabled:opacity-50"
             >
               <PaperPlaneRight size={18} weight="bold" />
               {enviando ? "ENVIANDO..." : "ENVIAR COTIZACIÓN"}

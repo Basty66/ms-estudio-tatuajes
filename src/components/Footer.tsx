@@ -23,7 +23,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-cyan-400 font-bold text-xs tracking-[0.2em] uppercase mb-5">
+            <h4 className="font-tech text-cyan-400 font-bold text-xs tracking-[0.2em] uppercase mb-5">
               Enlaces
             </h4>
             <nav className="flex flex-col gap-3">
@@ -44,7 +44,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-cyan-400 font-bold text-xs tracking-[0.2em] uppercase mb-5">
+            <h4 className="font-tech text-cyan-400 font-bold text-xs tracking-[0.2em] uppercase mb-5">
               Redes
             </h4>
             <div className="flex flex-col gap-3">

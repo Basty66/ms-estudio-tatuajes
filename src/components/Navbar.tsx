@@ -61,7 +61,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.05 }}
               onClick={() => handleNav(link.href)}
-              className="relative px-5 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-300 tracking-widest uppercase group"
+              className="font-tech relative px-5 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-300 tracking-[0.2em] uppercase group"
             >
               {link.label}
               <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[1px] bg-cyan-400 transition-all duration-300 group-hover:w-1/2" />
@@ -76,7 +76,7 @@ export default function Navbar() {
           href="https://wa.me/56964470668"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden md:inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm tracking-widest hover:bg-cyan-400/20 hover:border-cyan-400/50 hover:shadow-[0_0_30px_rgba(0,229,255,0.15)] transition-all duration-300 group"
+          className="font-tech hidden md:inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm tracking-[0.2em] hover:bg-cyan-400/20 hover:border-cyan-400/50 hover:shadow-[0_0_30px_rgba(0,229,255,0.15)] transition-all duration-300 group"
         >
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
           CONTACTO
@@ -105,7 +105,7 @@ export default function Navbar() {
                 <button
                   key={link.href}
                   onClick={() => handleNav(link.href)}
-                  className="text-left py-3 px-4 rounded-lg text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/5 transition-all duration-300 tracking-widest uppercase text-sm"
+                  className="font-tech text-left py-3 px-4 rounded-lg text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/5 transition-all duration-300 tracking-[0.2em] uppercase text-sm"
                 >
                   {link.label}
                 </button>
@@ -114,7 +114,7 @@ export default function Navbar() {
                 href="https://wa.me/56964470668"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 text-center py-3 px-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 tracking-widest text-sm hover:bg-cyan-400/20 transition-all"
+                className="font-tech mt-2 text-center py-3 px-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 tracking-[0.2em] text-sm hover:bg-cyan-400/20 transition-all"
               >
                 CONTACTO
               </a>

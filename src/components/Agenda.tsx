@@ -114,7 +114,7 @@ export default function Agenda() {
           transition={{ duration: 0.7 }}
           className="text-center mb-16"
         >
-          <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
+          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Reserva tu cita
           </span>
                 <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
@@ -168,9 +168,9 @@ export default function Agenda() {
 
               <div className="flex items-center gap-3">
                 <CalendarBlank size={20} className="text-cyan-400" weight="duotone" />
-                <span className="text-white font-semibold tracking-wider text-lg">
-                  {monthNames[month]} {year}
-                </span>
+                  <span className="font-tech text-white font-semibold tracking-wider text-lg">
+                    {monthNames[month]} {year}
+                  </span>
               </div>
 
               <motion.button
@@ -185,7 +185,7 @@ export default function Agenda() {
 
             <div className="grid grid-cols-7 gap-1 mb-3">
               {daysOfWeek.map((d) => (
-                <div key={d} className="text-center text-[11px] tracking-wider text-cyan-400/40 font-semibold py-2">
+                <div key={d} className="font-tech text-center text-[11px] tracking-wider text-cyan-400/40 font-semibold py-2">
                   {d}
                 </div>
               ))}
@@ -252,7 +252,7 @@ export default function Agenda() {
           </div>
 
           {error && (
-            <p className="text-xs text-red-400 tracking-wider text-center">{error}</p>
+            <p className="font-tech text-xs text-red-400 tracking-wider text-center">{error}</p>
           )}
 
           <motion.button
@@ -260,7 +260,7 @@ export default function Agenda() {
             whileTap={!submitting ? { scale: 0.98 } : {}}
             onClick={handleSubmit}
             disabled={submitting || !nombre.trim() || !whatsapp.trim() || !selected}
-            className="neon-button-primary w-full rounded-2xl px-6 py-4 mt-6 flex items-center justify-center gap-3 text-base tracking-widest font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+            className="font-tech neon-button-primary w-full rounded-2xl px-6 py-4 mt-6 flex items-center justify-center gap-3 text-base tracking-[0.2em] font-bold disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <Spinner size={22} className="animate-spin" />
@@ -270,7 +270,7 @@ export default function Agenda() {
             {submitting ? "PROCESANDO..." : "AGENDA TU CITA POR WHATSAPP"}
           </motion.button>
 
-          <p className="text-center text-gray-700 text-xs mt-4 tracking-wider">
+          <p className="font-tech text-center text-gray-700 text-xs mt-4 tracking-[0.2em] uppercase">
             Se abrirá WhatsApp con tu mensaje personalizado
           </p>
         </motion.div>
