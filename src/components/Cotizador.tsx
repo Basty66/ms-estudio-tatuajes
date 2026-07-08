@@ -1,8 +1,5 @@
 import { useState } from "react"
 import { Upload, Calculator, Send } from "lucide-react"
-import { collection, addDoc } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { db, storage } from "../lib/firebase"
 import { calcularEstimacion, formatPrecio } from "../lib/precios"
 
 const estilos = [
@@ -62,30 +59,25 @@ export default function Cotizador() {
     if (!form.nombre || !form.whatsapp || !form.estilo || !form.zona || !form.tamano) return
 
     setEnviando(true)
-    let imageUrl = ""
 
-    if (file) {
-      const filePath = `cotizaciones/${Date.now()}_${file.name}`
-      const storageRef = ref(storage, filePath)
-      await uploadBytes(storageRef, file)
-      imageUrl = await getDownloadURL(storageRef)
-    }
+    const formData = new FormData()
+    formData.append("nombre", form.nombre)
+    formData.append("whatsapp", form.whatsapp)
+    formData.append("estilo", form.estilo)
+    formData.append("zona", form.zona)
+    formData.append("tamano", form.tamano)
+    if (file) formData.append("imagen", file)
 
-    await addDoc(collection(db, "cotizaciones"), {
-      nombre: form.nombre,
-      whatsapp: form.whatsapp,
-      estilo: form.estilo,
-      zona: form.zona,
-      tamano: form.tamano,
-      imagen_url: imageUrl,
-      created_at: new Date().toISOString(),
-    })
+    const res = await fetch("/api/cotizar", { method: "POST", body: formData })
+    const data = await res.json()
 
     setEnviando(false)
-    setEnviado(true)
-    setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
-    setFile(null)
-    setEstimacion(null)
+    if (data.success) {
+      setEnviado(true)
+      setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
+      setFile(null)
+      setEstimacion(null)
+    }
   }
 
   if (enviado) {
