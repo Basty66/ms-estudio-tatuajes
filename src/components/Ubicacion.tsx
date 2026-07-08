@@ -73,14 +73,14 @@ export default function Ubicacion() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="glass rounded-2xl md:rounded-3xl p-2 md:p-4 min-h-[220px] md:min-h-[280px] group"
+            className="glass rounded-2xl md:rounded-3xl p-2 md:p-4 min-h-[220px] md:min-h-[280px] group overflow-hidden"
           >
-            <div className="w-full h-full min-h-[260px] rounded-2xl overflow-hidden">
+            <div className="w-full h-full min-h-[200px] rounded-2xl overflow-hidden">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3325.5!2d-71.214!3d-33.685!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDQxJzA2LjAiUyA3McKwMTInNTAuNCJX!5e0!3m2!1ses!2scl!4v1!4m1!1s0x9662b5b5b5b5b5b5%3A0x0!2zQXYuIE1hbnNvIDUyOSwgTWVsaXBpbGxh!5e0!3m2!1ses!2scl"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!2d3325.5!2d-71.214!3d-33.685!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDQxJzA2LjAiUyA3McKwMTInNTAuNCJX!5e0!3m2!1ses!2scl!4v1!4m1!1s0x9662b5b5b5b5b5b5%3A0x0!2zQXYuIE1hbnNvIDUyOSwgTWVsaXBpbGxh!5e0!3m2!1ses!2scl"
                 width="100%"
                 height="100%"
-                style={{ border: 0, minHeight: "200px" }}
+                style={{ border: 0, minHeight: "200px", maxWidth: "100%" }}
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"

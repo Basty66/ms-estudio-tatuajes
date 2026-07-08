@@ -12,11 +12,11 @@ export default function WhatsAppFloat() {
       href="https://wa.me/56964470668"
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-5 right-5 md:bottom-8 md:right-8 z-50 flex items-center gap-3 bg-[#25D366] text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+      className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 flex items-center gap-3 bg-[#25D366] text-white rounded-full shadow-lg hover:shadow-xl transition-shadow max-w-[calc(100vw-2rem)]"
       style={{ boxShadow: "0 4px 20px rgba(37, 211, 102, 0.4)" }}
     >
-      <div className="flex items-center gap-2 px-4 py-3 md:px-5 md:py-3.5">
-        <WhatsappLogo size={22} weight="fill" />
+      <div className="flex items-center gap-2 px-3 py-2.5 md:px-5 md:py-3.5">
+        <WhatsappLogo size={20} className="md:size-[22px]" weight="fill" />
         <span className="hidden md:inline text-sm font-semibold tracking-wider">
           ESCRIBENOS
         </span>

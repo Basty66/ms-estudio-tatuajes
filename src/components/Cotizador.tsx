@@ -55,9 +55,11 @@ export default function Cotizador() {
   const [estimacion, setEstimacion] = useState<{ minimo: number; maximo: number } | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+    if (e.target.name === "whatsapp") setError(null)
   }
 
   const handleCalcular = () => {
@@ -68,6 +70,11 @@ export default function Cotizador() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.nombre || !form.whatsapp || !form.estilo || !form.zona || !form.tamano) return
+
+    if (!/^\+56\d{9}$/.test(form.whatsapp)) {
+      setError("WhatsApp inválido. Debe ser +569XXXXXXXX")
+      return
+    }
 
     setEnviando(true)
 
@@ -107,10 +114,10 @@ export default function Cotizador() {
         setFile(null)
         setEstimacion(null)
       } else {
-        alert("Error del servidor. Intenta de nuevo más tarde.")
+        setError("Error del servidor. Intenta de nuevo más tarde.")
       }
     } catch {
-      alert("Error al enviar la cotización. Intenta de nuevo.")
+      setError("Error al enviar la cotización. Intenta de nuevo.")
     }
     setEnviando(false)
   }
@@ -318,6 +325,10 @@ export default function Cotizador() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {error && (
+              <p className="text-xs text-red-400 tracking-wider text-center">{error}</p>
+            )}
 
             <button
               type="submit"

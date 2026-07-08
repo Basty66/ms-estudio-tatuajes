@@ -35,6 +35,7 @@ export default function Agenda() {
   const [whatsapp, setWhatsapp] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfMonth(year, month)
@@ -68,6 +69,12 @@ export default function Agenda() {
   const handleSubmit = async () => {
     if (!nombre.trim() || !whatsapp.trim() || !selected) return
 
+    const digits = whatsapp.trim().replace(/\D/g, "")
+    if (digits.length !== 9 || !digits.startsWith("9")) {
+      setError("WhatsApp inválido. Debe ser 9XXXXXXXX (9 dígitos)")
+      return
+    }
+
     setSubmitting(true)
     const fechaStr = formatDate(selected)
 
@@ -77,7 +84,7 @@ export default function Agenda() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre: nombre.trim(),
-          whatsapp: whatsapp.trim(),
+          whatsapp: `+56${digits}`,
           fecha: fechaStr,
           descripcion: descripcion.trim(),
         }),
@@ -143,7 +150,7 @@ export default function Agenda() {
                   type="tel"
                   placeholder="9 1234 5678"
                   value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
+                  onChange={(e) => { setWhatsapp(e.target.value); setError(null) }}
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-16 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 focus:bg-white/10 transition-all tracking-wider"
                 />
               </div>
@@ -243,6 +250,10 @@ export default function Agenda() {
               className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 focus:bg-white/10 transition-all tracking-wider resize-none"
             />
           </div>
+
+          {error && (
+            <p className="text-xs text-red-400 tracking-wider text-center">{error}</p>
+          )}
 
           <motion.button
             whileHover={!submitting ? { scale: 1.02 } : {}}
