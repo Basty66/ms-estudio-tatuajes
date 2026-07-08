@@ -8,6 +8,7 @@ import Cotizador from "./components/Cotizador"
 import Agenda from "./components/Agenda"
 import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
+import WhatsAppFloat from "./components/WhatsAppFloat"
 
 const sections = [
   { id: "inicio", Component: Hero },
@@ -69,6 +70,7 @@ export default function App() {
       </AnimatePresence>
 
       <Footer />
+      <WhatsAppFloat />
     </div>
   )
 }
