@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Upload, Calculator, Send } from "lucide-react"
-import { supabase } from "../lib/supabase"
+import { collection, addDoc } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { db, storage } from "../lib/firebase"
 import { calcularEstimacion, formatPrecio } from "../lib/precios"
 
 const estilos = [
@@ -64,33 +66,26 @@ export default function Cotizador() {
 
     if (file) {
       const filePath = `cotizaciones/${Date.now()}_${file.name}`
-      const { data: uploadData } = await supabase.storage
-        .from("imagenes")
-        .upload(filePath, file)
-      if (uploadData) {
-        const { data: urlData } = supabase.storage.from("imagenes").getPublicUrl(filePath)
-        imageUrl = urlData?.publicUrl || ""
-      }
+      const storageRef = ref(storage, filePath)
+      await uploadBytes(storageRef, file)
+      imageUrl = await getDownloadURL(storageRef)
     }
 
-    const { error } = await supabase.from("cotizaciones").insert([
-      {
-        nombre: form.nombre,
-        whatsapp: form.whatsapp,
-        estilo: form.estilo,
-        zona: form.zona,
-        tamano: form.tamano,
-        imagen_url: imageUrl,
-      },
-    ])
+    await addDoc(collection(db, "cotizaciones"), {
+      nombre: form.nombre,
+      whatsapp: form.whatsapp,
+      estilo: form.estilo,
+      zona: form.zona,
+      tamano: form.tamano,
+      imagen_url: imageUrl,
+      created_at: new Date().toISOString(),
+    })
 
     setEnviando(false)
-    if (!error) {
-      setEnviado(true)
-      setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
-      setFile(null)
-      setEstimacion(null)
-    }
+    setEnviado(true)
+    setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
+    setFile(null)
+    setEstimacion(null)
   }
 
   if (enviado) {
