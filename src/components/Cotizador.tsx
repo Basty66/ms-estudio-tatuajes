@@ -73,34 +73,46 @@ export default function Cotizador() {
 
     let imagenBase64 = ""
     if (file) {
-      const reader = new FileReader()
-      imagenBase64 = await new Promise((resolve) => {
-        reader.onload = () => resolve(reader.result as string)
-        reader.readAsDataURL(file)
+      try {
+        const reader = new FileReader()
+        imagenBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error("Error al leer la imagen"))
+          reader.readAsDataURL(file)
+        })
+      } catch {
+        setEnviando(false)
+        return
+      }
+    }
+
+    try {
+      const res = await fetch("/api/cotizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: form.nombre,
+          whatsapp: form.whatsapp,
+          estilo: form.estilo,
+          zona: form.zona,
+          tamano: form.tamano,
+          imagenBase64,
+        }),
       })
+      const data = await res.json()
+
+      if (data.success) {
+        setEnviado(true)
+        setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
+        setFile(null)
+        setEstimacion(null)
+      } else {
+        alert("Error del servidor. Intenta de nuevo más tarde.")
+      }
+    } catch {
+      alert("Error al enviar la cotización. Intenta de nuevo.")
     }
-
-    const res = await fetch("/api/cotizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: form.nombre,
-        whatsapp: form.whatsapp,
-        estilo: form.estilo,
-        zona: form.zona,
-        tamano: form.tamano,
-        imagenBase64,
-      }),
-    })
-    const data = await res.json()
-
     setEnviando(false)
-    if (data.success) {
-      setEnviado(true)
-      setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
-      setFile(null)
-      setEstimacion(null)
-    }
   }
 
   if (enviado) {

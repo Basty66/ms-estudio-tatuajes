@@ -72,7 +72,7 @@ export default function Agenda() {
     const fechaStr = formatDate(selected)
 
     try {
-      await fetch("/api/agendar", {
+      const res = await fetch("/api/agendar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,8 +82,9 @@ export default function Agenda() {
           descripcion: descripcion.trim(),
         }),
       })
+      await res.json()
     } catch {
-      // silently continue to WhatsApp even if API fails
+      // continue to WhatsApp even if API fails
     }
 
     const mensaje = `Hola MS Estudio, soy ${nombre.trim()}. Vi su página web y me interesa agendar una cita para el día ${fechaStr}.${descripcion.trim() ? `\n\nDetalles: ${descripcion.trim()}` : ""}\n\nMi WhatsApp es ${whatsapp.trim()}. Quedo atento.`
