@@ -4,7 +4,6 @@ import {
   Building,
   SealCheck,
   Star,
-  ArrowSquareOut,
 } from "@phosphor-icons/react"
 
 const pillars = [
@@ -74,21 +73,21 @@ export default function Ubicacion() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="glass rounded-3xl p-8 md:p-10 flex flex-col items-center justify-center min-h-[280px] group"
+            className="glass rounded-3xl p-3 md:p-4 min-h-[280px] group"
           >
-            <MapPin size={48} className="text-cyan-400 mb-4" weight="duotone" />
-            <p className="text-gray-400 text-sm tracking-wider mb-4">
-              Melipilla, Región Metropolitana
-            </p>
-            <a
-              href="https://maps.google.com/?q=Av.+Manso+529+Melipilla"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/10 text-gray-400 hover:text-cyan-400 hover:border-cyan-400/30 transition-all text-sm tracking-wider group"
-            >
-              VER EN MAPA
-              <ArrowSquareOut size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </a>
+            <div className="w-full h-full min-h-[260px] rounded-2xl overflow-hidden">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3325.5!2d-71.214!3d-33.685!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDQxJzA2LjAiUyA3McKwMTInNTAuNCJX!5e0!3m2!1ses!2scl!4v1!4m1!1s0x9662b5b5b5b5b5b5%3A0x0!2zQXYuIE1hbnNvIDUyOSwgTWVsaXBpbGxh!5e0!3m2!1ses!2scl"
+                width="100%"
+                height="100%"
+                style={{ border: 0, minHeight: "260px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="MS Estudio de Tatuajes - Ubicación"
+                className="grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition-all duration-700"
+              />
+            </div>
           </motion.div>
         </div>
 
