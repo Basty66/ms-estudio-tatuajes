@@ -105,7 +105,7 @@ export default function Cotizador() {
 
   if (enviado) {
     return (
-      <section id="cotizador" className="relative py-32">
+      <section id="cotizador" className="relative py-20 md:py-32">
         <div className="max-w-lg mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -138,10 +138,10 @@ export default function Cotizador() {
   }
 
   return (
-    <section id="cotizador" className="relative py-32 overflow-hidden">
+    <section id="cotizador" className="relative py-20 md:py-32 overflow-hidden">
       <div className="ambient-glow bottom-0 right-0 translate-x-1/2 translate-y-1/2 bg-cyan-400/5" />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -152,7 +152,7 @@ export default function Cotizador() {
           <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Cotiza tu diseño
           </span>
-          <h2 className="section-title text-5xl md:text-7xl text-white mb-4">
+                <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
             COTIZADOR
             <br />
             <span className="premium-gradient">INSTANTÁNEO</span>
@@ -167,7 +167,7 @@ export default function Cotizador() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="max-w-2xl mx-auto"
         >
-          <form onSubmit={handleSubmit} className="glass rounded-3xl p-8 md:p-10 space-y-6">
+          <form onSubmit={handleSubmit} className="glass rounded-2xl md:rounded-3xl p-5 md:p-10 space-y-5 md:space-y-6">
             <div className="grid md:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-xs tracking-widest text-cyan-400/60 uppercase">

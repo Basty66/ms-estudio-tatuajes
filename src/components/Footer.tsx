@@ -10,7 +10,7 @@ export default function Footer() {
     <footer className="relative border-t border-white/5 pt-16 pb-8">
       <div className="ambient-glow top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-cyan-400/3" />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="grid md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-2">
             <div className="mb-4">

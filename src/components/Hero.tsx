@@ -46,7 +46,7 @@ export default function Hero() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-20 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 relative z-10">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -60,20 +60,20 @@ export default function Hero() {
             MS Estudio de Tatuajes · Melipilla
           </motion.p>
 
-          <motion.h1
-            variants={itemVariants}
-            className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold section-title leading-[0.85] mb-6"
-          >
-            <span className="premium-gradient">CONCURSO</span>
-            <br />
-            <span className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.15em] block mt-4 font-sans font-light">
-              PARTICIPA Y GANA
-            </span>
-          </motion.h1>
+            <motion.h1
+              variants={itemVariants}
+              className="text-5xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold section-title leading-[0.85] mb-6"
+            >
+              <span className="premium-gradient">CONCURSO</span>
+              <br />
+              <span className="text-white text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.15em] block mt-3 md:mt-4 font-sans font-light">
+                PARTICIPA Y GANA
+              </span>
+            </motion.h1>
 
           <motion.p
             variants={itemVariants}
-            className="text-gray-600 max-w-lg mx-auto text-sm tracking-[0.2em] mb-16"
+            className="text-gray-600 max-w-lg mx-auto text-xs md:text-sm tracking-[0.2em] mb-10 md:mb-16"
           >
             CONCURSO EXCLUSIVO PARA SEGUIDORES
           </motion.p>
@@ -89,19 +89,19 @@ export default function Hero() {
                   key={step.title}
                   variants={cardVariants}
                   whileHover="hover"
-                  className="glass-card rounded-2xl p-6 md:p-8 flex flex-col items-center gap-4 group cursor-default"
+                  className="glass-card rounded-2xl p-4 md:p-8 flex flex-col items-center gap-3 md:gap-4 group cursor-default"
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-cyan-400/5 border border-cyan-400/10 flex items-center justify-center group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 transition-all duration-500">
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-cyan-400/5 border border-cyan-400/10 flex items-center justify-center group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 transition-all duration-500">
                     <Icon
-                      size={28}
+                      size={24}
                       className="text-cyan-400"
                       weight="duotone"
                     />
                   </div>
-                  <span className="text-3xl md:text-4xl font-bold section-title text-cyan-400">
+                  <span className="text-2xl md:text-4xl font-bold section-title text-cyan-400">
                     {step.title}
                   </span>
-                  <span className="text-[11px] text-gray-500 tracking-[0.2em] text-center leading-relaxed">
+                  <span className="text-[10px] md:text-[11px] text-gray-500 tracking-[0.2em] text-center leading-relaxed">
                     {step.desc}
                   </span>
                 </motion.div>
@@ -113,22 +113,22 @@ export default function Hero() {
             variants={itemVariants}
             className="max-w-2xl mx-auto"
           >
-            <div className="gradient-border rounded-2xl p-8 md:p-10 bg-dark-400/50 backdrop-blur-sm">
+            <div className="gradient-border rounded-2xl p-5 md:p-10 bg-dark-400/50 backdrop-blur-sm">
               <motion.div
-                className="flex items-center justify-center gap-4 md:gap-6 flex-wrap"
+                className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6"
                 animate={{ y: [0, -5, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
                 <Sparkle
-                  size={36}
-                  className="text-cyan-400"
+                  size={28}
+                  className="text-cyan-400 shrink-0"
                   weight="fill"
                 />
-                <div>
-                  <p className="text-3xl md:text-4xl font-bold section-title premium-gradient">
+                <div className="text-center md:text-left">
+                  <p className="text-2xl md:text-4xl font-bold section-title premium-gradient">
                     ¡UN GANADOR!
                   </p>
-                  <p className="text-xl md:text-2xl text-white font-bold tracking-wider">
+                  <p className="text-base md:text-2xl text-white font-bold tracking-wider">
                     TATUAJE GRATIS VALORADO EN $80.000
                   </p>
                 </div>

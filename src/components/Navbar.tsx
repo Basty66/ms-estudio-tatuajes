@@ -43,7 +43,7 @@ export default function Navbar() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
         <button
           onClick={() => handleNav("#inicio")}
           className="group relative"
@@ -100,7 +100,7 @@ export default function Navbar() {
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
             className="md:hidden glass-strong border-t border-white/5 overflow-hidden"
           >
-            <nav className="flex flex-col px-6 py-6 gap-2">
+            <nav className="flex flex-col px-4 md:px-6 py-4 md:py-6 gap-2">
               {links.map((link) => (
                 <button
                   key={link.href}

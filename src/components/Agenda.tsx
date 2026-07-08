@@ -68,10 +68,10 @@ export default function Agenda() {
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
 
   return (
-    <section id="agenda" className="relative py-32 overflow-hidden">
+    <section id="agenda" className="relative py-20 md:py-32 overflow-hidden">
       <div className="ambient-glow top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-cyan-400/5" />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -82,7 +82,7 @@ export default function Agenda() {
           <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Reserva tu cita
           </span>
-          <h2 className="section-title text-5xl md:text-7xl text-white mb-4">
+                <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
             AGENDA
             <br />
             <span className="premium-gradient">TU CITA</span>
@@ -97,7 +97,7 @@ export default function Agenda() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="max-w-lg mx-auto"
         >
-          <div className="glass rounded-3xl p-8 md:p-10">
+          <div className="glass rounded-2xl md:rounded-3xl p-4 md:p-10">
             <div className="flex items-center justify-between mb-8">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -151,7 +151,7 @@ export default function Agenda() {
                     whileTap={{ scale: 0.9 }}
                     disabled={past}
                     onClick={() => handleSelectDay(day)}
-                    className={`text-sm py-2.5 rounded-xl transition-all ${
+                    className={`text-sm min-h-[40px] py-2.5 rounded-xl transition-all ${
                       isSelected
                         ? "bg-cyan-400 text-black font-bold"
                         : past

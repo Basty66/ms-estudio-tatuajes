@@ -41,10 +41,10 @@ const cardVariants = {
 
 export default function Gallery() {
   return (
-    <section id="galeria" className="relative py-32 overflow-hidden">
+    <section id="galeria" className="relative py-20 md:py-32 overflow-hidden">
       <div className="ambient-glow top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 bg-cyan-400/5" />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -55,7 +55,7 @@ export default function Gallery() {
           <span className="text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Nuestro trabajo
           </span>
-          <h2 className="section-title text-5xl md:text-7xl text-white mb-4">
+                <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
             GALERÍA DE
             <br />
             <span className="premium-gradient">ESTILOS</span>
@@ -75,7 +75,7 @@ export default function Gallery() {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-50px" }}
                 whileHover={{ y: -8 }}
-                className="group relative rounded-2xl overflow-hidden min-h-[480px] glass-card cursor-pointer"
+                className="group relative rounded-2xl overflow-hidden min-h-[320px] md:min-h-[480px] glass-card cursor-pointer"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-60`} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -87,7 +87,7 @@ export default function Gallery() {
                   }}
                 />
 
-                <div className="relative z-10 h-full flex flex-col justify-end p-8">
+                <div className="relative z-10 h-full flex flex-col justify-end p-5 md:p-8">
                   <div className="mb-6">
                     <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 transition-all duration-500">
                       <Icon size={28} className="text-cyan-400" weight="duotone" />
