@@ -111,7 +111,7 @@ export default function Agenda() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
           className="text-center mb-16"
         >
           <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
@@ -129,7 +129,7 @@ export default function Agenda() {
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
+          transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
           className="max-w-lg mx-auto"
         >
           <div className="glass rounded-2xl md:rounded-3xl p-4 md:p-10">

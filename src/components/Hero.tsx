@@ -29,7 +29,7 @@ const cardVariants = {
     scale: 1,
     transition: { duration: 0.6, ease: easeOut },
   },
-  hover: { y: -8, transition: { duration: 0.3 } },
+  hover: { y: -8, transition: { duration: 0.3, ease: easeOut } },
 }
 
 export default function Hero() {

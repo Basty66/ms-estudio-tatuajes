@@ -153,7 +153,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #fff;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .neon-input:focus {
@@ -196,7 +196,7 @@
   inset: 0;
   background: linear-gradient(135deg, #33ebff, #00b8d4);
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .neon-button-primary:hover::before {
@@ -248,4 +248,9 @@
 
 @media (max-width: 768px) {
   .ambient-glow { width: 300px; height: 300px; filter: blur(80px); }
+}
+
+.will-change-transform {
+  will-change: transform;
+  backface-visibility: hidden;
 }
