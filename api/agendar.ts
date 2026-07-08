@@ -6,6 +6,13 @@ export async function POST(request: Request) {
   try {
     const { nombre, whatsapp, fecha, descripcion } = await request.json()
 
+    if (!nombre || !whatsapp || !fecha) {
+      return Response.json({ success: false, error: "Faltan campos requeridos" }, { status: 400 })
+    }
+    if (!/^\+56\d{9}$/.test(whatsapp)) {
+      return Response.json({ success: false, error: "WhatsApp inválido" }, { status: 400 })
+    }
+
     const sql = neon(process.env.NEON_DATABASE_URL!)
 
     await sql`
