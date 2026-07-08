@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { List, X, Sword } from "@phosphor-icons/react"
+import { List, X } from "@phosphor-icons/react"
 
 const links = [
   { href: "#inicio", label: "Inicio" },
@@ -46,14 +46,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <button
           onClick={() => handleNav("#inicio")}
-          className="flex items-center gap-2 group"
+          className="group relative"
         >
-          <Sword
-            size={28}
-            className="text-cyan-400 transition-transform duration-300 group-hover:rotate-12"
-            weight="fill"
-          />
-          <span className="text-2xl font-bold tracking-[0.3em] text-white group-hover:text-cyan-400 transition-colors duration-300">
+          <span className="text-3xl font-bold tracking-[0.15em] text-white neon-text">
             MS
           </span>
         </button>

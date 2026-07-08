@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { Sword, Heart, ArrowUp } from "@phosphor-icons/react"
+import { Heart, ArrowUp } from "@phosphor-icons/react"
 
 export default function Footer() {
   const scrollToTop = () => {
@@ -13,9 +13,8 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Sword size={24} className="text-cyan-400" weight="fill" />
-              <span className="text-2xl font-bold tracking-[0.3em] text-white">MS</span>
+            <div className="mb-4">
+              <span className="text-2xl font-bold tracking-[0.15em] text-white neon-text">MS</span>
             </div>
             <p className="text-gray-600 text-sm leading-relaxed max-w-sm">
               Estudio de Tatuajes Profesional en Melipilla, Chile.
