@@ -3,28 +3,25 @@ import { Eye, Swatches, TextT, ArrowRight } from "@phosphor-icons/react"
 
 const categories = [
   {
+    image: "/images/tatuaje1.jpg",
     icon: Eye,
     title: "Black & Grey",
     subtitle: "Realismo Mitológico",
     desc: "Tatuaje detallado de Anubis",
-    accent: "from-gray-600 via-gray-400 to-gray-600",
-    gradient: "from-gray-900/80 via-gray-800/40 to-gray-900/80",
   },
   {
+    image: "/images/tatuaje2.jpg",
     icon: Swatches,
     title: "Microrealismo a Color",
     subtitle: "Fine Line",
     desc: "Dos peces Betta flotando, uno rojo y uno negro",
-    accent: "from-cyan-400 via-blue-400 to-cyan-400",
-    gradient: "from-cyan-900/30 via-blue-900/30 to-cyan-900/30",
   },
   {
+    image: "/images/tatuaje3.jpg",
     icon: TextT,
     title: "Lettering",
     subtitle: "Caligrafía Custom",
     desc: "Letras estilo Script que digan \"Godfather\"",
-    accent: "from-purple-400 via-pink-400 to-purple-400",
-    gradient: "from-purple-900/30 via-gray-900/30 to-purple-900/30",
   },
 ]
 
@@ -75,10 +72,10 @@ export default function Gallery() {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-50px" }}
                 whileHover={{ y: -8 }}
-                className="group relative rounded-2xl overflow-hidden min-h-[320px] md:min-h-[480px] glass-card cursor-pointer"
+                className="group relative rounded-2xl overflow-hidden min-h-[320px] md:min-h-[480px] glass-card cursor-pointer bg-cover bg-center"
+                style={{ backgroundImage: `url(${cat.image})` }}
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-60`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/30 group-hover:via-black/40 transition-all duration-700" />
 
                 <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                   style={{
