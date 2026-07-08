@@ -62,11 +62,11 @@ export default function Hero() {
 
             <motion.h1
               variants={itemVariants}
-              className="text-5xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold section-title leading-[0.85] mb-6"
+              className="text-4xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold section-title leading-[0.85] mb-6"
             >
               <span className="premium-gradient">CONCURSO</span>
               <br />
-              <span className="text-white text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.15em] block mt-3 md:mt-4 font-sans font-light">
+              <span className="text-white text-xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.08em] sm:tracking-[0.15em] block mt-2 sm:mt-4 font-sans font-light">
                 PARTICIPA Y GANA
               </span>
             </motion.h1>
