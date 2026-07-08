@@ -48,9 +48,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-dark overflow-x-hidden">
-      <div className="ambient-glow top-[-100px] left-[-100px] bg-cyan-400" />
-      <div className="ambient-glow bottom-[-100px] right-[-100px] bg-cyan-400" />
-      <div className="ambient-glow top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-500" />
 
       <Navbar />
       <ScrollToTop />

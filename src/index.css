@@ -25,15 +25,22 @@
 
 @layer base {
   * { box-sizing: border-box; }
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
   body {
     margin: 0;
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
     background: #000;
     color: #e0e0e0;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
   }
-  html { scroll-behavior: smooth; overflow-x: hidden; }
+  html { scroll-behavior: smooth; }
   ::selection { background: rgba(0, 229, 255, 0.3); color: #fff; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #000; }
@@ -129,8 +136,10 @@
 .glass-card {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: translateZ(0);
 }
 
 .glass-card:hover {
