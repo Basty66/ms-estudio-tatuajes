@@ -6,6 +6,9 @@ import {
   CaretRight,
   CalendarCheck,
   WhatsappLogo,
+  User,
+  Note,
+  Spinner,
 } from "@phosphor-icons/react"
 
 const daysOfWeek = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
@@ -28,6 +31,10 @@ export default function Agenda() {
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [selected, setSelected] = useState<Date | null>(null)
+  const [nombre, setNombre] = useState("")
+  const [whatsapp, setWhatsapp] = useState("")
+  const [descripcion, setDescripcion] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfMonth(year, month)
@@ -58,10 +65,30 @@ export default function Agenda() {
   const formatDate = (date: Date) =>
     date.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })
 
-  const handleWhatsApp = () => {
-    const fechaStr = selected ? formatDate(selected) : "próximamente"
-    const mensaje = `Hola MS Estudio, vi su página web y me interesa agendar una cita para el día ${fechaStr}. Quedo atento.`
+  const handleSubmit = async () => {
+    if (!nombre.trim() || !whatsapp.trim() || !selected) return
+
+    setSubmitting(true)
+    const fechaStr = formatDate(selected)
+
+    try {
+      await fetch("/api/agendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          whatsapp: whatsapp.trim(),
+          fecha: fechaStr,
+          descripcion: descripcion.trim(),
+        }),
+      })
+    } catch {
+      // silently continue to WhatsApp even if API fails
+    }
+
+    const mensaje = `Hola MS Estudio, soy ${nombre.trim()}. Vi su página web y me interesa agendar una cita para el día ${fechaStr}.${descripcion.trim() ? `\n\nDetalles: ${descripcion.trim()}` : ""}\n\nMi WhatsApp es ${whatsapp.trim()}. Quedo atento.`
     window.open(`https://wa.me/56964470668?text=${encodeURIComponent(mensaje)}`, "_blank")
+    setSubmitting(false)
   }
 
   const isToday = (day: number) =>
@@ -98,6 +125,29 @@ export default function Agenda() {
           className="max-w-lg mx-auto"
         >
           <div className="glass rounded-2xl md:rounded-3xl p-4 md:p-10">
+            <div className="space-y-4 mb-8">
+              <div className="relative">
+                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/50" weight="duotone" />
+                <input
+                  type="text"
+                  placeholder="Tu nombre"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 focus:bg-white/10 transition-all tracking-wider"
+                />
+              </div>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/50 text-sm font-mono">+56</span>
+                <input
+                  type="tel"
+                  placeholder="9 1234 5678"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-16 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 focus:bg-white/10 transition-all tracking-wider"
+                />
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mb-8">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -182,18 +232,34 @@ export default function Agenda() {
             </AnimatePresence>
           </div>
 
+          <div className="relative mt-4">
+            <Note size={16} className="absolute left-4 top-4 text-cyan-400/50" weight="duotone" />
+            <textarea
+              placeholder="Describe brevemente tu idea (opcional)"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              rows={2}
+              className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 focus:bg-white/10 transition-all tracking-wider resize-none"
+            />
+          </div>
+
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleWhatsApp}
-            className="neon-button-primary w-full rounded-2xl px-6 py-4 mt-6 flex items-center justify-center gap-3 text-base tracking-widest font-bold"
+            whileHover={!submitting ? { scale: 1.02 } : {}}
+            whileTap={!submitting ? { scale: 0.98 } : {}}
+            onClick={handleSubmit}
+            disabled={submitting || !nombre.trim() || !whatsapp.trim() || !selected}
+            className="neon-button-primary w-full rounded-2xl px-6 py-4 mt-6 flex items-center justify-center gap-3 text-base tracking-widest font-bold disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <WhatsappLogo size={22} weight="fill" />
-            AGENDA TU CITA POR WHATSAPP
+            {submitting ? (
+              <Spinner size={22} className="animate-spin" />
+            ) : (
+              <WhatsappLogo size={22} weight="fill" />
+            )}
+            {submitting ? "PROCESANDO..." : "AGENDA TU CITA POR WHATSAPP"}
           </motion.button>
 
           <p className="text-center text-gray-700 text-xs mt-4 tracking-wider">
-            Se abrirá WhatsApp con un mensaje predefinido
+            Se abrirá WhatsApp con tu mensaje personalizado
           </p>
         </motion.div>
       </div>
