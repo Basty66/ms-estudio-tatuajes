@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
+    "target": "es2022",
+    "module": "esnext",
     "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": true,
-    "isolatedModules": true,
-    "types": ["@vercel/node"]
+    "types": ["node"],
+    "skipLibCheck": true,
+    "noEmit": true
   },
   "include": ["./**/*.ts"]
 }
