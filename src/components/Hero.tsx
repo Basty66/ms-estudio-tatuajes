@@ -37,18 +37,22 @@ export default function Hero() {
 
   return (
     <section id="inicio" className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-      {/* Tattoo background image — parallax */}
-      <div
-        className="absolute inset-0 z-0 hidden md:block"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center 30%",
-          backgroundAttachment: "fixed",
-          filter: "grayscale(100%) brightness(18%) contrast(140%)",
-          opacity: 0.5,
-        }}
-      />
+      {/* Video background — desktop */}
+      <div className="absolute inset-0 z-0 hidden md:block" style={{ filter: "grayscale(100%) brightness(18%) contrast(140%)" }}>
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          disablePictureInPicture
+          poster="https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80"
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/video/hero.mp4" type="video/mp4" />
+        </video>
+      </div>
+
+      {/* Fallback image — mobile y si no hay video */}
       <div
         className="absolute inset-0 z-0 md:hidden"
         style={{
@@ -57,6 +61,18 @@ export default function Hero() {
           backgroundPosition: "center 30%",
           filter: "grayscale(100%) brightness(18%) contrast(140%)",
           opacity: 0.5,
+        }}
+      />
+      {/* Fallback image — desktop si video no carga */}
+      <div
+        className="absolute inset-0 z-0 hidden md:block"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center 30%",
+          filter: "grayscale(100%) brightness(18%) contrast(140%)",
+          opacity: 0.5,
+          zIndex: -1,
         }}
       />
 
