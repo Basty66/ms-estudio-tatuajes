@@ -11,6 +11,7 @@ import {
   PaperPlaneRight,
   CheckCircle,
   ArrowClockwise,
+  WhatsappLogo,
 } from "@phosphor-icons/react"
 import { calcularEstimacion, formatPrecio } from "../lib/precios"
 
@@ -54,6 +55,7 @@ export default function Cotizador() {
   const [file, setFile] = useState<File | null>(null)
   const [estimacion, setEstimacion] = useState<{ minimo: number; maximo: number } | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [ultimoEnvio, setUltimoEnvio] = useState<{ nombre: string; whatsapp: string; estilo: string; zona: string; tamano: string } | null>(null)
   const [enviado, setEnviado] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -110,6 +112,7 @@ export default function Cotizador() {
       const data = await res.json()
 
       if (data.success) {
+        setUltimoEnvio({ ...form })
         setEnviado(true)
         setForm({ nombre: "", whatsapp: "+56", estilo: "", zona: "", tamano: "" })
         setFile(null)
@@ -141,16 +144,34 @@ export default function Cotizador() {
               <CheckCircle size={40} className="text-cyan-400" weight="fill" />
             </motion.div>
             <h3 className="section-title text-3xl premium-gradient mb-3">¡COTIZACIÓN ENVIADA!</h3>
-            <p className="text-gray-500 text-sm mb-8 tracking-wider">
+            <p className="text-gray-500 text-sm mb-2 tracking-wider">
               Te contactaremos por WhatsApp para confirmar los detalles.
             </p>
-            <button
-              onClick={() => setEnviado(false)}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm tracking-widest hover:bg-cyan-400/20 transition-all"
-            >
-              <ArrowClockwise size={16} weight="bold" />
-              NUEVA COTIZACIÓN
-            </button>
+            {ultimoEnvio && (
+              <p className="text-gray-600 text-xs mb-6">
+                {ultimoEnvio.estilo && `${ultimoEnvio.estilo} · `}{ultimoEnvio.zona} · {ultimoEnvio.tamano}
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+              {ultimoEnvio && (
+                <a
+                  href={`https://wa.me/56964470668?text=${encodeURIComponent(`Hola MS Estudio! Soy ${ultimoEnvio.nombre}. Acabo de enviar una cotización:\n- Estilo: ${ultimoEnvio.estilo}\n- Zona: ${ultimoEnvio.zona}\n- Tamaño: ${ultimoEnvio.tamano}\n\n¿Podrían revisarla? Gracias!`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#25D366] text-white text-sm font-semibold tracking-wider hover:bg-[#1ea952] transition-all"
+                >
+                  <WhatsappLogo size={18} weight="fill" />
+                  CONFIRMAR POR WHATSAPP
+                </a>
+              )}
+              <button
+                onClick={() => { setEnviado(false); setUltimoEnvio(null) }}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm tracking-widest hover:bg-cyan-400/20 transition-all"
+              >
+                <ArrowClockwise size={16} weight="bold" />
+                NUEVA COTIZACIÓN
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>

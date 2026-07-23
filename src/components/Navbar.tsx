@@ -7,8 +7,11 @@ const links = [
   { href: "#inicio", label: "Inicio" },
   { href: "#sobre", label: "Sobre mí" },
   { href: "#galeria", label: "Galería" },
+  { href: "#cuidados", label: "Cuidados" },
   { href: "#cotizador", label: "Cotizador" },
   { href: "#agenda", label: "Agenda" },
+  { href: "#faq", label: "FAQ" },
+  { href: "#blog", label: "Blog" },
   { href: "#ubicacion", label: "Ubicación" },
 ]
 

@@ -1,134 +1,165 @@
-import { motion } from "framer-motion"
-import { Eye, Swatches, TextT, ArrowRight, Image } from "@phosphor-icons/react"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Image, X } from "@phosphor-icons/react"
 
-const categories = [
-  {
-    image: "/images/tatuaje1.jpg",
-    icon: Eye,
-    title: "Black & Grey",
-    subtitle: "Realismo Mitológico",
-    desc: "Tatuaje detallado de Anubis",
-    info: "El Black & Grey es la técnica clásica del tatuaje. Usamos sombreado en escala de grises para crear volumen, profundidad y realismo. Ideal para retratos, criaturas mitológicas y piezas con alto contraste. Es el estilo más solicitado por su durabilidad y elegancia atemporal.",
-    ideal: "Retratos, dioses, animales, rostros",
-  },
-  {
-    image: "/images/tatuaje2.jpg",
-    icon: Swatches,
-    title: "Microrealismo a Color",
-    subtitle: "Fine Line",
-    desc: "Dos peces Betta flotando, uno rojo y uno negro",
-    info: "El Microrealismo combina líneas finas (Fine Line) con color vibrante para lograr detalles hiperrealistas en tamaño reducido. Usamos agujas ultra finas y tintas de alta densidad para capturar cada detalle. Perfecto para piezas pequeñas con gran impacto visual.",
-    ideal: "Animales, flores, retratos pequeños, detalles",
-  },
-  {
-    image: "/images/tatuaje3.jpg",
-    icon: TextT,
-    title: "Lettering",
-    subtitle: "Caligrafía Custom",
-    desc: "Letras estilo Script que digan \"Godfather\"",
-    info: "El Lettering es el arte de la tipografía personalizada. Cada pieza se diseña desde cero adaptando la fuente, el grosor y la ornamentación al estilo del cliente. Desde scripts elegantes hasta letras góticas, creamos textos con carácter y significado único.",
-    ideal: "Nombres, fechas, frases, iniciales, memoriales",
-  },
-]
+interface GalleryImage {
+  id: number
+  imagen_url: string
+  estilo: string
+  titulo: string
+  descripcion: string
+}
 
 const easeOut = [0.23, 1, 0.32, 1] as const
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 60 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, delay: i * 0.15, ease: easeOut },
-  }),
-}
-
 export default function Gallery() {
+  const [images, setImages] = useState<GalleryImage[]>([])
+  const [estilos, setEstilos] = useState<string[]>([])
+  const [filtro, setFiltro] = useState("todos")
+  const [lightbox, setLightbox] = useState<GalleryImage | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/admin/galeria")
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.images) {
+          setImages(data.images)
+          const uniqueStyles = [...new Set(data.images.map((i: GalleryImage) => i.estilo))] as string[]
+          setEstilos(uniqueStyles)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtradas = filtro === "todos" ? images : images.filter(i => i.estilo === filtro)
+
+  if (loading) {
+    return (
+      <section id="galeria" className="relative py-20 md:py-32 overflow-hidden section-dark">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin mx-auto" />
+        </div>
+      </section>
+    )
+  }
+
+  if (images.length === 0) return null
+
   return (
-    <section id="galeria" className="relative py-24 md:py-36 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-dark via-dark-100 to-dark" />
-      <div className="ambient-glow-cyan top-1/2 left-0 w-[500px] h-[500px] -translate-y-1/2 -translate-x-1/2" />
+    <section id="galeria" className="relative py-20 md:py-28 overflow-hidden section-dark">
+      <div className="ambient-glow-cyan top-1/3 left-0 w-[500px] h-[500px] -translate-x-1/2" />
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true }}
           transition={{ duration: 0.7, ease: easeOut }}
-          className="text-center mb-16 md:mb-24"
+          className="text-center mb-10"
         >
-          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400 uppercase mb-4 block">
+          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400 uppercase">
             <Image size={14} className="inline mr-2 text-cyan-400" weight="fill" />
             Nuestro trabajo
           </span>
-          <h2 className="section-title-fluid text-white mb-4 leading-[0.85]">
-            GALERÍA DE{" "}
-            <span className="premium-gradient">ESTILOS</span>
+          <h2 className="section-title text-4xl md:text-7xl text-white mt-2 mb-4">
+            GALERÍA DE <span className="premium-gradient">ESTILOS</span>
           </h2>
-          <div className="flex items-center justify-center gap-4">
-            <span className="h-px w-12 bg-cyan-400/30" />
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="h-px w-12 bg-cyan-400/30" />
-          </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-          {categories.map((cat, i) => {
-            const Icon = cat.icon
-            return (
-              <motion.div
-                key={cat.title}
-                custom={i}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-50px" }}
-                whileHover={{ y: -8 }}
-                className="group relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[4/5] md:aspect-[3/4] lg:aspect-[4/5] glass-card-dark cursor-pointer"
-              >
+        {/* Filtros */}
+        <div className="flex justify-center gap-2 mb-10 flex-wrap">
+          <button
+            onClick={() => setFiltro("todos")}
+            className={`font-tech text-[11px] tracking-wider px-4 py-2 rounded-full transition-all ${
+              filtro === "todos"
+                ? "bg-cyan-400/10 text-cyan-400 border border-cyan-400/20"
+                : "text-gray-500 hover:text-gray-300 border border-transparent"
+            }`}
+          >
+            TODOS
+          </button>
+          {estilos.map(e => (
+            <button
+              key={e}
+              onClick={() => setFiltro(e)}
+              className={`font-tech text-[11px] tracking-wider px-4 py-2 rounded-full transition-all capitalize ${
+                filtro === e
+                  ? "bg-cyan-400/10 text-cyan-400 border border-cyan-400/20"
+                  : "text-gray-500 hover:text-gray-300 border border-transparent"
+              }`}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid */}
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+          {filtradas.map((img, i) => (
+            <motion.div
+              key={img.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: (i % 8) * 0.05, duration: 0.5 }}
+              className="break-inside-avoid mb-3 md:mb-4 cursor-pointer group"
+              onClick={() => setLightbox(img)}
+            >
+              <div className="relative rounded-xl overflow-hidden glass-card-dark">
                 <img
-                  src={cat.image}
-                  alt={cat.title}
+                  src={img.imagen_url}
+                  alt={img.titulo || img.estilo}
                   loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent group-hover:from-black/50 transition-all duration-700" />
-
-                <div className="relative z-10 h-full flex flex-col justify-end p-5 md:p-8">
-                  <div className="mb-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 group-hover:shadow-[0_0_25px_rgba(0,229,255,0.1)] transition-all duration-500">
-                      <Icon size={24} className="text-cyan-400" weight="duotone" />
-                    </div>
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-wider">
-                      {cat.title}
-                    </h3>
-                    <p className="font-tech text-cyan-400/80 text-sm font-medium tracking-widest mb-3 uppercase">
-                      {cat.subtitle}
-                    </p>
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                      {cat.desc}
-                    </p>
-                  </div>
-
-                  <div className="overflow-hidden max-h-0 group-hover:max-h-40 transition-all duration-700 ease-in-out">
-                    <p className="text-gray-500 text-xs leading-relaxed mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
-                      {cat.info}
-                    </p>
-                    <p className="font-tech text-cyan-400/40 text-[10px] tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-200">
-                      Ideal para: {cat.ideal}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-cyan-400/50 group-hover:text-cyan-400 transition-colors duration-300 font-tech text-xs tracking-[0.25em] uppercase mt-3">
-                    <span className="md:hidden">Más info</span>
-                    <span className="hidden md:inline">Ver estilo</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-3">
+                  <div>
+                    {img.titulo && <p className="text-white text-xs font-medium truncate">{img.titulo}</p>}
+                    <p className="text-cyan-400/60 text-[10px] font-tech uppercase tracking-wider capitalize">{img.estilo}</p>
                   </div>
                 </div>
-              </motion.div>
-            )
-          })}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+            onClick={() => setLightbox(null)}
+          >
+            <button
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+              onClick={() => setLightbox(null)}
+            >
+              <X size={20} weight="bold" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              src={lightbox.imagen_url}
+              alt={lightbox.titulo}
+              className="max-w-full max-h-[85vh] object-contain rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            {lightbox.titulo && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass rounded-full px-5 py-2 border border-white/5">
+                <p className="text-white text-sm">{lightbox.titulo}</p>
+                <p className="text-cyan-400/60 text-[10px] font-tech uppercase tracking-wider text-center capitalize">{lightbox.estilo}</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

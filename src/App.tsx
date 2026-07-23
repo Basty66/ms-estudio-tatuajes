@@ -5,16 +5,19 @@ import Navbar from "./components/Navbar"
 import Hero from "./components/Hero"
 import SobreElTatuador from "./components/SobreElTatuador"
 import Gallery from "./components/Gallery"
+import CuidadosPost from "./components/CuidadosPost"
 import Cotizador from "./components/Cotizador"
 import Agenda from "./components/Agenda"
+import FAQ from "./components/FAQ"
+import BlogSection from "./components/BlogSection"
 import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
 import WhatsAppFloat from "./components/WhatsAppFloat"
 import Reviews from "./components/Reviews"
 import Admin from "./pages/Admin"
 
-const sectionIds = ["inicio", "sobre", "galeria", "cotizador", "agenda", "reviews", "ubicacion"]
-const components = [Hero, SobreElTatuador, Gallery, Cotizador, Agenda, Reviews, Ubicacion]
+const sectionIds = ["inicio", "sobre", "galeria", "cuidados", "cotizador", "agenda", "faq", "blog", "reviews", "ubicacion"]
+const components = [Hero, SobreElTatuador, Gallery, CuidadosPost, Cotizador, Agenda, FAQ, BlogSection, Reviews, Ubicacion]
 
 function HomePage() {
   return (
