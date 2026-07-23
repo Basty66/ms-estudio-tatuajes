@@ -244,7 +244,7 @@ export default function Agenda() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={prevMonth}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400/20 transition-all"
+                className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400/20 transition-all"
               >
                 <CaretLeft size={16} weight="bold" />
               </motion.button>
@@ -260,14 +260,14 @@ export default function Agenda() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={nextMonth}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400/20 transition-all"
+                className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400/20 transition-all"
               >
                 <CaretRight size={16} weight="bold" />
               </motion.button>
             </div>
 
             {/* Leyenda */}
-            <div className="flex items-center justify-center gap-3 mb-4 text-[10px] font-tech tracking-wider flex-wrap">
+            <div className="flex items-center justify-center gap-3 mb-4 text-[11px] font-tech tracking-wider flex-wrap">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-400" /> Libre</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> Parcial</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> Lleno</span>
@@ -304,7 +304,7 @@ export default function Agenda() {
                     disabled={status === "past" || status === "nodata" || status === "full"}
                     onClick={() => handleSelectDay(day)}
                     title={info ? `${info.booked}/${info.max} cupos · ${info.pendientes} pendientes, ${info.confirmadas} confirmadas` : ""}
-                    className={`text-sm min-h-[40px] py-2.5 rounded-xl transition-all ${dayColor(status)}`}
+                    className={`text-sm min-h-[44px] py-2.5 rounded-xl transition-all ${dayColor(status)}`}
                   >
                     {day}
                   </motion.button>

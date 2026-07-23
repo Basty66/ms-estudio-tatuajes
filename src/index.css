@@ -430,10 +430,15 @@
   inset: 0;
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
   filter: grayscale(100%) brightness(15%) contrast(140%);
   opacity: 0.4;
   z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .tattoo-bg::before {
+    background-attachment: fixed;
+  }
 }
 
 .tattoo-bg > * { position: relative; z-index: 1; }

@@ -231,7 +231,7 @@ export default function Cotizador() {
                   value={form.estilo}
                   onChange={handleChange}
                   required
-                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm appearance-none"
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm"
                 >
                   <option value="">Seleccionar</option>
                   {estilos.map((e) => (
@@ -250,7 +250,7 @@ export default function Cotizador() {
                   value={form.zona}
                   onChange={handleChange}
                   required
-                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm appearance-none"
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm"
                 >
                   <option value="">Seleccionar</option>
                   {zonas.map((z) => (
@@ -269,7 +269,7 @@ export default function Cotizador() {
                   value={form.tamano}
                   onChange={handleChange}
                   required
-                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm appearance-none"
+                  className="neon-input rounded-xl px-5 py-3.5 w-full text-sm"
                 >
                   <option value="">Seleccionar</option>
                   {tamanos.map((t) => (

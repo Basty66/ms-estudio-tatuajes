@@ -39,12 +39,22 @@ export default function Hero() {
     <section id="inicio" className="relative min-h-screen flex flex-col justify-center overflow-hidden">
       {/* Tattoo background image — parallax */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 hidden md:block"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80')`,
           backgroundSize: "cover",
           backgroundPosition: "center 30%",
           backgroundAttachment: "fixed",
+          filter: "grayscale(100%) brightness(18%) contrast(140%)",
+          opacity: 0.5,
+        }}
+      />
+      <div
+        className="absolute inset-0 z-0 md:hidden"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=800&q=80')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center 30%",
           filter: "grayscale(100%) brightness(18%) contrast(140%)",
           opacity: 0.5,
         }}
@@ -124,7 +134,7 @@ export default function Hero() {
                   <span className="text-2xl md:text-4xl font-bold section-title text-cyan-400">
                     {step.title}
                   </span>
-                  <span className="font-tech text-[10px] md:text-[11px] text-gray-500 tracking-[0.2em] text-center leading-relaxed uppercase">
+                  <span className="font-tech text-[11px] md:text-[11px] text-gray-500 tracking-[0.2em] text-center leading-relaxed uppercase">
                     {step.desc}
                   </span>
                 </motion.div>
@@ -161,7 +171,7 @@ export default function Hero() {
                   navigate("#galeria", { replace: true })
                 }
               }}
-              className="font-tech group flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors duration-300 tracking-[0.25em] text-xs uppercase"
+              className="font-tech group flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors duration-300 tracking-[0.25em] text-xs uppercase py-3 px-4 min-h-[44px]"
               whileHover={{ x: 5 }}
             >
               Descubre nuestros estilos

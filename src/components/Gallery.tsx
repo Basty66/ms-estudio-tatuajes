@@ -93,13 +93,6 @@ export default function Gallery() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent group-hover:from-black/50 transition-all duration-700" />
 
-                <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                  style={{
-                    background:
-                      "radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0,229,255,0.06), transparent 40%)",
-                  }}
-                />
-
                 <div className="relative z-10 h-full flex flex-col justify-end p-5 md:p-8">
                   <div className="mb-4">
                     <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 group-hover:shadow-[0_0_25px_rgba(0,229,255,0.1)] transition-all duration-500">
@@ -116,11 +109,11 @@ export default function Gallery() {
                     </p>
                   </div>
 
-                  <div className="overflow-hidden max-h-0 md:group-hover:max-h-40 transition-all duration-700 ease-in-out">
-                    <p className="text-gray-500 text-xs leading-relaxed mb-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-100">
+                  <div className="overflow-hidden max-h-0 group-hover:max-h-40 transition-all duration-700 ease-in-out">
+                    <p className="text-gray-500 text-xs leading-relaxed mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
                       {cat.info}
                     </p>
-                    <p className="font-tech text-cyan-400/40 text-[10px] tracking-widest uppercase opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-200">
+                    <p className="font-tech text-cyan-400/40 text-[10px] tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-200">
                       Ideal para: {cat.ideal}
                     </p>
                   </div>

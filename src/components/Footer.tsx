@@ -35,7 +35,7 @@ export default function Footer() {
                     const el = document.getElementById(id)
                     if (el) el.scrollIntoView({ behavior: "smooth" })
                   }}
-                  className="text-left text-gray-500 hover:text-cyan-400 text-xs tracking-wider transition-colors"
+                  className="text-left text-gray-500 hover:text-cyan-400 text-xs tracking-wider transition-colors py-2 min-h-[44px] flex items-center"
                 >
                   {l}
                 </button>
@@ -52,7 +52,7 @@ export default function Footer() {
                 href="https://instagram.com/matness_tattoos"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors text-sm group"
+                className="flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors text-sm group min-h-[44px]"
               >
                 <span className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 transition-all">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400 group-hover:text-cyan-400 transition-colors">
@@ -67,7 +67,7 @@ export default function Footer() {
                 href="https://facebook.com/matnesstattoos"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors text-sm group"
+                className="flex items-center gap-3 text-gray-500 hover:text-cyan-400 transition-colors text-sm group min-h-[44px]"
               >
                 <span className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 transition-all">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400 group-hover:text-cyan-400 transition-colors">
@@ -90,7 +90,7 @@ export default function Footer() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={scrollToTop}
-            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-cyan-400 hover:border-cyan-400/20 hover:bg-cyan-400/5 transition-all"
+            className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-cyan-400 hover:border-cyan-400/20 hover:bg-cyan-400/5 transition-all"
           >
             <ArrowUp size={16} weight="bold" />
           </motion.button>

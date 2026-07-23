@@ -101,7 +101,7 @@ export default function Navbar() {
 
         <button
           onClick={() => setOpen(!open)}
-          className="md:hidden text-cyan-400 p-2"
+          className="md:hidden text-cyan-400 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Menú"
         >
           {open ? <X size={24} weight="bold" /> : <List size={24} weight="bold" />}
