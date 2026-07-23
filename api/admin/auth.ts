@@ -6,8 +6,12 @@ export async function POST(request: Request) {
   try {
     const { password } = await request.json()
 
-    if (password === process.env.ADMIN_PASSWORD) {
-      const token = btoa(process.env.ADMIN_PASSWORD!)
+    const pw = process.env.ADMIN_PASSWORD
+    if (!pw) {
+      return Response.json({ success: false, error: "ADMIN_PASSWORD no configurada" }, { status: 500 })
+    }
+    if (password === pw) {
+      const token = btoa(pw)
       return Response.json({ success: true, token })
     }
 
