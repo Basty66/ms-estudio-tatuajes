@@ -971,6 +971,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   onRefresh: () => void
   headers: Record<string, string>
 }) {
+  const [filtro, setFiltro] = useState<string>("todas")
   const [editId, setEditId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState({ nombre: "", whatsapp: "", fecha: "", hora: "", duracion: 120, descripcion: "", estado: "pendiente", admin_notas: "" })
   const [creando, setCreando] = useState(false)
@@ -1023,6 +1024,16 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
     return colors[e] || colors.pendiente
   }
 
+  const filtros: { key: string; label: string; color: string }[] = [
+    { key: "todas", label: "Todas", color: "text-gray-300" },
+    { key: "pendiente", label: `Pendientes (${citas.filter(c => !c.estado || c.estado === "pendiente").length})`, color: "text-yellow-400" },
+    { key: "confirmada", label: `Confirmadas (${citas.filter(c => c.estado === "confirmada").length})`, color: "text-green-400" },
+    { key: "completada", label: `Completadas (${citas.filter(c => c.estado === "completada").length})`, color: "text-blue-400" },
+    { key: "cancelada", label: `Canceladas (${citas.filter(c => c.estado === "cancelada").length})`, color: "text-red-400" },
+  ]
+
+  const filtradas = filtro === "todas" ? citas : citas.filter(c => (c.estado || "pendiente") === filtro)
+
   return (
     <motion.div key="citas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
@@ -1049,8 +1060,22 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
         </button>
       </div>
 
+      {/* Filtros */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {filtros.map(f => (
+          <button key={f.key} onClick={() => setFiltro(f.key)}
+            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
+              filtro === f.key
+                ? "bg-white/10 text-white border border-white/20"
+                : "text-gray-500 hover:text-gray-300 border border-transparent"
+            }`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-3">
-        {citas.map((c) => (
+        {filtradas.map((c) => (
           <motion.div key={c.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="glass rounded-xl p-4">
             {editId === c.id ? (
@@ -1145,10 +1170,12 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
         ))}
       </div>
 
-      {citas.length === 0 && (
+      {filtradas.length === 0 && (
         <div className="text-center py-16">
           <CalendarCheck size={48} className="text-gray-700 mx-auto mb-4" />
-          <p className="font-tech text-gray-600 tracking-wider">NO HAY CITAS AÚN</p>
+          <p className="font-tech text-gray-600 tracking-wider">
+            {filtro === "todas" ? "NO HAY CITAS AÚN" : `NO HAY CITAS ${filtro.toUpperCase()}S`}
+          </p>
         </div>
       )}
     </motion.div>

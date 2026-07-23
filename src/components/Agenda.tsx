@@ -159,14 +159,27 @@ export default function Agenda() {
   const isToday = (day: number) =>
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
 
-  const getDayStatus = (day: number): "available" | "full" | "past" | "nodata" | "selected" | "today" => {
+  const getDayStatus = (day: number): "available" | "partial" | "full" | "past" | "nodata" | "selected" | "today" => {
     if (selected?.getDate() === day && selected?.getMonth() === month && selected?.getFullYear() === year) return "selected"
     if (isPastDay(day)) return "past"
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
     const info = daysData.get(dateStr)
     if (!info) return "nodata"
-    if (info.available) return isToday(day) ? "today" : "available"
-    return "full"
+    if (!info.available) return "full"
+    if (info.booked > 0) return isToday(day) ? "today" : "partial"
+    return isToday(day) ? "today" : "available"
+  }
+
+  const dayColor = (status: string) => {
+    switch (status) {
+      case "selected": return "bg-cyan-400 text-black font-bold"
+      case "today": return "text-cyan-400 font-bold border border-cyan-400/30 bg-cyan-400/5"
+      case "available": return "text-gray-300 hover:bg-cyan-400/15 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(0,229,255,0.1)] bg-cyan-400/5"
+      case "partial": return "text-amber-300 bg-amber-400/10 border border-amber-400/20 hover:bg-amber-400/20 transition-all"
+      case "full": return "text-red-400 bg-red-400/10 border border-red-400/20 cursor-not-allowed"
+      case "past": return "text-gray-700 cursor-not-allowed"
+      default: return "text-gray-700 cursor-not-allowed"
+    }
   }
 
   return (
@@ -251,10 +264,11 @@ export default function Agenda() {
             </div>
 
             {/* Leyenda */}
-            <div className="flex items-center justify-center gap-4 mb-4 text-[10px] font-tech tracking-wider">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-400" /> Disponible</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-700" /> Completo</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-800" /> Pasado</span>
+            <div className="flex items-center justify-center gap-3 mb-4 text-[10px] font-tech tracking-wider flex-wrap">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-400" /> Libre</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> Parcial</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> Lleno</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-700" /> Pasado</span>
             </div>
 
             <div className="grid grid-cols-7 gap-1 mb-3">
@@ -281,23 +295,13 @@ export default function Agenda() {
                 const info = daysData.get(dateStr)
 
                 return (
-                  <motion.button
+                    <motion.button
                     key={day}
-                    whileTap={status === "available" ? { scale: 0.9 } : {}}
-                    disabled={status !== "available" && status !== "today"}
+                    whileTap={status === "available" || status === "partial" ? { scale: 0.9 } : {}}
+                    disabled={status === "past" || status === "nodata" || status === "full"}
                     onClick={() => handleSelectDay(day)}
-                    title={info ? `${info.booked}/${info.max} slots` : ""}
-                    className={`text-sm min-h-[40px] py-2.5 rounded-xl transition-all ${
-                      status === "selected"
-                        ? "bg-cyan-400 text-black font-bold"
-                        : status === "past" || status === "nodata"
-                          ? "text-gray-700 cursor-not-allowed"
-                          : status === "full"
-                            ? "text-gray-600 bg-white/5 cursor-not-allowed"
-                            : status === "today"
-                              ? "text-cyan-400 font-bold border border-cyan-400/30 bg-cyan-400/5"
-                              : "text-gray-300 hover:bg-cyan-400/15 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(0,229,255,0.1)] bg-cyan-400/5"
-                    }`}
+                    title={info ? `${info.booked}/${info.max} reservados` : ""}
+                    className={`text-sm min-h-[40px] py-2.5 rounded-xl transition-all ${dayColor(status)}`}
                   >
                     {day}
                   </motion.button>
