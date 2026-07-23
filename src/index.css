@@ -510,9 +510,93 @@
   backface-visibility: hidden;
 }
 
+/* ─── INK BACKGROUND ANIMATIONS ─── */
+@keyframes ink-morph {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: scale(1) rotate(0deg); }
+  25% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  50% { border-radius: 50% 30% 70% 50% / 40% 50% 60% 40%; transform: scale(1.1) rotate(2deg); }
+  75% { border-radius: 70% 40% 40% 60% / 30% 70% 40% 60%; }
+}
+
+@keyframes ink-drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -20px); }
+}
+
+@keyframes ink-drift-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-20px, 30px); }
+}
+
+@keyframes ink-particle-float {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+.ink-bg {
+  background: radial-gradient(ellipse at 30% 20%, rgba(0,229,255,0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 80%, rgba(0,229,255,0.03) 0%, transparent 50%),
+              #000;
+}
+
+.ink-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.ink-blob-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0,229,255,0.4), rgba(0,229,255,0.05), transparent);
+  top: 10%;
+  left: -5%;
+  animation: ink-morph 12s ease-in-out infinite, ink-drift 15s ease-in-out infinite;
+}
+
+.ink-blob-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1), rgba(0,229,255,0.05), transparent);
+  bottom: 15%;
+  right: -8%;
+  animation: ink-morph 14s ease-in-out infinite reverse, ink-drift-2 18s ease-in-out infinite;
+}
+
+.ink-blob-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(0,229,255,0.3), rgba(0,229,255,0.02), transparent);
+  top: 50%;
+  left: 60%;
+  animation: ink-morph 10s ease-in-out infinite, ink-drift 20s ease-in-out infinite;
+}
+
+.ink-particle-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ink-particle {
+  position: absolute;
+  bottom: 0;
+  background: rgba(0, 229, 255, 0.4);
+  border-radius: 50%;
+  animation: ink-particle-float linear infinite;
+}
+
 @media (max-width: 768px) {
   .ambient-glow { width: 300px; height: 300px; filter: blur(80px); }
   .ambient-glow-cyan { width: 250px; height: 250px; }
   .ambient-glow-gold { width: 250px; height: 250px; }
   .section-ink-divider { height: 40px; }
+  .ink-blob-1 { width: 300px; height: 300px; }
+  .ink-blob-2 { width: 250px; height: 250px; }
+  .ink-blob-3 { width: 150px; height: 150px; }
 }

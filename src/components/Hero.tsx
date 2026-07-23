@@ -37,44 +37,49 @@ export default function Hero() {
 
   return (
     <section id="inicio" className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-      {/* Video background — desktop */}
-      <div className="absolute inset-0 z-0 hidden md:block" style={{ filter: "grayscale(100%) brightness(18%) contrast(140%)" }}>
+      {/* Animated ink background */}
+      <div className="absolute inset-0 z-0 ink-bg">
+        <div className="ink-blob ink-blob-1" />
+        <div className="ink-blob ink-blob-2" />
+        <div className="ink-blob ink-blob-3" />
+        <div className="ink-particle-container">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="ink-particle" style={{
+              left: `${10 + (i * 7) % 80}%`,
+              animationDelay: `${i * 0.8}s`,
+              animationDuration: `${6 + (i % 4) * 2}s`,
+              width: `${2 + (i % 3) * 2}px`,
+              height: `${2 + (i % 3) * 2}px`,
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Fallback image behind everything */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1200&q=80')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center 30%",
+          filter: "grayscale(100%) brightness(15%) contrast(140%)",
+          opacity: 0.35,
+        }}
+      />
+
+      {/* Video — activalo poniendo hero.mp4 en public/video/ */}
+      <div className="absolute inset-0 z-[2] hidden md:block" style={{ filter: "grayscale(100%) brightness(20%) contrast(120%)", mixBlendMode: "overlay" }}>
         <video
           autoPlay
           muted
           loop
           playsInline
           disablePictureInPicture
-          poster="https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover opacity-70"
         >
           <source src="/video/hero.mp4" type="video/mp4" />
         </video>
       </div>
-
-      {/* Fallback image — mobile y si no hay video */}
-      <div
-        className="absolute inset-0 z-0 md:hidden"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=800&q=80')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center 30%",
-          filter: "grayscale(100%) brightness(18%) contrast(140%)",
-          opacity: 0.5,
-        }}
-      />
-      {/* Fallback image — desktop si video no carga */}
-      <div
-        className="absolute inset-0 z-0 hidden md:block"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center 30%",
-          filter: "grayscale(100%) brightness(18%) contrast(140%)",
-          opacity: 0.5,
-          zIndex: -1,
-        }}
-      />
 
       {/* Ink-splash gradient overlays */}
       <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black via-transparent to-black opacity-90" />
