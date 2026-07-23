@@ -1249,9 +1249,9 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
     })
     if (citaOriginal && editForm.estado && editForm.estado !== (citaOriginal.estado || "pendiente") && citaOriginal.whatsapp) {
       const msgs: Record<string, string> = {
-        confirmada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} está CONFIRMADA ✅\n🕐 ${editForm.hora || "A coordinar"}\n📍 Manso 529, Melipilla\n¡Te espero!`,
-        cancelada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} fue CANCELADA 😕\nSi querés reagendar, avisame.`,
-        completada: `Hola ${editForm.nombre || citaOriginal.nombre}, ¡gracias por confiar en mi trabajo! 🎨\nTu sesión fue completada. Seguí los cuidados indicados.`,
+        confirmada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} esta *CONFIRMADA*\n*Hora:* ${editForm.hora || "A coordinar"}\n*Direccion:* Manso 529, Melipilla\nTe espero!`,
+        cancelada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} fue *CANCELADA*\nSi queres reagendar, avisame.`,
+        completada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu sesion fue *COMPLETADA*\nGracias por confiar en mi trabajo. Segui los cuidados indicados.`,
       }
       const msg = msgs[editForm.estado]
       if (msg) {
