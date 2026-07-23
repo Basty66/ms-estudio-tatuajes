@@ -1147,7 +1147,11 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
     }
     await fetch("/api/admin/citas", {
       method: "PATCH", headers,
-      body: JSON.stringify({ id, estado }),
+      body: JSON.stringify({
+        id,
+        estado,
+        ...(precio > 0 ? { admin_notas: `💰 Precio: $${precio.toLocaleString("es-CL")} | 50% abono: $${Math.round(precio * 0.5).toLocaleString("es-CL")}` } : {}),
+      }),
     })
     if (estado === "confirmada" && precio > 0) {
       await fetch("/api/admin/finanzas", {
