@@ -17,6 +17,11 @@ function extractYT(url: string) {
   return w ? w[1] : null
 }
 
+function extractIG(url: string) {
+  const m = url.match(/instagram\.com\/reel\/([^/?&#]+)/)
+  return m ? m[1] : null
+}
+
 export default function ReelsSection() {
   const [reels, setReels] = useState<Reel[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,20 +108,39 @@ export default function ReelsSection() {
                   />
                 </div>
               ) : (
-                /* Preview card con icono IG */
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-amber-500/10 flex flex-col items-center justify-center gap-3 cursor-pointer"
-                  onClick={() => toggleIg(reel.id)}>
-                  <motion.div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur border border-pink-400/30 flex items-center justify-center"
-                    animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                    <InstagramLogo size={28} weight="fill" className="text-pink-400" />
-                  </motion.div>
-                  <div className="flex items-center gap-2">
-                    <Play size={12} className="text-white/50" weight="fill" />
-                    <span className="text-white/40 text-[10px] font-tech tracking-wider uppercase">Tocar para ver</span>
+                /* Preview card con thumbnail de Instagram */
+                <div className="absolute inset-0 cursor-pointer" onClick={() => toggleIg(reel.id)}>
+                  {/* Thumbnail via proxy */}
+                  {(() => {
+                    const igCode = extractIG(reel.url)
+                    if (igCode) {
+                      return (
+                        <img
+                          src={`/api/instagram-thumb?code=${igCode}`}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => (e.target as HTMLImageElement).style.display = "none"}
+                        />
+                      )
+                    }
+                    return null
+                  })()}
+                  {/* Overlays */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <motion.div className="w-14 h-14 rounded-full bg-black/30 backdrop-blur border border-white/10 flex items-center justify-center"
+                      animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                      <Play size={20} className="text-white ml-0.5" weight="fill" />
+                    </motion.div>
                   </div>
-                  <div className="absolute bottom-4 left-4 right-4 h-0.5 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div className="h-full bg-gradient-to-r from-pink-400/40 to-pink-400/10 rounded-full w-2/3"
-                      animate={{ x: ["-50%", "100%"] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} />
+                  <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur flex items-center gap-1">
+                    <InstagramLogo size={12} weight="fill" className="text-pink-400" />
+                    <span className="text-white/60 text-[9px] font-tech">Reel</span>
+                  </div>
+                  <div className="absolute bottom-3 left-3 text-white/50 text-[10px] font-tech tracking-wider">
+                    Tocar para expandir
                   </div>
                 </div>
               )
