@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       recentAgendamentos,
     })
   } catch (error) {
-    console.error(error)
-    return Response.json({ success: false, error: "Error al obtener métricas" }, { status: 500 })
+    console.error("admin GET error:", error)
+    return Response.json({ success: false, error: String(error) }, { status: 500 })
   }
 }
