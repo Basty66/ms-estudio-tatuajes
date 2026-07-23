@@ -1137,19 +1137,43 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   const [nueva, setNueva] = useState({ nombre: "", whatsapp: "+56", fecha: "", hora: "", duracion: 120, descripcion: "" })
 
   const updateEstado = async (id: number, estado: string) => {
+    const cita = citas.find(c => c.id === id)
     await fetch("/api/admin/citas", {
       method: "PATCH", headers,
       body: JSON.stringify({ id, estado }),
     })
     onRefresh()
+    if (cita?.whatsapp) {
+      const msgs: Record<string, string> = {
+        confirmada: `Hola ${cita.nombre}, tu cita del ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} está CONFIRMADA ✅\n📍 Manso 529, Melipilla\n🕐 ${cita.hora || "A coordinar"}\n¡Te espero!`,
+        cancelada: `Hola ${cita.nombre}, tu cita del ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} fue CANCELADA 😕\nSi querés reagendar, avisame.`,
+        completada: `Hola ${cita.nombre}, ¡gracias por confiar en mi trabajo! 🎨\nTu sesión fue completada. Seguí los cuidados indicados. ¡Nos vemos!`,
+      }
+      const msg = msgs[estado]
+      if (msg) {
+        window.open(`https://wa.me/${cita.whatsapp.replace(/\+/g, "")}?text=${encodeURIComponent(msg)}`, "_blank")
+      }
+    }
   }
 
   const saveEdit = async () => {
     if (!editId) return
+    const citaOriginal = citas.find(c => c.id === editId)
     await fetch("/api/admin/citas", {
       method: "PATCH", headers,
       body: JSON.stringify({ id: editId, ...editForm }),
     })
+    if (citaOriginal && editForm.estado && editForm.estado !== (citaOriginal.estado || "pendiente") && citaOriginal.whatsapp) {
+      const msgs: Record<string, string> = {
+        confirmada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} está CONFIRMADA ✅\n🕐 ${editForm.hora || "A coordinar"}\n📍 Manso 529, Melipilla\n¡Te espero!`,
+        cancelada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} fue CANCELADA 😕\nSi querés reagendar, avisame.`,
+        completada: `Hola ${editForm.nombre || citaOriginal.nombre}, ¡gracias por confiar en mi trabajo! 🎨\nTu sesión fue completada. Seguí los cuidados indicados.`,
+      }
+      const msg = msgs[editForm.estado]
+      if (msg) {
+        window.open(`https://wa.me/${(editForm.whatsapp || citaOriginal.whatsapp).replace(/\+/g, "")}?text=${encodeURIComponent(msg)}`, "_blank")
+      }
+    }
     setEditId(null)
     onRefresh()
   }

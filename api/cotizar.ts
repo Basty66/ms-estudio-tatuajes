@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless"
+import { notifyArtist } from "./lib/telegram"
 
 export const config = { runtime: "edge" }
 
@@ -19,6 +20,15 @@ export async function POST(request: Request) {
       INSERT INTO cotizaciones (nombre, whatsapp, estilo, zona, tamano, imagen_url)
       VALUES (${nombre}, ${whatsapp}, ${estilo}, ${zona}, ${tamano}, ${imagenBase64 || ""})
     `
+
+    await notifyArtist(
+      `<b>💰 NUEVA COTIZACIÓN</b>\n` +
+      `<b>Cliente:</b> ${nombre}\n` +
+      `<b>WhatsApp:</b> <a href="https://wa.me/${whatsapp.replace(/\+/g, '')}">${whatsapp}</a>\n` +
+      `<b>Estilo:</b> ${estilo}\n` +
+      `<b>Zona:</b> ${zona}\n` +
+      `<b>Tamaño:</b> ${tamano}`
+    )
 
     return Response.json({ success: true })
   } catch (error) {
