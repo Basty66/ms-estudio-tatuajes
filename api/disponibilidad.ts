@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     }
 
     // Generate days array
-    const days: { date: string; day: number; dayOfWeek: number; available: boolean; booked: number; max: number }[] = []
+    const days: { date: string; day: number; dayOfWeek: number; available: boolean; booked: number; max: number; pendientes: number; confirmadas: number; completadas: number }[] = []
     for (let d = 1; d <= lastDayObj.getDate(); d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
       const dayOfWeek = new Date(year, month, d).getDay()
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
       if (override) {
         if (!override.activo) {
-          days.push({ date: dateStr, day: d, dayOfWeek, available: false, booked: 0, max: 0 })
+          days.push({ date: dateStr, day: d, dayOfWeek, available: false, booked: 0, max: 0, pendientes: 0, confirmadas: 0, completadas: 0 })
           continue
         }
         maxSlots = override.slots_max
@@ -81,14 +81,14 @@ export async function GET(request: Request) {
       if (maxSlots === null) {
         const templateEntry = template.find((t: any) => t.dia_semana === dayOfWeek)
         if (!templateEntry || !templateEntry.activo) {
-          days.push({ date: dateStr, day: d, dayOfWeek, available: false, booked: 0, max: 0 })
+          days.push({ date: dateStr, day: d, dayOfWeek, available: false, booked: 0, max: 0, pendientes: 0, confirmadas: 0, completadas: 0 })
           continue
         }
         maxSlots = templateEntry.slots_max
       }
 
       if (isPast) {
-        days.push({ date: dateStr, day: d, dayOfWeek, available: false, booked: 0, max: 0 })
+        days.push({ date: dateStr, day: d, dayOfWeek, available: false, booked: 0, max: 0, pendientes: 0, confirmadas: 0, completadas: 0 })
         continue
       }
 
