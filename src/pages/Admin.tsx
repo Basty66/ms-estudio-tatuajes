@@ -1139,12 +1139,32 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
 
   const updateEstado = async (id: number, estado: string) => {
     const cita = citas.find(c => c.id === id)
+    let precio = 0
+    if (estado === "confirmada") {
+      const input = prompt("💰 Precio del tatuaje ($):", "")
+      if (input === null) return // Canceló
+      precio = parseInt(input) || 0
+    }
     await fetch("/api/admin/citas", {
       method: "PATCH", headers,
       body: JSON.stringify({ id, estado }),
     })
+    if (estado === "confirmada" && precio > 0) {
+      await fetch("/api/admin/finanzas", {
+        method: "POST", headers,
+        body: JSON.stringify({
+          tipo: "ingreso",
+          categoria: "tatuaje",
+          concepto: `Cita: ${cita?.nombre || "Cliente"} - ${cita?.descripcion || "Tatuaje"}`,
+          monto: precio,
+          fecha: cita?.fecha || new Date().toISOString().split("T")[0],
+          agendamiento_id: id,
+        }),
+      })
+    }
     onRefresh()
     if (cita?.whatsapp) {
+      const abono = Math.round(precio * 0.5)
       const msgs: Record<string, string> = {
         confirmada: [
           `✅ *CITA CONFIRMADA* ✅`,
@@ -1153,14 +1173,16 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
           `📅 *Fecha:* ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}`,
           `🕐 *Hora:* ${cita.hora || "A coordinar"}`,
           `📍 *Dirección:* Manso 529, Melipilla`,
+          cita.descripcion ? `📝 *Diseño:* ${cita.descripcion}` : "",
           ``,
-          `💵 *Para reservar:* aboná el 50% del valor acordado`,
-          `📲 Confirmame con el comprobante y queda agendado`,
+          precio > 0 ? `💰 *Valor total:* $${precio.toLocaleString("es-CL")}` : "",
+          precio > 0 ? `💵 *Aboná el 50% para reservar:* $${abono.toLocaleString("es-CL")}` : `💵 *Para reservar:* aboná el 50% del valor`,
+          `📲 Envíame el comprobante y queda agendado`,
           ``,
           `⚠️ *Importante:* Llegá 10 min antes. Si no podés, avisame con anticipación.`,
           ``,
           `¡Nos vemos! 🙌`,
-        ].join("\n"),
+        ].filter(Boolean).join("\n"),
         cancelada: [
           `❌ *CITA CANCELADA* ❌`,
           ``,
