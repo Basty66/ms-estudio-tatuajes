@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     return Response.json({ success: true })
   } catch (error) {
     console.error("cotizar error:", String(error))
-    return Response.json({ success: false, error: String(error) }, { status: 500 })
+    return Response.json({ success: false, error: "Error al guardar la cotización" }, { status: 500 })
   }
 }
