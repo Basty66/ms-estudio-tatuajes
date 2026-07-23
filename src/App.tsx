@@ -20,14 +20,13 @@ const components = [Hero, SobreElTatuador, Gallery, ReelsSection, Cotizador, Age
 function HomePage() {
   return (
     <>
-      {components.map((Comp, i) => (
-        <div key={sectionIds[i]}>
-          <section id={sectionIds[i]}>
+      {components.map((Comp, i) => {
+        return (
+          <section key={sectionIds[i]} id={sectionIds[i]}>
             <Comp />
           </section>
-          {i < components.length - 1 && <div className="section-ink-divider" />}
-        </div>
-      ))}
+        )
+      })}
     </>
   )
 }
