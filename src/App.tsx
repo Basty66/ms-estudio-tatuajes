@@ -3,19 +3,18 @@ import { Routes, Route, useLocation } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import Navbar from "./components/Navbar"
 import Hero from "./components/Hero"
-import Gallery from "./components/Gallery"
 import SobreElTatuador from "./components/SobreElTatuador"
+import Gallery from "./components/Gallery"
 import Cotizador from "./components/Cotizador"
 import Agenda from "./components/Agenda"
-import ReelsSection from "./components/ReelsSection"
 import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
 import WhatsAppFloat from "./components/WhatsAppFloat"
 import Reviews from "./components/Reviews"
 import Admin from "./pages/Admin"
 
-const sectionIds = ["inicio", "sobre", "galeria", "reels", "cotizador", "agenda", "reviews", "ubicacion"]
-const components = [Hero, SobreElTatuador, Gallery, ReelsSection, Cotizador, Agenda, Reviews, Ubicacion]
+const sectionIds = ["inicio", "sobre", "galeria", "cotizador", "agenda", "reviews", "ubicacion"]
+const components = [Hero, SobreElTatuador, Gallery, Cotizador, Agenda, Reviews, Ubicacion]
 
 function HomePage() {
   return (

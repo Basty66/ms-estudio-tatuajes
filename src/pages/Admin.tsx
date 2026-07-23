@@ -25,7 +25,6 @@ import {
   CaretLeft,
   CaretRight,
   TrendUp,
-  Play,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -104,16 +103,6 @@ interface FinanzaItem {
   cliente_nombre?: string
 }
 
-interface ReelItem {
-  id: number
-  url: string
-  titulo: string
-  plataforma: string
-  activo: boolean
-  orden: number
-  creado_en: string
-}
-
 interface DisponibilidadItem {
   dia_semana: number
   activo: boolean
@@ -130,7 +119,7 @@ interface ExcepcionFecha {
   motivo: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "reels"
+type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -171,7 +160,6 @@ export default function Admin() {
   const [allCitas, setAllCitas] = useState<Booking[]>([])
   const [finanzas, setFinanzas] = useState<FinanzaItem[]>([])
   const [finanzasSummary, setFinanzasSummary] = useState<any>(null)
-  const [reels, setReels] = useState<ReelItem[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState("")
 
@@ -311,17 +299,6 @@ export default function Admin() {
     setLoading(false)
   }, [token])
 
-  const fetchReels = useCallback(async () => {
-    if (!token) return
-    setLoading(true)
-    try {
-      const res = await fetch("/api/admin/reels", { headers })
-      const data = await res.json()
-      if (data.success) setReels(data.reels || [])
-    } catch { setErrorMsg("Error al cargar reels") }
-    setLoading(false)
-  }, [token])
-
   useEffect(() => {
     if (!token) return
     if (tab === "dashboard") { fetchDashboard(); fetchAllCitas() }
@@ -332,8 +309,7 @@ export default function Admin() {
     if (tab === "citas") fetchAllCitas()
     if (tab === "cotizaciones") fetchCotizaciones()
     if (tab === "finanzas") fetchFinanzas()
-    if (tab === "reels") fetchReels()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchFinanzas, fetchReels])
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchFinanzas])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -406,7 +382,6 @@ export default function Admin() {
     { id: "resenas", label: "Reseñas", icon: Star },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
     { id: "finanzas", label: "Finanzas", icon: TrendUp },
-    { id: "reels", label: "Reels", icon: Play },
   ]
 
   return (
@@ -484,8 +459,6 @@ export default function Admin() {
               <CotizacionesTab items={cotizaciones} onRefresh={fetchCotizaciones} headers={headers} />
             ) : tab === "finanzas" ? (
               <FinanzasTab items={finanzas} summary={finanzasSummary} onRefresh={fetchFinanzas} headers={headers} />
-            ) : tab === "reels" ? (
-              <ReelsTab items={reels} onRefresh={fetchReels} headers={headers} />
             ) : null}
           </AnimatePresence>
         </main>
@@ -1620,138 +1593,6 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
           </div>
         )}
       </div>
-    </motion.div>
-  )
-}
-
-function ReelsTab({ items, onRefresh, headers }: { items: ReelItem[]; onRefresh: () => void; headers: Record<string, string> }) {
-  const [url, setUrl] = useState("")
-  const [titulo, setTitulo] = useState("")
-  const [videoUrl, setVideoUrl] = useState("")
-  const [plataforma, setPlataforma] = useState<"instagram" | "tiktok" | "youtube">("instagram")
-  const [saving, setSaving] = useState(false)
-
-  const guardar = async () => {
-    if (!url) return
-    const patterns: Record<string, RegExp> = {
-      instagram: /instagram\.com\/reel\//,
-      tiktok: /tiktok\.com\/@.+\/video\/\d+/,
-      youtube: /(youtube\.com|youtu\.be)\//,
-    }
-    if (!patterns[plataforma].test(url.trim())) {
-      alert(`URL inválida para ${plataforma}. Ejemplo: ${plataforma === 'instagram' ? 'instagram.com/reel/...' : plataforma === 'tiktok' ? 'tiktok.com/@user/video/123' : 'youtube.com/shorts/...'}`)
-      return
-    }
-    setSaving(true)
-    try {
-      const res = await fetch("/api/admin/reels", {
-        method: "POST", headers,
-        body: JSON.stringify({ url, titulo, plataforma, video_url: videoUrl || "" }),
-      })
-      const data = await res.json()
-      if (!data.success) { alert("Error: " + (data.error || "Error al guardar")); setSaving(false); return }
-    } catch (e) { console.error("Error al guardar reel", e); alert("Error de conexión"); setSaving(false); return }
-    setUrl("")
-    setTitulo("")
-    setVideoUrl("")
-    onRefresh()
-    setSaving(false)
-  }
-
-  const eliminar = async (id: number) => {
-    if (!confirm("¿Eliminar este reel?")) return
-    try {
-      const res = await fetch(`/api/admin/reels?id=${id}`, { method: "DELETE", headers })
-      const data = await res.json()
-      if (!data.success) { alert("Error: " + (data.error || "Error al eliminar")); return }
-    } catch (e) { console.error("Error al eliminar reel", e); alert("Error de conexión"); return }
-    onRefresh()
-  }
-
-  const getPlatformColor = (p: string) => {
-    switch (p) {
-      case "instagram": return "border-pink-400/20 bg-pink-400/5"
-      case "tiktok": return "border-white/10 bg-white/5"
-      case "youtube": return "border-red-400/20 bg-red-400/5"
-      default: return "border-cyan-400/20 bg-cyan-400/5"
-    }
-  }
-
-  return (
-    <motion.div key="reels" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
-        <Play size={20} className="text-pink-400" weight="fill" /> REELS
-      </h2>
-
-      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
-        <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
-          <Plus size={16} className="text-cyan-400" /> AGREGAR REEL
-        </h3>
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => setPlataforma("instagram")}
-            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${plataforma === "instagram" ? "bg-pink-400/10 text-pink-400 border border-pink-400/30" : "text-gray-500 border border-transparent"}`}>
-            INSTAGRAM
-          </button>
-          <button onClick={() => setPlataforma("tiktok")}
-            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${plataforma === "tiktok" ? "bg-white/10 text-white border border-white/20" : "text-gray-500 border border-transparent"}`}>
-            TIKTOK
-          </button>
-          <button onClick={() => setPlataforma("youtube")}
-            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${plataforma === "youtube" ? "bg-red-400/10 text-red-400 border border-red-400/30" : "text-gray-500 border border-transparent"}`}>
-            YOUTUBE
-          </button>
-        </div>
-        <div className="flex flex-col md:flex-row gap-3 mb-4">
-          <input value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="URL del reel (Instagram/TikTok/YouTube)" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
-          <input value={titulo} onChange={(e) => setTitulo(e.target.value)}
-            placeholder="Título (opcional)" className="neon-input rounded-xl px-4 py-3 w-full md:max-w-xs text-sm" />
-        </div>
-        <div className="mb-4">
-          <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="URL del video MP4 (opcional - para reproducir directo en la web)" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
-          <p className="text-gray-700 text-[10px] font-tech tracking-wider mt-1">Sube el MP4 a un hosting/CDN y pega la URL aquí para reproducción nativa.</p>
-        </div>
-        <button onClick={guardar} disabled={!url || saving}
-          className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] disabled:opacity-30">
-          {saving ? "GUARDANDO..." : "GUARDAR"}
-        </button>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="text-center py-16">
-          <Play size={48} className="text-gray-700 mx-auto mb-4" />
-          <p className="font-tech text-gray-600 tracking-wider">NO HAY REELS AÚN</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {items.map((reel) => (
-            <div key={reel.id} className={`glass rounded-xl p-4 border ${getPlatformColor(reel.plataforma)}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-tech text-[10px] tracking-wider text-gray-600 uppercase">
-                      {reel.plataforma}
-                    </span>
-                    <span className="font-tech text-[10px] tracking-wider text-gray-700">
-                      {new Date(reel.creado_en).toLocaleDateString("es-CL")}
-                    </span>
-                  </div>
-                  <p className="text-white text-sm truncate">{reel.titulo || "Sin título"}</p>
-                  <a href={reel.url} target="_blank" rel="noopener noreferrer"
-                    className="text-cyan-400/60 text-xs truncate block hover:text-cyan-400 transition-colors">
-                    {reel.url.length > 60 ? reel.url.slice(0, 60) + "..." : reel.url}
-                  </a>
-                </div>
-                <button onClick={() => eliminar(reel.id)}
-                  className="text-gray-600 hover:text-red-400 hover:bg-red-400/10 p-2 rounded-lg transition-all shrink-0 ml-3">
-                  <Trash size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </motion.div>
   )
 }
