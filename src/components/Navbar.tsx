@@ -23,12 +23,12 @@ export default function Navbar() {
   }, [])
 
   const tapCount = useRef(0)
-  const tapTimer = useRef<ReturnType<typeof setTimeout>>()
+  const tapTimer = useRef<number | undefined>(undefined)
 
   const handleLogoTripleTap = () => {
     tapCount.current += 1
     clearTimeout(tapTimer.current)
-    tapTimer.current = setTimeout(() => { tapCount.current = 0 }, 800)
+    tapTimer.current = window.setTimeout(() => { tapCount.current = 0 }, 800)
 
     if (tapCount.current >= 3) {
       tapCount.current = 0
