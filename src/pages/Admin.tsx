@@ -25,6 +25,7 @@ import {
   CaretLeft,
   CaretRight,
   TrendUp,
+  WhatsappLogo,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -1145,15 +1146,67 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
     onRefresh()
     if (cita?.whatsapp) {
       const msgs: Record<string, string> = {
-        confirmada: `Hola ${cita.nombre}, tu cita del ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} está CONFIRMADA ✅\n📍 Manso 529, Melipilla\n🕐 ${cita.hora || "A coordinar"}\n¡Te espero!`,
-        cancelada: `Hola ${cita.nombre}, tu cita del ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} fue CANCELADA 😕\nSi querés reagendar, avisame.`,
-        completada: `Hola ${cita.nombre}, ¡gracias por confiar en mi trabajo! 🎨\nTu sesión fue completada. Seguí los cuidados indicados. ¡Nos vemos!`,
+        confirmada: [
+          `✅ *CITA CONFIRMADA* ✅`,
+          ``,
+          `👤 *Cliente:* ${cita.nombre}`,
+          `📅 *Fecha:* ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}`,
+          `🕐 *Hora:* ${cita.hora || "A coordinar"}`,
+          `📍 *Dirección:* Manso 529, Melipilla`,
+          ``,
+          `💵 *Para reservar:* aboná el 50% del valor acordado`,
+          `📲 Confirmame con el comprobante y queda agendado`,
+          ``,
+          `⚠️ *Importante:* Llegá 10 min antes. Si no podés, avisame con anticipación.`,
+          ``,
+          `¡Nos vemos! 🙌`,
+        ].join("\n"),
+        cancelada: [
+          `❌ *CITA CANCELADA* ❌`,
+          ``,
+          `👤 *Cliente:* ${cita.nombre}`,
+          `📅 *Fecha:* ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}`,
+          ``,
+          `😕 Lamento que no podamos vernos en esta ocasión.`,
+          `📲 Si querés reagendar, escribime y coordinamos otra fecha.`,
+          ``,
+          `¡Gracias por avisar! 🙏`,
+        ].join("\n"),
+        completada: [
+          `🎨 *SESIÓN COMPLETADA* 🎨`,
+          ``,
+          `👤 *Cliente:* ${cita.nombre}`,
+          ``,
+          `✨ ¡Gracias por confiar en mi trabajo!`,
+          `❤️ Seguí los cuidados indicados para una cicatrización perfecta.`,
+          `📸 Si podés, mandame una foto cuando esté curado.`,
+          ``,
+          `💉 *Recordá:* protegé tu tatuaje del sol las próximas 3 semanas.`,
+          ``,
+          `¡Nos vemos en la próxima! 🔥`,
+        ].join("\n"),
       }
       const msg = msgs[estado]
       if (msg) {
         window.open(`https://wa.me/${cita.whatsapp.replace(/\+/g, "")}?text=${encodeURIComponent(msg)}`, "_blank")
       }
     }
+  }
+
+  const chatearCliente = (cita: Booking) => {
+    if (!cita.whatsapp) return
+    const msg = [
+      `💬 *Hola ${cita.nombre}!*`,
+      ``,
+      `Soy Matness Tattoos 🎨`,
+      `Estamos coordinando tu cita.`,
+      ``,
+      `📅 Fecha solicitada: ${new Date(cita.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}`,
+      cita.descripcion ? `📝 Diseño: ${cita.descripcion}` : "",
+      ``,
+      `Hablemos de los detalles y el precio para confirmar.`,
+    ].filter(Boolean).join("\n")
+    window.open(`https://wa.me/${cita.whatsapp.replace(/\+/g, "")}?text=${encodeURIComponent(msg)}`, "_blank")
   }
 
   const saveEdit = async () => {
@@ -1318,10 +1371,16 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {(c.estado || "pendiente") === "pendiente" && (
-                    <button onClick={() => updateEstado(c.id, "confirmada")}
-                      className="text-green-400 hover:bg-green-400/10 p-1.5 rounded-lg transition-all" title="Confirmar">
-                      <Check size={16} weight="bold" />
-                    </button>
+                    <>
+                      <button onClick={() => chatearCliente(c)}
+                        className="text-green-500 hover:bg-green-500/10 p-1.5 rounded-lg transition-all" title="Chatear con el cliente (precio, detalles)">
+                        <WhatsappLogo size={16} weight="fill" />
+                      </button>
+                      <button onClick={() => updateEstado(c.id, "confirmada")}
+                        className="text-green-400 hover:bg-green-400/10 p-1.5 rounded-lg transition-all" title="Confirmar cita">
+                        <Check size={16} weight="bold" />
+                      </button>
+                    </>
                   )}
                   {(c.estado || "pendiente") === "confirmada" && (
                     <button onClick={() => updateEstado(c.id, "completada")}
