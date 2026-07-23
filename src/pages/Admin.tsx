@@ -22,6 +22,8 @@ import {
   XCircle,
   PencilSimple,
   CalendarBlank,
+  CaretLeft,
+  CaretRight,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -816,6 +818,52 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
   const [editExcepcion, setEditExcepcion] = useState({ fecha: "", slots_max: "", motivo: "", activo: true })
   const [saving, setSaving] = useState(false)
   const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+  const daysShort = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+  // Calendar state for visual disponibilidad
+  const today = new Date()
+  const [calYear, setCalYear] = useState(today.getFullYear())
+  const [calMonth, setCalMonth] = useState(today.getMonth())
+  const [calDays, setCalDays] = useState<any[]>([])
+  const [loadingCal, setLoadingCal] = useState(true)
+
+  useEffect(() => {
+    setLoadingCal(true)
+    fetch(`/api/disponibilidad?year=${calYear}&month=${calMonth}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setCalDays(data.days || [])
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCal(false))
+  }, [calYear, calMonth])
+
+  const calMonthData = (() => {
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
+    const firstDay = new Date(calYear, calMonth, 1).getDay()
+    const calDaysMap = new Map(calDays.map((d: any) => [d.date, d]))
+
+    const getStatus = (day: number) => {
+      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+      const info = calDaysMap.get(dateStr)
+      if (!info) return "nodata"
+      if (!info.available) return "full"
+      if (info.booked > 0) return "partial"
+      return "free"
+    }
+
+    const calColor = (status: string) => {
+      switch (status) {
+        case "free": return "text-gray-300 bg-cyan-400/5"
+        case "partial": return "text-amber-300 bg-amber-400/10 border border-amber-400/20"
+        case "full": return "text-red-400 bg-red-400/10 border border-red-400/20"
+        default: return "text-gray-700"
+      }
+    }
+
+    return { daysInMonth, firstDay, calDaysMap, getStatus, calColor }
+  })()
 
   useEffect(() => {
     setTemplate(disponibilidad.length > 0
@@ -910,6 +958,66 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
           className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] mt-6 disabled:opacity-30">
           {saving ? "GUARDANDO..." : "GUARDAR DISPONIBILIDAD"}
         </button>
+      </div>
+
+      {/* Calendario visual */}
+      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 flex items-center gap-2">
+            <CalendarBlank size={16} className="text-cyan-400" /> CALENDARIO DE DISPONIBILIDAD
+          </h3>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { if (calMonth === 0) { setCalYear(calYear - 1); setCalMonth(11) } else setCalMonth(calMonth - 1) }}
+              className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 transition-all">
+              <CaretLeft size={14} weight="bold" />
+            </button>
+            <span className="font-tech text-white text-sm tracking-wider w-32 text-center">
+              {monthNames[calMonth]} {calYear}
+            </span>
+            <button onClick={() => { if (calMonth === 11) { setCalYear(calYear + 1); setCalMonth(0) } else setCalMonth(calMonth + 1) }}
+              className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 transition-all">
+              <CaretRight size={14} weight="bold" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 mb-4 text-[10px] font-tech tracking-wider flex-wrap">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-400" /> Libre</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> Parcial</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> Lleno</span>
+        </div>
+
+        {loadingCal ? (
+          <div className="flex items-center justify-center py-10">
+            <Spinner size={20} className="text-cyan-400 animate-spin" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {daysShort.map((d) => (
+                <div key={d} className="font-tech text-center text-[11px] tracking-wider text-cyan-400/40 font-semibold py-1">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: calMonthData.firstDay }).map((_, i) => (
+                <div key={`e-${i}`} />
+              ))}
+              {Array.from({ length: calMonthData.daysInMonth }).map((_, i) => {
+                const day = i + 1
+                const status = calMonthData.getStatus(day)
+                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                const info = calMonthData.calDaysMap.get(dateStr)
+                return (
+                  <div key={day}
+                    title={info ? `${info.booked}/${info.max} ocupados` : ""}
+                    className={`text-xs min-h-[32px] py-1.5 rounded-lg text-center font-tech transition-all ${calMonthData.calColor(status)}`}>
+                    {day}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
