@@ -25,6 +25,7 @@ import {
   CaretLeft,
   CaretRight,
   TrendUp,
+  Play,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -103,6 +104,16 @@ interface FinanzaItem {
   cliente_nombre?: string
 }
 
+interface ReelItem {
+  id: number
+  url: string
+  titulo: string
+  plataforma: string
+  activo: boolean
+  orden: number
+  creado_en: string
+}
+
 interface DisponibilidadItem {
   dia_semana: number
   activo: boolean
@@ -119,7 +130,7 @@ interface ExcepcionFecha {
   motivo: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas"
+type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "reels"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -160,7 +171,9 @@ export default function Admin() {
   const [allCitas, setAllCitas] = useState<Booking[]>([])
   const [finanzas, setFinanzas] = useState<FinanzaItem[]>([])
   const [finanzasSummary, setFinanzasSummary] = useState<any>(null)
+  const [reels, setReels] = useState<ReelItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState("")
 
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : {}
 
@@ -219,7 +232,7 @@ export default function Admin() {
       const res = await fetch("/api/admin/cotizaciones", { headers })
       const data = await res.json()
       if (data.success) setCotizaciones(data.cotizaciones)
-    } catch {}
+    } catch { setErrorMsg("Error al cargar cotizaciones") }
     setLoading(false)
   }, [token])
 
@@ -235,7 +248,7 @@ export default function Admin() {
       const sumData = await sumRes.json()
       if (transData.success) setFinanzas(transData.transactions)
       if (sumData.success) setFinanzasSummary(sumData)
-    } catch {}
+    } catch { setErrorMsg("Error al cargar finanzas") }
     setLoading(false)
   }, [token])
 
@@ -246,7 +259,7 @@ export default function Admin() {
       const res = await fetch("/api/admin/galeria", { headers })
       const data = await res.json()
       if (data.success) setGaleria(data.images)
-    } catch {}
+    } catch { setErrorMsg("Error al cargar galería") }
     setLoading(false)
   }, [token])
 
@@ -257,7 +270,7 @@ export default function Admin() {
       const res = await fetch("/api/admin/publicaciones", { headers })
       const data = await res.json()
       if (data.success) setPosts(data.posts)
-    } catch {}
+    } catch { setErrorMsg("Error al cargar publicaciones") }
     setLoading(false)
   }, [token])
 
@@ -268,7 +281,7 @@ export default function Admin() {
       const res = await fetch("/api/resenas")
       const data = await res.json()
       if (data.success) setResenas(data.resenas)
-    } catch {}
+    } catch { setErrorMsg("Error al cargar reseñas") }
     setLoading(false)
   }, [token])
 
@@ -283,7 +296,7 @@ export default function Admin() {
         setExcepciones(data.overrides || [])
         setAllCitas(data.citas || [])
       }
-    } catch {}
+    } catch { setErrorMsg("Error al cargar disponibilidad") }
     setLoading(false)
   }, [token])
 
@@ -294,13 +307,24 @@ export default function Admin() {
       const res = await fetch("/api/admin/citas", { headers })
       const data = await res.json()
       if (data.success) setAllCitas(data.citas || [])
-    } catch {}
+    } catch { setErrorMsg("Error al cargar citas") }
+    setLoading(false)
+  }, [token])
+
+  const fetchReels = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/reels", { headers })
+      const data = await res.json()
+      if (data.success) setReels(data.reels || [])
+    } catch { setErrorMsg("Error al cargar reels") }
     setLoading(false)
   }, [token])
 
   useEffect(() => {
     if (!token) return
-    if (tab === "dashboard") fetchDashboard()
+    if (tab === "dashboard") { fetchDashboard(); fetchAllCitas() }
     if (tab === "galeria") fetchGaleria()
     if (tab === "publicaciones") fetchPosts()
     if (tab === "resenas") fetchResenas()
@@ -308,7 +332,8 @@ export default function Admin() {
     if (tab === "citas") fetchAllCitas()
     if (tab === "cotizaciones") fetchCotizaciones()
     if (tab === "finanzas") fetchFinanzas()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchFinanzas])
+    if (tab === "reels") fetchReels()
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchFinanzas, fetchReels])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -381,6 +406,7 @@ export default function Admin() {
     { id: "resenas", label: "Reseñas", icon: Star },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
     { id: "finanzas", label: "Finanzas", icon: TrendUp },
+    { id: "reels", label: "Reels", icon: Play },
   ]
 
   return (
@@ -417,6 +443,19 @@ export default function Admin() {
           ))}
         </nav>
 
+        {errorMsg && (
+          <div className="fixed top-4 right-4 z-50 max-w-sm animate-slideDown">
+            <div className="glass rounded-xl px-4 py-3 border border-red-400/30 flex items-start gap-3">
+              <Warning size={18} className="text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-red-400 text-xs font-tech tracking-wider">{errorMsg}</p>
+              </div>
+              <button onClick={() => setErrorMsg("")} className="text-gray-600 hover:text-white transition-colors">
+                <XCircle size={14} />
+              </button>
+            </div>
+          </div>
+        )}
         <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
           <AnimatePresence mode="wait">
             {loading ? (
@@ -445,6 +484,8 @@ export default function Admin() {
               <CotizacionesTab items={cotizaciones} onRefresh={fetchCotizaciones} headers={headers} />
             ) : tab === "finanzas" ? (
               <FinanzasTab items={finanzas} summary={finanzasSummary} onRefresh={fetchFinanzas} headers={headers} />
+            ) : tab === "reels" ? (
+              <ReelsTab items={reels} onRefresh={fetchReels} headers={headers} />
             ) : null}
           </AnimatePresence>
         </main>
@@ -567,7 +608,7 @@ function GaleriaTab({ items, onDelete, onRefresh, headers }: { items: GalleryIte
         setPreview(null)
         onRefresh()
       }
-    } catch {}
+    } catch (e) { console.error("Error al subir imagen", e) }
     setUploading(false)
   }
 
@@ -703,7 +744,7 @@ function PublicacionesTab({ items, onDelete, onRefresh, headers }: { items: Post
         setForm({ titulo: "", contenido: "", imagen_url: "", tipo: "post" })
         onRefresh()
       }
-    } catch {}
+    } catch (e) { console.error("Error al crear publicación", e) }
     setCreating(false)
   }
 
@@ -870,7 +911,7 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
       .then(data => {
         if (data.success) setCalDays(data.days || [])
       })
-      .catch(() => {})
+      .catch(() => console.error("Error al cargar calendario de disponibilidad"))
       .finally(() => setLoadingCal(false))
   }, [calYear, calMonth])
 
@@ -917,7 +958,7 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
         body: JSON.stringify({ template }),
       })
       onRefresh()
-    } catch {}
+    } catch (e) { console.error("Error al guardar plantilla", e) }
     setSaving(false)
   }
 
@@ -938,7 +979,7 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
       })
       setEditExcepcion({ fecha: "", slots_max: "", motivo: "", activo: true })
       onRefresh()
-    } catch {}
+    } catch (e) { console.error("Error al guardar excepción", e) }
     setSaving(false)
   }
 
@@ -950,7 +991,7 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
         body: JSON.stringify({ deleteOverride: fecha }),
       })
       onRefresh()
-    } catch {}
+    } catch (e) { console.error("Error al eliminar excepción", e) }
   }
 
   return (
@@ -1335,7 +1376,7 @@ function CotizacionesTab({ items, onRefresh, headers }: { items: Quote[]; onRefr
         headers,
         body: JSON.stringify({ id, estado }),
       })
-    } catch {}
+    } catch (e) { console.error("Error al actualizar cotización", e) }
     onRefresh()
   }
 
@@ -1343,7 +1384,7 @@ function CotizacionesTab({ items, onRefresh, headers }: { items: Quote[]; onRefr
     if (!confirm("¿Eliminar esta cotización?")) return
     try {
       await fetch(`/api/admin/cotizaciones?id=${id}`, { method: "DELETE", headers })
-    } catch {}
+    } catch (e) { console.error("Error al eliminar cotización", e) }
     onRefresh()
   }
 
@@ -1429,11 +1470,15 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
   const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0])
 
   const guardar = async () => {
-    if (!concepto || !monto) return
-    await fetch("/api/admin/finanzas", {
-      method: "POST", headers,
-      body: JSON.stringify({ tipo, categoria, concepto, monto: parseInt(monto), fecha }),
-    })
+    if (!concepto || monto === "") return
+    try {
+      const res = await fetch("/api/admin/finanzas", {
+        method: "POST", headers,
+        body: JSON.stringify({ tipo, categoria, concepto, monto: parseInt(monto), fecha }),
+      })
+      const data = await res.json()
+      if (!data.success) { alert("Error: " + (data.error || "Error al guardar")); return }
+    } catch { alert("Error de conexión al guardar"); return }
     setConcepto("")
     setMonto("")
     onRefresh()
@@ -1441,7 +1486,11 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
 
   const eliminar = async (id: number) => {
     if (!confirm("¿Eliminar este registro?")) return
-    await fetch(`/api/admin/finanzas?id=${id}`, { method: "DELETE", headers })
+    try {
+      const res = await fetch(`/api/admin/finanzas?id=${id}`, { method: "DELETE", headers })
+      const data = await res.json()
+      if (!data.success) { alert("Error: " + (data.error || "Error al eliminar")); return }
+    } catch { alert("Error de conexión al eliminar"); return }
     onRefresh()
   }
 
@@ -1517,7 +1566,7 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
           <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
             className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
         </div>
-        <button onClick={guardar} disabled={!concepto || !monto}
+        <button onClick={guardar} disabled={!concepto || monto === ""}
           className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] disabled:opacity-30">
           GUARDAR
         </button>
@@ -1571,6 +1620,131 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
           </div>
         )}
       </div>
+    </motion.div>
+  )
+}
+
+function ReelsTab({ items, onRefresh, headers }: { items: ReelItem[]; onRefresh: () => void; headers: Record<string, string> }) {
+  const [url, setUrl] = useState("")
+  const [titulo, setTitulo] = useState("")
+  const [plataforma, setPlataforma] = useState<"instagram" | "tiktok" | "youtube">("instagram")
+  const [saving, setSaving] = useState(false)
+
+  const guardar = async () => {
+    if (!url) return
+    const patterns: Record<string, RegExp> = {
+      instagram: /instagram\.com\/reel\//,
+      tiktok: /tiktok\.com\/@.+\/video\/\d+/,
+      youtube: /(youtube\.com|youtu\.be)\//,
+    }
+    if (!patterns[plataforma].test(url.trim())) {
+      alert(`URL inválida para ${plataforma}. Ejemplo: ${plataforma === 'instagram' ? 'instagram.com/reel/...' : plataforma === 'tiktok' ? 'tiktok.com/@user/video/123' : 'youtube.com/shorts/...'}`)
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/admin/reels", {
+        method: "POST", headers,
+        body: JSON.stringify({ url, titulo, plataforma }),
+      })
+      const data = await res.json()
+      if (!data.success) { alert("Error: " + (data.error || "Error al guardar")); setSaving(false); return }
+    } catch (e) { console.error("Error al guardar reel", e); alert("Error de conexión"); setSaving(false); return }
+    setUrl("")
+    setTitulo("")
+    onRefresh()
+    setSaving(false)
+  }
+
+  const eliminar = async (id: number) => {
+    if (!confirm("¿Eliminar este reel?")) return
+    try {
+      const res = await fetch(`/api/admin/reels?id=${id}`, { method: "DELETE", headers })
+      const data = await res.json()
+      if (!data.success) { alert("Error: " + (data.error || "Error al eliminar")); return }
+    } catch (e) { console.error("Error al eliminar reel", e); alert("Error de conexión"); return }
+    onRefresh()
+  }
+
+  const getPlatformColor = (p: string) => {
+    switch (p) {
+      case "instagram": return "border-pink-400/20 bg-pink-400/5"
+      case "tiktok": return "border-white/10 bg-white/5"
+      case "youtube": return "border-red-400/20 bg-red-400/5"
+      default: return "border-cyan-400/20 bg-cyan-400/5"
+    }
+  }
+
+  return (
+    <motion.div key="reels" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
+        <Play size={20} className="text-pink-400" weight="fill" /> REELS
+      </h2>
+
+      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+        <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
+          <Plus size={16} className="text-cyan-400" /> AGREGAR REEL
+        </h3>
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setPlataforma("instagram")}
+            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${plataforma === "instagram" ? "bg-pink-400/10 text-pink-400 border border-pink-400/30" : "text-gray-500 border border-transparent"}`}>
+            INSTAGRAM
+          </button>
+          <button onClick={() => setPlataforma("tiktok")}
+            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${plataforma === "tiktok" ? "bg-white/10 text-white border border-white/20" : "text-gray-500 border border-transparent"}`}>
+            TIKTOK
+          </button>
+          <button onClick={() => setPlataforma("youtube")}
+            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${plataforma === "youtube" ? "bg-red-400/10 text-red-400 border border-red-400/30" : "text-gray-500 border border-transparent"}`}>
+            YOUTUBE
+          </button>
+        </div>
+        <div className="flex flex-col md:flex-row gap-3 mb-4">
+          <input value={url} onChange={(e) => setUrl(e.target.value)}
+            placeholder="URL del reel" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <input value={titulo} onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Título (opcional)" className="neon-input rounded-xl px-4 py-3 w-full md:max-w-xs text-sm" />
+        </div>
+        <button onClick={guardar} disabled={!url || saving}
+          className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] disabled:opacity-30">
+          {saving ? "GUARDANDO..." : "GUARDAR"}
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-16">
+          <Play size={48} className="text-gray-700 mx-auto mb-4" />
+          <p className="font-tech text-gray-600 tracking-wider">NO HAY REELS AÚN</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {items.map((reel) => (
+            <div key={reel.id} className={`glass rounded-xl p-4 border ${getPlatformColor(reel.plataforma)}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-tech text-[10px] tracking-wider text-gray-600 uppercase">
+                      {reel.plataforma}
+                    </span>
+                    <span className="font-tech text-[10px] tracking-wider text-gray-700">
+                      {new Date(reel.creado_en).toLocaleDateString("es-CL")}
+                    </span>
+                  </div>
+                  <p className="text-white text-sm truncate">{reel.titulo || "Sin título"}</p>
+                  <a href={reel.url} target="_blank" rel="noopener noreferrer"
+                    className="text-cyan-400/60 text-xs truncate block hover:text-cyan-400 transition-colors">
+                    {reel.url.length > 60 ? reel.url.slice(0, 60) + "..." : reel.url}
+                  </a>
+                </div>
+                <button onClick={() => eliminar(reel.id)}
+                  className="text-gray-600 hover:text-red-400 hover:bg-red-400/10 p-2 rounded-lg transition-all shrink-0 ml-3">
+                  <Trash size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }

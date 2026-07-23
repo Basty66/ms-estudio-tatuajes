@@ -32,6 +32,15 @@ export async function POST(request: Request) {
     const dateStr = dateObj.toISOString().split("T")[0]
     const dayOfWeek = dateObj.getDay()
 
+    if (isNaN(dayOfWeek)) {
+      return Response.json({ success: false, error: "Fecha inválida" }, { status: 400 })
+    }
+
+    const todayStr = new Date().toISOString().split("T")[0]
+    if (dateStr < todayStr) {
+      return Response.json({ success: false, error: "No se puede agendar en una fecha pasada" }, { status: 400 })
+    }
+
     // Check availability template
     const template = await sql`
       SELECT * FROM disponibilidad WHERE dia_semana = ${dayOfWeek}

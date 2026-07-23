@@ -45,6 +45,11 @@ export async function PATCH(request: Request) {
       return Response.json({ success: false, error: "ID requerido" }, { status: 400 })
     }
 
+    const ESTADOS_VALIDOS = ["pendiente", "confirmada", "completada", "cancelada"]
+    if (estado !== undefined && !ESTADOS_VALIDOS.includes(estado)) {
+      return Response.json({ success: false, error: "Estado inválido. Valores permitidos: pendiente, confirmada, completada, cancelada" }, { status: 400 })
+    }
+
     const sql = neon(process.env.NEON_DATABASE_URL!)
 
     // Build the SET clause dynamically
@@ -87,10 +92,16 @@ export async function POST(request: Request) {
       return Response.json({ success: false, error: "Campos requeridos: nombre, whatsapp, fecha" }, { status: 400 })
     }
 
+    const ESTADOS_VALIDOS = ["pendiente", "confirmada", "completada", "cancelada"]
+    const finalEstado = estado || "confirmada"
+    if (!ESTADOS_VALIDOS.includes(finalEstado)) {
+      return Response.json({ success: false, error: "Estado inválido" }, { status: 400 })
+    }
+
     const sql = neon(process.env.NEON_DATABASE_URL!)
     const result = await sql`
       INSERT INTO agendamentos (nombre, whatsapp, fecha, hora, duracion, descripcion, estado, admin_notas)
-      VALUES (${nombre}, ${whatsapp}, ${fecha}, ${hora || ""}, ${duracion || 120}, ${descripcion || ""}, ${estado || "confirmada"}, ${""})
+      VALUES (${nombre}, ${whatsapp}, ${fecha}, ${hora || ""}, ${duracion || 120}, ${descripcion || ""}, ${finalEstado}, ${""})
       RETURNING *
     `
 
@@ -109,8 +120,8 @@ export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url)
     const id = url.searchParams.get("id")
-    if (!id) {
-      return Response.json({ success: false, error: "ID requerido" }, { status: 400 })
+    if (!id || isNaN(parseInt(id))) {
+      return Response.json({ success: false, error: "ID inválido" }, { status: 400 })
     }
 
     const sql = neon(process.env.NEON_DATABASE_URL!)

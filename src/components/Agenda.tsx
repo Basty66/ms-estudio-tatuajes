@@ -66,7 +66,7 @@ export default function Agenda() {
           setDaysData(map)
         }
       })
-      .catch(() => {})
+      .catch(() => setError("No se pudo cargar la disponibilidad. Recarga la página."))
       .finally(() => setLoadingDisp(false))
   }, [year, month])
 

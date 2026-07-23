@@ -68,17 +68,21 @@ export async function POST(request: Request) {
   try {
     const { tipo, categoria, concepto, monto, fecha, agendamiento_id } = await request.json()
 
-    if (!tipo || !categoria || !concepto || !monto) {
+    if (!tipo || !categoria || !concepto || (monto === undefined || monto === null)) {
       return Response.json({ success: false, error: "Campos requeridos: tipo, categoria, concepto, monto" }, { status: 400 })
     }
     if (!["ingreso", "gasto"].includes(tipo)) {
       return Response.json({ success: false, error: "tipo debe ser ingreso o gasto" }, { status: 400 })
     }
+    const montoNum = parseInt(monto)
+    if (isNaN(montoNum)) {
+      return Response.json({ success: false, error: "monto debe ser un número válido" }, { status: 400 })
+    }
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
     const result = await sql`
       INSERT INTO finanzas (tipo, categoria, concepto, monto, fecha, agendamiento_id)
-      VALUES (${tipo}, ${categoria}, ${concepto}, ${parseInt(monto)}, ${fecha || new Date().toISOString().split("T")[0]}, ${agendamiento_id || null})
+      VALUES (${tipo}, ${categoria}, ${concepto}, ${montoNum}, ${fecha || new Date().toISOString().split("T")[0]}, ${agendamiento_id || null})
       RETURNING *
     `
 
@@ -97,8 +101,8 @@ export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url)
     const id = url.searchParams.get("id")
-    if (!id) {
-      return Response.json({ success: false, error: "ID requerido" }, { status: 400 })
+    if (!id || isNaN(parseInt(id))) {
+      return Response.json({ success: false, error: "ID inválido" }, { status: 400 })
     }
 
     const sql = neon(process.env.NEON_DATABASE_URL!)

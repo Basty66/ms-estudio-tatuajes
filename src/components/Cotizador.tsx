@@ -88,6 +88,7 @@ export default function Cotizador() {
           reader.readAsDataURL(file)
         })
       } catch {
+        setError("No se pudo leer la imagen. Intenta con otra.")
         setEnviando(false)
         return
       }

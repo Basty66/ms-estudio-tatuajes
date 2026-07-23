@@ -4,8 +4,10 @@ import { AnimatePresence, motion } from "framer-motion"
 import Navbar from "./components/Navbar"
 import Hero from "./components/Hero"
 import Gallery from "./components/Gallery"
+import SobreElTatuador from "./components/SobreElTatuador"
 import Cotizador from "./components/Cotizador"
 import Agenda from "./components/Agenda"
+import ReelsSection from "./components/ReelsSection"
 import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
 import WhatsAppFloat from "./components/WhatsAppFloat"
@@ -14,7 +16,9 @@ import Admin from "./pages/Admin"
 
 const sections = [
   { id: "inicio", Component: Hero },
+  { id: "sobre", Component: SobreElTatuador },
   { id: "galeria", Component: Gallery },
+  { id: "reels", Component: ReelsSection },
   { id: "cotizador", Component: Cotizador },
   { id: "agenda", Component: Agenda },
   { id: "reviews", Component: Reviews },
