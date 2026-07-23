@@ -24,6 +24,7 @@ import {
   CalendarBlank,
   CaretLeft,
   CaretRight,
+  TrendUp,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -90,6 +91,18 @@ interface Quote {
   estado: string
 }
 
+interface FinanzaItem {
+  id: number
+  tipo: string
+  categoria: string
+  concepto: string
+  monto: number
+  fecha: string
+  agendamiento_id: number | null
+  created_at: string
+  cliente_nombre?: string
+}
+
 interface DisponibilidadItem {
   dia_semana: number
   activo: boolean
@@ -106,7 +119,7 @@ interface ExcepcionFecha {
   motivo: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones"
+type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -145,6 +158,8 @@ export default function Admin() {
   const [disponibilidad, setDisponibilidad] = useState<DisponibilidadItem[]>([])
   const [excepciones, setExcepciones] = useState<ExcepcionFecha[]>([])
   const [allCitas, setAllCitas] = useState<Booking[]>([])
+  const [finanzas, setFinanzas] = useState<FinanzaItem[]>([])
+  const [finanzasSummary, setFinanzasSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : {}
@@ -204,6 +219,22 @@ export default function Admin() {
       const res = await fetch("/api/admin/cotizaciones", { headers })
       const data = await res.json()
       if (data.success) setCotizaciones(data.cotizaciones)
+    } catch {}
+    setLoading(false)
+  }, [token])
+
+  const fetchFinanzas = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const [transRes, sumRes] = await Promise.all([
+        fetch("/api/admin/finanzas", { headers }),
+        fetch("/api/admin/finanzas?resumen=true", { headers }),
+      ])
+      const transData = await transRes.json()
+      const sumData = await sumRes.json()
+      if (transData.success) setFinanzas(transData.transactions)
+      if (sumData.success) setFinanzasSummary(sumData)
     } catch {}
     setLoading(false)
   }, [token])
@@ -276,7 +307,8 @@ export default function Admin() {
     if (tab === "disponibilidad") fetchDisponibilidad()
     if (tab === "citas") fetchAllCitas()
     if (tab === "cotizaciones") fetchCotizaciones()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones])
+    if (tab === "finanzas") fetchFinanzas()
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchFinanzas])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -348,6 +380,7 @@ export default function Admin() {
     { id: "publicaciones", label: "Publicaciones", icon: NotePencil },
     { id: "resenas", label: "Reseñas", icon: Star },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
+    { id: "finanzas", label: "Finanzas", icon: TrendUp },
   ]
 
   return (
@@ -410,6 +443,8 @@ export default function Admin() {
               <ResenasTab items={resenas} />
             ) : tab === "cotizaciones" ? (
               <CotizacionesTab items={cotizaciones} onRefresh={fetchCotizaciones} headers={headers} />
+            ) : tab === "finanzas" ? (
+              <FinanzasTab items={finanzas} summary={finanzasSummary} onRefresh={fetchFinanzas} headers={headers} />
             ) : null}
           </AnimatePresence>
         </main>
@@ -961,44 +996,44 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
       </div>
 
       {/* Calendario visual */}
-      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+      <div className="glass rounded-2xl p-5 md:p-6 mb-8 max-w-md mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 flex items-center gap-2">
-            <CalendarBlank size={16} className="text-cyan-400" /> CALENDARIO DE DISPONIBILIDAD
+            <CalendarBlank size={16} className="text-cyan-400" /> DISPONIBILIDAD
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button onClick={() => { if (calMonth === 0) { setCalYear(calYear - 1); setCalMonth(11) } else setCalMonth(calMonth - 1) }}
-              className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 transition-all">
-              <CaretLeft size={14} weight="bold" />
+              className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 transition-all">
+              <CaretLeft size={12} weight="bold" />
             </button>
-            <span className="font-tech text-white text-sm tracking-wider w-32 text-center">
-              {monthNames[calMonth]} {calYear}
+            <span className="font-tech text-white text-xs tracking-wider w-24 text-center">
+              {monthNames[calMonth].slice(0, 3)} {calYear}
             </span>
             <button onClick={() => { if (calMonth === 11) { setCalYear(calYear + 1); setCalMonth(0) } else setCalMonth(calMonth + 1) }}
-              className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 transition-all">
-              <CaretRight size={14} weight="bold" />
+              className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400 hover:bg-cyan-400/10 transition-all">
+              <CaretRight size={12} weight="bold" />
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 mb-4 text-[10px] font-tech tracking-wider flex-wrap">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-400" /> Libre</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> Parcial</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> Lleno</span>
+        <div className="flex items-center justify-center gap-2 mb-3 text-[9px] font-tech tracking-wider">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-cyan-400" /> Libre</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-amber-400" /> Parcial</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-400" /> Lleno</span>
         </div>
 
         {loadingCal ? (
-          <div className="flex items-center justify-center py-10">
-            <Spinner size={20} className="text-cyan-400 animate-spin" />
+          <div className="flex items-center justify-center py-8">
+            <Spinner size={16} className="text-cyan-400 animate-spin" />
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 gap-[2px] mb-[2px]">
               {daysShort.map((d) => (
-                <div key={d} className="font-tech text-center text-[11px] tracking-wider text-cyan-400/40 font-semibold py-1">{d}</div>
+                <div key={d} className="font-tech text-center text-[9px] tracking-wider text-cyan-400/30 font-semibold py-1">{d}</div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-[2px]">
               {Array.from({ length: calMonthData.firstDay }).map((_, i) => (
                 <div key={`e-${i}`} />
               ))}
@@ -1009,8 +1044,10 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
                 const info = calMonthData.calDaysMap.get(dateStr)
                 return (
                   <div key={day}
-                    title={info ? `${info.booked}/${info.max} cupos · ${info.pendientes || 0} pendientes, ${info.confirmadas || 0} confirmadas` : ""}
-                    className={`text-xs min-h-[32px] py-1.5 rounded-lg text-center font-tech transition-all ${calMonthData.calColor(status)}`}>
+                    title={info
+                      ? `${dateStr}\n${info.booked}/${info.max} cupos usados\n${info.pendientes || 0} pendientes\n${info.confirmadas || 0} confirmadas`
+                      : dateStr}
+                    className={`aspect-square flex items-center justify-center text-[11px] rounded-lg font-tech transition-all cursor-default ${calMonthData.calColor(status)}`}>
                     {day}
                   </div>
                 )
@@ -1375,6 +1412,165 @@ function CotizacionesTab({ items, onRefresh, headers }: { items: Quote[]; onRefr
           <p className="font-tech text-gray-600 tracking-wider">NO HAY COTIZACIONES AÚN</p>
         </div>
       )}
+    </motion.div>
+  )
+}
+
+function FinanzasTab({ items, summary, onRefresh, headers }: {
+  items: FinanzaItem[]
+  summary: any
+  onRefresh: () => void
+  headers: Record<string, string>
+}) {
+  const [tipo, setTipo] = useState<"ingreso" | "gasto">("ingreso")
+  const [categoria, setCategoria] = useState("tatuaje")
+  const [concepto, setConcepto] = useState("")
+  const [monto, setMonto] = useState("")
+  const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0])
+
+  const guardar = async () => {
+    if (!concepto || !monto) return
+    await fetch("/api/admin/finanzas", {
+      method: "POST", headers,
+      body: JSON.stringify({ tipo, categoria, concepto, monto: parseInt(monto), fecha }),
+    })
+    setConcepto("")
+    setMonto("")
+    onRefresh()
+  }
+
+  const eliminar = async (id: number) => {
+    if (!confirm("¿Eliminar este registro?")) return
+    await fetch(`/api/admin/finanzas?id=${id}`, { method: "DELETE", headers })
+    onRefresh()
+  }
+
+  const formatPeso = (n: number) => "$" + n.toLocaleString("es-CL")
+
+  const catIngresos = ["tatuaje", "otro"]
+  const catGastos = ["insumos", "porcentaje", "arriendo", "transporte", "marketing", "otro"]
+  const catLabels: Record<string, string> = {
+    tatuaje: "Tatuaje", insumos: "Insumos", porcentaje: "Porcentaje",
+    arriendo: "Arriendo", transporte: "Transporte", marketing: "Marketing", otro: "Otro"
+  }
+
+  return (
+    <motion.div key="finanzas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
+        <TrendUp size={20} className="text-cyan-400" /> FINANZAS
+      </h2>
+
+      {/* Resumen */}
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="glass rounded-2xl p-5">
+            <p className="font-tech text-xs tracking-[0.15em] text-gray-500 uppercase mb-1">Ingresos</p>
+            <p className="text-2xl font-bold text-green-400">{formatPeso(summary.total_ingresos)}</p>
+          </div>
+          <div className="glass rounded-2xl p-5">
+            <p className="font-tech text-xs tracking-[0.15em] text-gray-500 uppercase mb-1">Gastos</p>
+            <p className="text-2xl font-bold text-red-400">{formatPeso(summary.total_gastos)}</p>
+          </div>
+          <div className="glass rounded-2xl p-5">
+            <p className="font-tech text-xs tracking-[0.15em] text-gray-500 uppercase mb-1">Neto</p>
+            <p className={`text-2xl font-bold ${summary.neto >= 0 ? "text-cyan-400" : "text-red-400"}`}>
+              {formatPeso(summary.neto)}
+            </p>
+          </div>
+          <div className="glass rounded-2xl p-5">
+            <p className="font-tech text-xs tracking-[0.15em] text-gray-500 uppercase mb-1">Gastos</p>
+            <div className="text-xs text-gray-400 space-y-1">
+              <p>Insumos: <span className="text-white">{formatPeso(summary.gasto_insumos)}</span></p>
+              <p>% Pagado: <span className="text-white">{formatPeso(summary.gasto_porcentaje)}</span></p>
+              <p>Arriendo: <span className="text-white">{formatPeso(summary.gasto_arriendo)}</span></p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Formulario */}
+      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+        <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
+          <Plus size={16} className="text-cyan-400" /> NUEVO REGISTRO
+        </h3>
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => { setTipo("ingreso"); setCategoria("tatuaje") }}
+            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${tipo === "ingreso" ? "bg-green-400/10 text-green-400 border border-green-400/30" : "text-gray-500 border border-transparent"}`}>
+            INGRESO
+          </button>
+          <button onClick={() => { setTipo("gasto"); setCategoria("insumos") }}
+            className={`font-tech text-xs tracking-wider px-4 py-2 rounded-xl transition-all ${tipo === "gasto" ? "bg-red-400/10 text-red-400 border border-red-400/30" : "text-gray-500 border border-transparent"}`}>
+            GASTO
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value)}
+            className="neon-input rounded-xl px-4 py-3 w-full text-sm">
+            {(tipo === "ingreso" ? catIngresos : catGastos).map(c => (
+              <option key={c} value={c}>{catLabels[c] || c}</option>
+            ))}
+          </select>
+          <input value={concepto} onChange={(e) => setConcepto(e.target.value)}
+            placeholder="Concepto" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <input type="number" value={monto} onChange={(e) => setMonto(e.target.value)}
+            placeholder="Monto $" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
+            className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+        </div>
+        <button onClick={guardar} disabled={!concepto || !monto}
+          className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] disabled:opacity-30">
+          GUARDAR
+        </button>
+      </div>
+
+      {/* Tabla de registros */}
+      <div className="glass rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/5">
+                <th className="font-tech text-[10px] tracking-wider text-gray-500 text-left px-4 py-3">FECHA</th>
+                <th className="font-tech text-[10px] tracking-wider text-gray-500 text-left px-4 py-3">TIPO</th>
+                <th className="font-tech text-[10px] tracking-wider text-gray-500 text-left px-4 py-3">CATEGORÍA</th>
+                <th className="font-tech text-[10px] tracking-wider text-gray-500 text-left px-4 py-3">CONCEPTO</th>
+                <th className="font-tech text-[10px] tracking-wider text-gray-500 text-left px-4 py-3">CLIENTE</th>
+                <th className="font-tech text-[10px] tracking-wider text-gray-500 text-right px-4 py-3">MONTO</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(r => (
+                <tr key={r.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 text-gray-400 text-xs">{r.fecha}</td>
+                  <td className="px-4 py-3">
+                    <span className={`font-tech text-[10px] tracking-wider px-2 py-0.5 rounded-full border ${r.tipo === "ingreso" ? "bg-green-400/10 text-green-400 border-green-400/30" : "bg-red-400/10 text-red-400 border-red-400/30"}`}>
+                      {r.tipo.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-300 text-xs">{catLabels[r.categoria] || r.categoria}</td>
+                  <td className="px-4 py-3 text-white text-xs max-w-[200px] truncate">{r.concepto}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{r.cliente_nombre || "—"}</td>
+                  <td className={`px-4 py-3 text-xs font-bold text-right ${r.tipo === "ingreso" ? "text-green-400" : "text-red-400"}`}>
+                    {r.tipo === "ingreso" ? "+" : "-"}{formatPeso(r.monto)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => eliminar(r.id)}
+                      className="text-gray-600 hover:text-red-400 p-1 rounded transition-colors">
+                      <Trash size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {items.length === 0 && (
+          <div className="text-center py-16">
+            <TrendUp size={48} className="text-gray-700 mx-auto mb-4" />
+            <p className="font-tech text-gray-600 tracking-wider">SIN REGISTROS FINANCIEROS</p>
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }
