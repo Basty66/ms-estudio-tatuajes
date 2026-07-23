@@ -1627,6 +1627,7 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
 function ReelsTab({ items, onRefresh, headers }: { items: ReelItem[]; onRefresh: () => void; headers: Record<string, string> }) {
   const [url, setUrl] = useState("")
   const [titulo, setTitulo] = useState("")
+  const [videoUrl, setVideoUrl] = useState("")
   const [plataforma, setPlataforma] = useState<"instagram" | "tiktok" | "youtube">("instagram")
   const [saving, setSaving] = useState(false)
 
@@ -1645,13 +1646,14 @@ function ReelsTab({ items, onRefresh, headers }: { items: ReelItem[]; onRefresh:
     try {
       const res = await fetch("/api/admin/reels", {
         method: "POST", headers,
-        body: JSON.stringify({ url, titulo, plataforma }),
+        body: JSON.stringify({ url, titulo, plataforma, video_url: videoUrl || "" }),
       })
       const data = await res.json()
       if (!data.success) { alert("Error: " + (data.error || "Error al guardar")); setSaving(false); return }
     } catch (e) { console.error("Error al guardar reel", e); alert("Error de conexión"); setSaving(false); return }
     setUrl("")
     setTitulo("")
+    setVideoUrl("")
     onRefresh()
     setSaving(false)
   }
@@ -1701,9 +1703,14 @@ function ReelsTab({ items, onRefresh, headers }: { items: ReelItem[]; onRefresh:
         </div>
         <div className="flex flex-col md:flex-row gap-3 mb-4">
           <input value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="URL del reel" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+            placeholder="URL del reel (Instagram/TikTok/YouTube)" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
           <input value={titulo} onChange={(e) => setTitulo(e.target.value)}
             placeholder="Título (opcional)" className="neon-input rounded-xl px-4 py-3 w-full md:max-w-xs text-sm" />
+        </div>
+        <div className="mb-4">
+          <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="URL del video MP4 (opcional - para reproducir directo en la web)" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <p className="text-gray-700 text-[10px] font-tech tracking-wider mt-1">Sube el MP4 a un hosting/CDN y pega la URL aquí para reproducción nativa.</p>
         </div>
         <button onClick={guardar} disabled={!url || saving}
           className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] disabled:opacity-30">

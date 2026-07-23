@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { url, titulo, plataforma } = await request.json()
+    const { url, titulo, plataforma, video_url } = await request.json()
 
     if (!url) {
       return Response.json({ success: false, error: "URL requerida" }, { status: 400 })
