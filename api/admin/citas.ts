@@ -3,7 +3,10 @@ import { neon } from "@neondatabase/serverless"
 export const config = { runtime: "edge" }
 
 function checkAuth(request: Request): boolean {
-  return request.headers.get("authorization") === `Bearer ${process.env.ADMIN_PASSWORD}`
+  const auth = request.headers.get("authorization")
+  const token = auth?.replace("Bearer ", "")
+  const decoded = token ? atob(token) : ""
+  return decoded === process.env.ADMIN_PASSWORD
 }
 
 export async function GET(request: Request) {

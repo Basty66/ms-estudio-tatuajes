@@ -85,6 +85,7 @@ interface Quote {
   tamano: string
   imagen_url: string
   created_at: string
+  estado: string
 }
 
 interface DisponibilidadItem {
@@ -194,6 +195,17 @@ export default function Admin() {
     setLoading(false)
   }, [token])
 
+  const fetchCotizaciones = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/cotizaciones", { headers })
+      const data = await res.json()
+      if (data.success) setCotizaciones(data.cotizaciones)
+    } catch {}
+    setLoading(false)
+  }, [token])
+
   const fetchGaleria = useCallback(async () => {
     if (!token) return
     setLoading(true)
@@ -261,7 +273,8 @@ export default function Admin() {
     if (tab === "resenas") fetchResenas()
     if (tab === "disponibilidad") fetchDisponibilidad()
     if (tab === "citas") fetchAllCitas()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas])
+    if (tab === "cotizaciones") fetchCotizaciones()
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -393,9 +406,9 @@ export default function Admin() {
               <PublicacionesTab items={posts} onDelete={deletePost} onRefresh={fetchPosts} headers={headers} />
             ) : tab === "resenas" ? (
               <ResenasTab items={resenas} />
-            ) : (
-              <CotizacionesTab items={cotizaciones} />
-            )}
+            ) : tab === "cotizaciones" ? (
+              <CotizacionesTab items={cotizaciones} onRefresh={fetchCotizaciones} headers={headers} />
+            ) : null}
           </AnimatePresence>
         </main>
       </div>
@@ -1142,7 +1155,34 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   )
 }
 
-function CotizacionesTab({ items }: { items: Quote[] }) {
+function CotizacionesTab({ items, onRefresh, headers }: { items: Quote[]; onRefresh: () => void; headers: Record<string, string> }) {
+  const actualizarEstado = async (id: number, estado: string) => {
+    try {
+      await fetch("/api/admin/cotizaciones", {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ id, estado }),
+      })
+    } catch {}
+    onRefresh()
+  }
+
+  const eliminar = async (id: number) => {
+    if (!confirm("¿Eliminar esta cotización?")) return
+    try {
+      await fetch(`/api/admin/cotizaciones?id=${id}`, { method: "DELETE", headers })
+    } catch {}
+    onRefresh()
+  }
+
+  const badgeColor = (estado: string) => {
+    switch (estado) {
+      case "aceptada": return "bg-green-400/10 text-green-400 border-green-400/20"
+      case "rechazada": return "bg-red-400/10 text-red-400 border-red-400/20"
+      default: return "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
+    }
+  }
+
   return (
     <motion.div key="cotizaciones" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
@@ -1151,17 +1191,40 @@ function CotizacionesTab({ items }: { items: Quote[] }) {
       <div className="space-y-3">
         {items.map((c) => (
           <div key={c.id} className="glass rounded-xl p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-white text-sm font-medium">{c.nombre}</p>
-                <p className="text-cyan-400/60 text-xs font-tech">{c.whatsapp}</p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className={`font-tech text-[10px] tracking-wider px-2 py-0.5 rounded-full border ${badgeColor(c.estado)}`}>
+                    {(c.estado || "pendiente").toUpperCase()}
+                  </span>
+                  <p className="text-white text-sm font-medium">{c.nombre}</p>
+                  <p className="text-cyan-400/60 text-xs font-tech">{c.whatsapp}</p>
+                </div>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400">{c.estilo}</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-gray-400">{c.zona}</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-gray-400">{c.tamano}</span>
                 </div>
+                <p className="text-gray-700 text-xs mt-1">{new Date(c.created_at).toLocaleDateString("es-CL")}</p>
               </div>
-              <span className="text-gray-700 text-xs">{new Date(c.created_at).toLocaleDateString("es-CL")}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                {c.estado === "pendiente" && (
+                  <button onClick={() => actualizarEstado(c.id, "aceptada")}
+                    className="text-green-400 hover:bg-green-400/10 p-1.5 rounded-lg transition-all" title="Aceptar">
+                    <Check size={16} weight="bold" />
+                  </button>
+                )}
+                {c.estado === "pendiente" && (
+                  <button onClick={() => actualizarEstado(c.id, "rechazada")}
+                    className="text-red-400 hover:bg-red-400/10 p-1.5 rounded-lg transition-all" title="Rechazar">
+                    <XCircle size={16} />
+                  </button>
+                )}
+                <button onClick={() => eliminar(c.id)}
+                  className="text-gray-600 hover:text-red-400 hover:bg-red-400/10 p-1.5 rounded-lg transition-all" title="Eliminar">
+                  <Trash size={16} />
+                </button>
+              </div>
             </div>
             {c.imagen_url && (
               <div className="mt-3">
