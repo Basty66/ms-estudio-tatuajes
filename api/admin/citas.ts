@@ -44,52 +44,28 @@ export async function PATCH(request: Request) {
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
 
-    const updates: string[] = []
-    const values: any[] = []
+    // Build the SET clause dynamically
+    const sets: string[] = []
+    const vals: any[] = []
 
-    if (estado !== undefined) {
-      updates.push("estado")
-      values.push(estado)
-    }
-    if (admin_notas !== undefined) {
-      updates.push("admin_notas")
-      values.push(admin_notas)
-    }
-    if (duracion !== undefined) {
-      updates.push("duracion")
-      values.push(duracion)
-    }
-    if (hora !== undefined) {
-      updates.push("hora")
-      values.push(hora)
-    }
-    if (nombre !== undefined) {
-      updates.push("nombre")
-      values.push(nombre)
-    }
-    if (whatsapp !== undefined) {
-      updates.push("whatsapp")
-      values.push(whatsapp)
-    }
-    if (fecha !== undefined) {
-      updates.push("fecha")
-      values.push(fecha)
-    }
-    if (descripcion !== undefined) {
-      updates.push("descripcion")
-      values.push(descripcion)
-    }
+    if (estado !== undefined) { sets.push(`estado = $${vals.length + 1}`); vals.push(estado) }
+    if (admin_notas !== undefined) { sets.push(`admin_notas = $${vals.length + 1}`); vals.push(admin_notas) }
+    if (duracion !== undefined) { sets.push(`duracion = $${vals.length + 1}`); vals.push(duracion) }
+    if (hora !== undefined) { sets.push(`hora = $${vals.length + 1}`); vals.push(hora) }
+    if (nombre !== undefined) { sets.push(`nombre = $${vals.length + 1}`); vals.push(nombre) }
+    if (whatsapp !== undefined) { sets.push(`whatsapp = $${vals.length + 1}`); vals.push(whatsapp) }
+    if (fecha !== undefined) { sets.push(`fecha = $${vals.length + 1}`); vals.push(fecha) }
+    if (descripcion !== undefined) { sets.push(`descripcion = $${vals.length + 1}`); vals.push(descripcion) }
 
-    if (updates.length === 0) {
+    if (sets.length === 0) {
       return Response.json({ success: false, error: "Sin campos a actualizar" }, { status: 400 })
     }
 
-    const setClauses = updates.map((u, i) => `${u} = $${i + 1}`).join(", ")
-    values.push(id)
-    const query = `UPDATE agendamentos SET ${setClauses} WHERE id = $${values.length} RETURNING *`
+    vals.push(id)
+    const query = `UPDATE agendamentos SET ${sets.join(", ")} WHERE id = $${vals.length} RETURNING *`
+    const result = await sql.query(query, vals)
 
-    const result = await sql.unsafe(query, values)
-    return Response.json({ success: true, cita: result[0] })
+    return Response.json({ success: true, cita: result[0] || null })
   } catch (error) {
     console.error(error)
     return Response.json({ success: false, error: "Error al actualizar cita" }, { status: 500 })

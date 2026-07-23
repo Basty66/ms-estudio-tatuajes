@@ -84,9 +84,9 @@ export async function GET(request: Request) {
       }
 
       const booked = bookedMap[dateStr] || 0
-      const available = booked < maxSlots
+      const available = booked < (maxSlots as number)
 
-      days.push({ date: dateStr, day: d, dayOfWeek, available, booked, max: maxSlots })
+      days.push({ date: dateStr, day: d, dayOfWeek, available, booked, max: maxSlots as number })
     }
 
     return Response.json({ success: true, days, template, overrides })
