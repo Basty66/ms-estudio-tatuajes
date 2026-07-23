@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
-import { InstagramLogo, TiktokLogo, YoutubeLogo, Spinner } from "@phosphor-icons/react"
+import { InstagramLogo, TiktokLogo, YoutubeLogo, Spinner, Play, CaretLeft, CaretRight } from "@phosphor-icons/react"
 
 function extractReelCode(url: string): string | null {
   const match = url.match(/instagram\.com\/reel\/([^/?&#]+)/)
@@ -13,16 +13,20 @@ function extractTikTokId(url: string): { user: string; id: string } | null {
 }
 
 function extractYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/shorts\/|youtu\.be\/)([^/?&#]+)/)
-  if (match) return match[1]
-  const match2 = url.match(/youtube\.com\/watch\?v=([^&]+)/)
-  return match2 ? match2[1] : null
+  const shortsMatch = url.match(/(?:youtube\.com\/shorts\/|youtu\.be\/)([^/?&#]+)/)
+  if (shortsMatch) return shortsMatch[1]
+  const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/)
+  return watchMatch ? watchMatch[1] : null
 }
 
 function getEmbedUrl(reel: { url: string; plataforma: string }): string | null {
   if (reel.plataforma === "instagram") {
     const code = extractReelCode(reel.url)
     return code ? `https://www.instagram.com/reel/${code}/embed/captioned` : null
+  }
+  if (reel.plataforma === "tiktok") {
+    const t = extractTikTokId(reel.url)
+    return t ? `https://www.tiktok.com/embed/v2/${t.id}` : null
   }
   if (reel.plataforma === "youtube") {
     const id = extractYouTubeId(reel.url)
@@ -36,15 +40,13 @@ interface Reel {
   url: string
   titulo: string
   plataforma: string
-  activo: boolean
-  orden: number
-  creado_en: string
 }
 
 export default function ReelsSection() {
   const [reels, setReels] = useState<Reel[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set())
+  const [activeIndex, setActiveIndex] = useState(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch("/api/reels")
@@ -56,142 +58,137 @@ export default function ReelsSection() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (reels.length > 0) {
-      ;(window as any).instgrm?.Embeds?.process()
-      ;(window as any).tiktokEmbed?.load()
+  const scrollTo = (index: number) => {
+    const el = scrollRef.current
+    if (!el) return
+    const card = el.children[index] as HTMLElement
+    if (card) {
+      el.scrollTo({ left: card.offsetLeft - 16, behavior: "smooth" })
+      setActiveIndex(index)
     }
-  }, [reels])
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Spinner size={32} className="text-cyan-400 animate-spin" />
+      <div className="flex items-center justify-center py-16">
+        <Spinner size={28} className="text-cyan-400 animate-spin" />
       </div>
     )
   }
 
   if (reels.length === 0) return null
 
-  const getPlatformIcon = (plataforma: string) => {
-    switch (plataforma) {
-      case "instagram": return <InstagramLogo size={18} weight="fill" className="text-pink-400" />
-      case "tiktok": return <TiktokLogo size={18} weight="fill" className="text-gray-400" />
-      case "youtube": return <YoutubeLogo size={18} weight="fill" className="text-red-400" />
+  const getPlatformIcon = (p: string) => {
+    switch (p) {
+      case "instagram": return <InstagramLogo size={14} weight="fill" className="text-pink-400" />
+      case "tiktok": return <TiktokLogo size={14} weight="fill" className="text-gray-300" />
+      case "youtube": return <YoutubeLogo size={14} weight="fill" className="text-red-400" />
       default: return null
     }
   }
 
-  const getPlatformColor = (plataforma: string) => {
-    switch (plataforma) {
-      case "instagram": return "border-pink-400/20 hover:border-pink-400/40"
-      case "tiktok": return "border-white/10 hover:border-white/30"
-      case "youtube": return "border-red-400/20 hover:border-red-400/40"
-      default: return "border-cyan-400/20 hover:border-cyan-400/40"
-    }
-  }
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-20 md:py-28">
+    <div className="max-w-7xl mx-auto px-4 py-16 md:py-24">
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-        className="text-center mb-16"
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="text-center mb-10"
       >
-        <span className="font-tech text-xs tracking-[0.3em] text-cyan-400 uppercase">Contenido</span>
-        <h2 className="section-title text-4xl md:text-5xl mt-4 mb-6 text-white">REELS</h2>
-        <p className="text-gray-500 max-w-lg mx-auto text-sm leading-relaxed">
-          Mira nuestro trabajo en video. Seguinos en redes para más contenido.
+        <span className="font-tech text-xs tracking-[0.3em] text-cyan-400 uppercase">
+          Contenido
+        </span>
+        <h2 className="section-title text-4xl md:text-6xl text-white mt-2 mb-3">
+          <span className="premium-gradient">REELS</span>
+        </h2>
+        <p className="text-gray-600 text-xs font-tech tracking-wider max-w-md mx-auto">
+          Mira nuestro trabajo en video
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {reels.map((reel, i) => {
-          const embedUrl = getEmbedUrl(reel)
-          const tiktokData = reel.plataforma === "tiktok" ? extractTikTokId(reel.url) : null
-          const loaded = loadedVideos.has(reel.id)
-
-          return (
-            <motion.div
-              key={reel.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ delay: i * 0.1, duration: 0.6 }}
-              className={`glass rounded-2xl overflow-hidden border transition-all duration-300 ${getPlatformColor(reel.plataforma)}`}
+      {/* Horizontal scroll container */}
+      <div className="relative">
+        {/* Nav arrows */}
+        {reels.length > 3 && (
+          <>
+            <button
+              onClick={() => scrollTo(Math.max(0, activeIndex - 1))}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full glass border border-white/10 flex items-center justify-center text-white/60 hover:text-cyan-400 hover:border-cyan-400/30 transition-all -ml-3 hidden md:flex"
             >
-              <div className="relative aspect-[9/16] bg-black/40 flex items-center justify-center overflow-hidden">
-                {embedUrl ? (
-                  loaded ? (
-                    <iframe
-                      src={embedUrl}
-                      className="absolute inset-0 w-full h-full"
-                      frameBorder="0"
-                      allowFullScreen
-                      scrolling="no"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="text-center cursor-pointer" onClick={() => setLoadedVideos(prev => new Set(prev).add(reel.id))}>
-                      <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3 hover:bg-white/20 transition-all">
-                        <span className="text-white text-3xl">&#9654;</span>
-                      </div>
-                      <p className="text-gray-400 text-xs font-tech tracking-wider">CARGAR REEL</p>
-                    </div>
-                  )
-                ) : tiktokData ? (
-                  <a
-                    href={reel.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-center cursor-pointer hover:scale-105 transition-transform"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3 hover:bg-white/20 transition-all">
-                      <TiktokLogo size={28} weight="fill" className="text-gray-200" />
-                    </div>
-                    <p className="text-gray-400 text-xs font-tech tracking-wider">VER EN TIKTOK</p>
-                  </a>
-                ) : (
-                  <a
-                    href={reel.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-center cursor-pointer hover:scale-105 transition-transform"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3 hover:bg-white/20 transition-all">
-                      <span className="text-white text-2xl">&#9654;</span>
-                    </div>
-                    <p className="text-gray-400 text-xs font-tech tracking-wider">VER REEL</p>
-                  </a>
-                )}
-              </div>
+              <CaretLeft size={16} weight="bold" />
+            </button>
+            <button
+              onClick={() => scrollTo(Math.min(reels.length - 1, activeIndex + 1))}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full glass border border-white/10 flex items-center justify-center text-white/60 hover:text-cyan-400 hover:border-cyan-400/30 transition-all -mr-3 hidden md:flex"
+            >
+              <CaretRight size={16} weight="bold" />
+            </button>
+          </>
+        )}
 
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+        {/* Cards row */}
+        <div
+          ref={scrollRef}
+          className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {reels.map((reel, i) => {
+            const embedUrl = getEmbedUrl(reel)
+
+            return (
+              <motion.div
+                key={reel.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08, duration: 0.5 }}
+                className="snap-start shrink-0"
+                style={{ width: "clamp(260px, 42vw, 340px)" }}
+              >
+                <div className="glass rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/20 transition-all duration-300 group">
+                  {/* Video container */}
+                  <div className="relative aspect-[9/16] bg-black/60 overflow-hidden">
+                    {embedUrl ? (
+                      <iframe
+                        src={embedUrl}
+                        className="absolute inset-0 w-full h-full"
+                        frameBorder="0"
+                        allowFullScreen
+                        scrolling="no"
+                        loading="lazy"
+                        allow="autoplay; encrypted-media"
+                      />
+                    ) : (
+                      <a
+                        href={reel.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 hover:bg-black/40 transition-colors"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-cyan-400/20 transition-all">
+                          <Play size={22} className="text-white" weight="fill" />
+                        </div>
+                        <span className="text-gray-400 text-[10px] font-tech tracking-wider">VER REEL</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-3 py-2.5 flex items-center gap-2">
                     {getPlatformIcon(reel.plataforma)}
-                    <span className="text-xs text-gray-600 font-tech uppercase tracking-wider">
+                    <span className="text-[10px] text-gray-500 font-tech uppercase tracking-wider truncate">
                       {reel.plataforma}
                     </span>
+                    {reel.titulo && (
+                      <span className="text-[11px] text-gray-400 truncate flex-1">{reel.titulo}</span>
+                    )}
                   </div>
-                  {reel.titulo && (
-                    <p className="text-white text-sm truncate">{reel.titulo}</p>
-                  )}
                 </div>
-                <a
-                  href={reel.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 hover:text-cyan-400 transition-colors text-xs font-tech shrink-0 ml-3"
-                >
-                  ABRIR
-                </a>
-              </div>
-            </motion.div>
-          )
-        })}
+              </motion.div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
