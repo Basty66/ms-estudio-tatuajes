@@ -37,9 +37,21 @@ export default function Gallery() {
 
   if (loading) {
     return (
-      <section id="galeria" className="relative py-20 md:py-32 overflow-hidden section-dark">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin mx-auto" />
+      <section id="galeria" className="relative py-20 md:py-28 overflow-hidden section-dark">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10 animate-pulse">
+            <div className="h-3 w-32 bg-white/5 rounded mx-auto mb-3" />
+            <div className="h-10 w-64 bg-white/5 rounded mx-auto" />
+          </div>
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="break-inside-avoid mb-3 md:mb-4">
+                <div className="glass rounded-xl overflow-hidden">
+                  <div className="bg-white/5 animate-pulse" style={{ height: `${180 + (i % 3) * 60}px` }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     )
