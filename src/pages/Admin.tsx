@@ -448,7 +448,7 @@ function DashboardTab({ metrics, citasPendientes, cotizaciones, agendamentos }: 
                   <p className="text-white text-sm font-medium">{c.nombre}</p>
                   <p className="text-gray-500 text-xs">{c.whatsapp} · {c.estilo} · {c.zona} · {c.tamano}</p>
                 </div>
-                <span className="text-gray-600 text-xs">{new Date(c.creado_en).toLocaleDateString("es-CL")}</span>
+                <span className="text-gray-600 text-xs">{new Date(c.created_at).toLocaleDateString("es-CL")}</span>
               </div>
             ))}
           </div>
