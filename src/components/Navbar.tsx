@@ -56,7 +56,7 @@ export default function Navbar() {
       transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "glass-strong shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+          ? "glass-premium shadow-[0_8px_40px_rgba(0,0,0,0.7)]"
           : "bg-transparent"
       }`}
     >
@@ -115,7 +115,7 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            className="md:hidden glass-strong border-t border-white/5 overflow-hidden"
+            className="md:hidden glass-premium border-t border-white/5 overflow-hidden"
           >
             <nav className="flex flex-col px-4 md:px-6 py-4 md:py-6 gap-2">
               {links.map((link) => (

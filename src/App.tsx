@@ -14,24 +14,19 @@ import WhatsAppFloat from "./components/WhatsAppFloat"
 import Reviews from "./components/Reviews"
 import Admin from "./pages/Admin"
 
-const sections = [
-  { id: "inicio", Component: Hero },
-  { id: "sobre", Component: SobreElTatuador },
-  { id: "galeria", Component: Gallery },
-  { id: "reels", Component: ReelsSection },
-  { id: "cotizador", Component: Cotizador },
-  { id: "agenda", Component: Agenda },
-  { id: "reviews", Component: Reviews },
-  { id: "ubicacion", Component: Ubicacion },
-]
+const sectionIds = ["inicio", "sobre", "galeria", "reels", "cotizador", "agenda", "reviews", "ubicacion"]
+const components = [Hero, SobreElTatuador, Gallery, ReelsSection, Cotizador, Agenda, Reviews, Ubicacion]
 
 function HomePage() {
   return (
     <>
-      {sections.map(({ id, Component }) => (
-        <section key={id} id={id}>
-          <Component />
-        </section>
+      {components.map((Comp, i) => (
+        <div key={sectionIds[i]}>
+          <section id={sectionIds[i]}>
+            <Comp />
+          </section>
+          {i < components.length - 1 && <div className="section-ink-divider" />}
+        </div>
       ))}
     </>
   )
@@ -55,7 +50,15 @@ export default function App() {
   const isAdmin = location.pathname === "/admin"
 
   return (
-    <div className="min-h-screen bg-dark overflow-x-hidden">
+    <div className="min-h-screen bg-dark overflow-x-hidden relative">
+      {/* Global texture overlay */}
+      <div className="fixed inset-0 z-[1] pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "200px 200px",
+        }}
+      />
 
       {!isAdmin && <Navbar />}
       <ScrollToTop />

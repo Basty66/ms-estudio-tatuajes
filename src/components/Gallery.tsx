@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { Eye, Swatches, TextT, ArrowRight } from "@phosphor-icons/react"
+import { Eye, Swatches, TextT, ArrowRight, Image } from "@phosphor-icons/react"
 
 const categories = [
   {
@@ -44,29 +44,34 @@ const cardVariants = {
 
 export default function Gallery() {
   return (
-    <section id="galeria" className="relative py-20 md:py-32 overflow-hidden">
-      <div className="ambient-glow top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 bg-cyan-400/5" />
+    <section id="galeria" className="relative py-24 md:py-36 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-dark via-dark-100 to-dark" />
+      <div className="ambient-glow-cyan top-1/2 left-0 w-[500px] h-[500px] -translate-y-1/2 -translate-x-1/2" />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
-          className="text-center mb-16"
+          transition={{ duration: 0.7, ease: easeOut }}
+          className="text-center mb-16 md:mb-24"
         >
-          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
+          <span className="font-tech text-xs tracking-[0.3em] text-cyan-400 uppercase mb-4 block">
+            <Image size={14} className="inline mr-2 text-cyan-400" weight="fill" />
             Nuestro trabajo
           </span>
-                <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
-            GALERÍA DE
-            <br />
+          <h2 className="section-title-fluid text-white mb-4 leading-[0.85]">
+            GALERÍA DE{" "}
             <span className="premium-gradient">ESTILOS</span>
           </h2>
-          <div className="w-12 h-[1px] bg-cyan-400/30 mx-auto mt-6" />
+          <div className="flex items-center justify-center gap-4">
+            <span className="h-px w-12 bg-cyan-400/30" />
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            <span className="h-px w-12 bg-cyan-400/30" />
+          </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
           {categories.map((cat, i) => {
             const Icon = cat.icon
             return (
@@ -78,7 +83,7 @@ export default function Gallery() {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-50px" }}
                 whileHover={{ y: -8 }}
-                className="group relative rounded-2xl overflow-hidden aspect-[3/4] md:aspect-[4/5] glass-card cursor-pointer"
+                className="group relative rounded-2xl overflow-hidden aspect-[3/4] md:aspect-[4/5] glass-card-dark cursor-pointer"
               >
                 <img
                   src={cat.image}
@@ -86,8 +91,8 @@ export default function Gallery() {
                   loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:from-black/40 transition-all duration-700" />
-              
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent group-hover:from-black/50 transition-all duration-700" />
+
                 <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                   style={{
                     background:
@@ -97,7 +102,7 @@ export default function Gallery() {
 
                 <div className="relative z-10 h-full flex flex-col justify-end p-5 md:p-8">
                   <div className="mb-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 transition-all duration-500">
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-cyan-400/10 group-hover:border-cyan-400/20 group-hover:shadow-[0_0_25px_rgba(0,229,255,0.1)] transition-all duration-500">
                       <Icon size={24} className="text-cyan-400" weight="duotone" />
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-wider">
@@ -106,21 +111,21 @@ export default function Gallery() {
                     <p className="font-tech text-cyan-400/80 text-sm font-medium tracking-widest mb-3 uppercase">
                       {cat.subtitle}
                     </p>
-                    <p className="text-gray-500 text-sm leading-relaxed">
+                    <p className="text-gray-400 text-sm leading-relaxed">
                       {cat.desc}
                     </p>
                   </div>
 
                   <div className="overflow-hidden max-h-0 md:group-hover:max-h-40 transition-all duration-700 ease-in-out">
-                    <p className="text-gray-400 text-xs leading-relaxed mb-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-100">
+                    <p className="text-gray-500 text-xs leading-relaxed mb-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-100">
                       {cat.info}
                     </p>
-                    <p className="font-tech text-cyan-400/50 text-[10px] tracking-widest uppercase opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-200">
+                    <p className="font-tech text-cyan-400/40 text-[10px] tracking-widest uppercase opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 delay-200">
                       Ideal para: {cat.ideal}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-cyan-400/60 group-hover:text-cyan-400 transition-colors duration-300 font-tech text-xs tracking-[0.25em] uppercase mt-3">
+                  <div className="flex items-center gap-2 text-cyan-400/50 group-hover:text-cyan-400 transition-colors duration-300 font-tech text-xs tracking-[0.25em] uppercase mt-3">
                     <span className="md:hidden">Más info</span>
                     <span className="hidden md:inline">Ver estilo</span>
                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />

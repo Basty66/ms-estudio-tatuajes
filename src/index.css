@@ -18,9 +18,12 @@
   --color-glass: rgba(255, 255, 255, 0.03);
   --color-glass-border: rgba(255, 255, 255, 0.06);
   --color-glass-cyan: rgba(0, 229, 255, 0.08);
+  --color-gold: #d4a853;
+  --color-gold-400: #c9952e;
   --font-display: "Bebas Neue", "Anton", "Impact", sans-serif;
   --font-sans: "Inter", "Montserrat", "Segoe UI", system-ui, sans-serif;
   --font-tech: "Rajdhani", "Orbitron", sans-serif;
+  --font-ornamental: "Cinzel", "Playfair Display", serif;
 }
 
 @layer base {
@@ -40,6 +43,17 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    opacity: 0.04;
+  }
   html { scroll-behavior: smooth; }
   ::selection { background: rgba(0, 229, 255, 0.3); color: #fff; }
   ::-webkit-scrollbar { width: 6px; }
@@ -47,6 +61,7 @@
   ::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.3); border-radius: 3px; }
 }
 
+/* ─── ANIMACIONES ─── */
 @keyframes neon-pulse {
   0%, 100% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.3), 0 0 10px rgba(0, 229, 255, 0.2); }
   50% { box-shadow: 0 0 10px rgba(0, 229, 255, 0.6), 0 0 20px rgba(0, 229, 255, 0.4), 0 0 40px rgba(0, 229, 255, 0.2); }
@@ -78,6 +93,40 @@
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
+@keyframes ink-spread {
+  0% { clip-path: circle(0% at 50% 50%); opacity: 0; }
+  60% { clip-path: circle(75% at 50% 50%); opacity: 1; }
+  100% { clip-path: circle(150% at 50% 50%); opacity: 1; }
+}
+
+@keyframes ink-drip {
+  0% { height: 0; opacity: 0; }
+  50% { opacity: 1; }
+  100% { height: 100%; opacity: 0; }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(0, 229, 255, 0.15); }
+  50% { border-color: rgba(0, 229, 255, 0.5); }
+}
+
+@keyframes gold-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slide-down {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ─── GLASS EFFECTS ─── */
 .glass {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
@@ -99,6 +148,28 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.glass-premium {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.glass-premium:hover {
+  border-color: rgba(0, 229, 255, 0.2);
+  box-shadow: 0 8px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 229, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-ink {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 12px 60px rgba(0, 0, 0, 0.8);
+}
+
+/* ─── GRADIENTS ─── */
 .premium-gradient {
   background: linear-gradient(135deg, #00e5ff, #0077ff, #00e5ff);
   background-size: 200% 200%;
@@ -106,6 +177,19 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #d4a853, #f0d78c, #b8860b, #d4a853);
+  background-size: 300% 300%;
+  animation: gold-shift 6s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ink-gradient {
+  background: linear-gradient(180deg, #000 0%, #111 50%, #000 100%);
 }
 
 .gradient-border {
@@ -124,15 +208,36 @@
   mask-composite: exclude;
 }
 
+.gradient-border-gold {
+  position: relative;
+}
+
+.gradient-border-gold::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(212, 168, 83, 0.5), transparent, rgba(212, 168, 83, 0.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 .neon-border {
   border: 1px solid rgba(0, 229, 255, 0.15);
   animation: neon-pulse 3s ease-in-out infinite;
+}
+
+.neon-border-static {
+  border: 1px solid rgba(0, 229, 255, 0.15);
 }
 
 .neon-text {
   animation: text-glow 3s ease-in-out infinite;
 }
 
+/* ─── CARDS ─── */
 .glass-card {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(16px);
@@ -149,6 +254,22 @@
   box-shadow: 0 20px 60px rgba(0, 229, 255, 0.08), 0 0 30px rgba(0, 229, 255, 0.04);
 }
 
+.glass-card-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.glass-card-dark:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── INPUTS ─── */
 .neon-input {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -156,16 +277,8 @@
   transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.neon-input option {
-  background: #111;
-  color: #fff;
-  padding: 8px;
-}
-
-.neon-input optgroup {
-  background: #111;
-  color: #fff;
-}
+.neon-input option { background: #111; color: #fff; padding: 8px; }
+.neon-input optgroup { background: #111; color: #fff; }
 
 .neon-input:focus {
   border-color: rgba(0, 229, 255, 0.4);
@@ -176,6 +289,21 @@
 
 .neon-input::placeholder { color: rgba(255, 255, 255, 0.2); }
 
+.neon-input-gold {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 168, 83, 0.15);
+  color: #fff;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.neon-input-gold:focus {
+  border-color: rgba(212, 168, 83, 0.5);
+  box-shadow: 0 0 20px rgba(212, 168, 83, 0.08);
+  outline: none;
+  background: rgba(212, 168, 83, 0.03);
+}
+
+/* ─── BUTTONS ─── */
 .neon-button {
   background: rgba(0, 229, 255, 0.06);
   border: 1px solid rgba(0, 229, 255, 0.2);
@@ -210,38 +338,43 @@
   transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.neon-button-primary:hover::before {
-  opacity: 1;
-}
-
+.neon-button-primary:hover::before { opacity: 1; }
 .neon-button-primary:hover {
   box-shadow: 0 0 40px rgba(0, 229, 255, 0.3), 0 0 80px rgba(0, 229, 255, 0.1);
   transform: translateY(-2px);
 }
+.neon-button-primary > * { position: relative; z-index: 1; }
 
-.neon-button-primary > * {
-  position: relative;
-  z-index: 1;
+.neon-button-gold {
+  background: linear-gradient(135deg, rgba(212, 168, 83, 0.2), rgba(184, 134, 11, 0.15));
+  border: 1px solid rgba(212, 168, 83, 0.3);
+  color: #d4a853;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: pointer;
 }
 
+.neon-button-gold:hover {
+  background: linear-gradient(135deg, rgba(212, 168, 83, 0.3), rgba(184, 134, 11, 0.25));
+  border-color: rgba(212, 168, 83, 0.6);
+  box-shadow: 0 0 30px rgba(212, 168, 83, 0.15);
+}
+
+/* ─── TYPOGRAPHY ─── */
 .section-title {
   font-family: var(--font-display);
   letter-spacing: 2px;
   text-shadow: 0 2px 12px rgba(255, 255, 255, 0.08);
 }
 
-.text-neon-glow {
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6), 0 0 20px rgba(0, 229, 255, 0.3);
+.section-title-fluid {
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.08);
+  font-size: clamp(3rem, 10vw, 8rem);
 }
 
-.ambient-glow {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  filter: blur(120px);
-  pointer-events: none;
-  opacity: 0.15;
+.text-neon-glow {
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6), 0 0 20px rgba(0, 229, 255, 0.3);
 }
 
 .text-shimmer {
@@ -253,15 +386,128 @@
   animation: shimmer 4s linear infinite;
 }
 
-.split-text {
+.ornamental-amper {
+  font-family: var(--font-ornamental);
+  font-style: italic;
+}
+
+/* ─── BACKGROUND EFFECTS ─── */
+.ambient-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+.ambient-glow-cyan {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(130px);
+  pointer-events: none;
+  opacity: 0.12;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.4), transparent);
+}
+
+.ambient-glow-gold {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(130px);
+  pointer-events: none;
+  opacity: 0.1;
+  background: radial-gradient(circle, rgba(212, 168, 83, 0.3), transparent);
+}
+
+.tattoo-bg {
+  position: relative;
+}
+
+.tattoo-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  filter: grayscale(100%) brightness(15%) contrast(140%);
+  opacity: 0.4;
+  z-index: 0;
+}
+
+.tattoo-bg > * { position: relative; z-index: 1; }
+
+.section-ink-divider {
+  position: relative;
+  height: 80px;
   overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .ambient-glow { width: 300px; height: 300px; filter: blur(80px); }
+.section-ink-divider::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 229, 255, 0.03) 50%, transparent 100%);
+}
+
+.section-ink-divider::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(180deg, transparent, rgba(0, 229, 255, 0.3), transparent);
+}
+
+.section-dark {
+  background: linear-gradient(180deg, #000 0%, #050505 50%, #000 100%);
+}
+
+/* ─── TATTOO IMAGE REVEAL ─── */
+.tattoo-reveal {
+  position: relative;
+  overflow: hidden;
+}
+
+.tattoo-reveal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #000 0%, transparent 10%, transparent 90%, #000 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── UTILITY ─── */
+.split-text { overflow: hidden; }
+
+.border-glow-anim {
+  animation: border-glow 4s ease-in-out infinite;
+}
+
+.ink-reveal {
+  animation: ink-spread 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.subtle-pulse {
+  animation: subtle-pulse 4s ease-in-out infinite;
 }
 
 .will-change-transform {
   will-change: transform;
   backface-visibility: hidden;
+}
+
+@media (max-width: 768px) {
+  .ambient-glow { width: 300px; height: 300px; filter: blur(80px); }
+  .ambient-glow-cyan { width: 250px; height: 250px; }
+  .ambient-glow-gold { width: 250px; height: 250px; }
+  .section-ink-divider { height: 40px; }
 }
