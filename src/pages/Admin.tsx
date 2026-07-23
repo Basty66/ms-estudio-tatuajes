@@ -1204,17 +1204,23 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
           `Gracias por avisar!`,
         ].join("\n"),
         completada: [
-          `SESION COMPLETADA`,
+          `*SESION COMPLETADA*`,
           ``,
           `*Cliente:* ${cita.nombre}`,
           ``,
           `Gracias por confiar en mi trabajo!`,
+          `Espero que te haya gustado el resultado.`,
+          ``,
           `Segui los cuidados indicados para una cicatrizacion perfecta.`,
           `Si podes, mandame una foto cuando este curado.`,
           ``,
           `Recorda: protege tu tatuaje del sol las proximas 3 semanas.`,
           ``,
-          `Nos vemos en la proxima!`,
+          `*Si te gusto la experiencia, segui mis redes:*`,
+          `Instagram: @matness_tattoos`,
+          `Facebook: Matness Tattoos`,
+          ``,
+          `Espero verte de nuevo pronto!`,
         ].join("\n"),
       }
       const msg = msgs[estado]
@@ -1251,7 +1257,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
       const msgs: Record<string, string> = {
         confirmada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} esta *CONFIRMADA*\n*Hora:* ${editForm.hora || "A coordinar"}\n*Direccion:* Manso 529, Melipilla\nTe espero!`,
         cancelada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu cita del ${new Date(editForm.fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long" })} fue *CANCELADA*\nSi queres reagendar, avisame.`,
-        completada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu sesion fue *COMPLETADA*\nGracias por confiar en mi trabajo. Segui los cuidados indicados.`,
+        completada: `Hola ${editForm.nombre || citaOriginal.nombre}, tu sesion fue *COMPLETADA*. Gracias por confiar en mi trabajo! Si te gusto la experiencia, segui mis redes: Instagram @matness_tattoos | Facebook Matness Tattoos. Espero verte de nuevo pronto!`,
       }
       const msg = msgs[editForm.estado]
       if (msg) {
