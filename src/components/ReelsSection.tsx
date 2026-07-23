@@ -54,6 +54,9 @@ export default function ReelsSection() {
   if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={28} className="text-cyan-400 animate-spin" /></div>
   if (reels.length === 0) return null
 
+  const igCode = (url: string) => { const m = url.match(/instagram\.com\/reel\/([^/?&#]+)/); return m ? m[1] : null }
+  const ytId = (url: string) => { const m = url.match(/(?:youtube\.com\/shorts\/|youtu\.be\/)([^/?&#]+)/); if (m) return m[1]; const w = url.match(/youtube\.com\/watch\?v=([^&]+)/); return w ? w[1] : null }
+
   const platformGradient = (p: string) => {
     switch (p) {
       case "instagram": return "from-pink-500/10 via-purple-500/5 to-amber-500/10"
@@ -122,6 +125,54 @@ export default function ReelsSection() {
                         />
                         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                       </>
+                    ) : igCode(reel.url) ? (
+                      /* Instagram thumbnail via proxy */
+                      <div className="absolute inset-0">
+                        <img
+                          src={`/api/instagram-thumb?code=${igCode(reel.url)}`}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <motion.div
+                            className="w-14 h-14 rounded-full bg-black/30 backdrop-blur border border-white/10 flex items-center justify-center group-hover:bg-cyan-400/20 group-hover:scale-110 transition-all"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <Play size={20} className="text-white ml-0.5" weight="fill" />
+                          </motion.div>
+                        </div>
+                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur flex items-center gap-1">
+                          <InstagramLogo size={12} weight="fill" className="text-pink-400" />
+                          <span className="text-white/60 text-[9px] font-tech">IG</span>
+                        </div>
+                      </div>
+                    ) : ytId(reel.url) ? (
+                      /* YouTube thumbnail */
+                      <div className="absolute inset-0">
+                        <img
+                          src={`https://img.youtube.com/vi/${ytId(reel.url)}/hqdefault.jpg`}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <motion.div
+                            className="w-14 h-14 rounded-full bg-black/30 backdrop-blur border border-white/10 flex items-center justify-center group-hover:bg-red-400/20 group-hover:scale-110 transition-all"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <Play size={20} className="text-white ml-0.5" weight="fill" />
+                          </motion.div>
+                        </div>
+                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur flex items-center gap-1">
+                          <YoutubeLogo size={12} weight="fill" className="text-red-400" />
+                          <span className="text-white/60 text-[9px] font-tech">YT</span>
+                        </div>
+                      </div>
                     ) : (
                       /* Card animada con gradiente de plataforma */
                       <div className={`absolute inset-0 bg-gradient-to-br ${platformGradient(reel.plataforma)}`}>
