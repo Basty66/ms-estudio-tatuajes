@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
     const pendientes = await sql`
       SELECT COUNT(*)::int as total FROM agendamentos
-      WHERE (estado IS NULL OR estado = 'pendiente') AND fecha >= CURRENT_DATE
+      WHERE (estado IS NULL OR estado = 'pendiente') AND fecha::date >= CURRENT_DATE
     `
     const citasPendientes = pendientes[0]?.total || 0
 
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       recentAgendamentos,
     })
   } catch (error) {
-    console.error("admin GET error:", error)
-    return Response.json({ success: false, error: String(error) }, { status: 500 })
+    console.error(error)
+    return Response.json({ success: false, error: "Error al obtener métricas" }, { status: 500 })
   }
 }
