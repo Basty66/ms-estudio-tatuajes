@@ -12,12 +12,16 @@ import {
   Trash,
   UploadSimple,
   Plus,
-  ListChecks,
   CalendarCheck,
   CurrencyDollar,
   UsersThree,
   Spinner,
   Warning,
+  Clock,
+  Check,
+  XCircle,
+  PencilSimple,
+  CalendarBlank,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -27,6 +31,7 @@ interface Metrics {
   galeria: number
   publicaciones: number
   resenas: number
+  citasPendientes?: number
 }
 
 interface GalleryItem {
@@ -63,7 +68,11 @@ interface Booking {
   nombre: string
   whatsapp: string
   fecha: string
+  hora: string
+  duracion: number
   descripcion: string
+  estado: string
+  admin_notas: string
   creado_en: string
 }
 
@@ -78,7 +87,23 @@ interface Quote {
   creado_en: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "citas" | "cotizaciones"
+interface DisponibilidadItem {
+  dia_semana: number
+  activo: boolean
+  hora_inicio: string
+  hora_fin: string
+  slots_max: number
+}
+
+interface ExcepcionFecha {
+  id: number
+  fecha: string
+  slots_max: number | null
+  activo: boolean
+  motivo: string
+}
+
+type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -104,6 +129,9 @@ export default function Admin() {
   const [galeria, setGaleria] = useState<GalleryItem[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [resenas, setResenas] = useState<Resena[]>([])
+  const [disponibilidad, setDisponibilidad] = useState<DisponibilidadItem[]>([])
+  const [excepciones, setExcepciones] = useState<ExcepcionFecha[]>([])
+  const [allCitas, setAllCitas] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
 
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : {}
@@ -189,13 +217,41 @@ export default function Admin() {
     setLoading(false)
   }, [token])
 
+  const fetchDisponibilidad = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/disponibilidad", { headers })
+      const data = await res.json()
+      if (data.success) {
+        setDisponibilidad(data.template || [])
+        setExcepciones(data.overrides || [])
+        setAllCitas(data.citas || [])
+      }
+    } catch {}
+    setLoading(false)
+  }, [token])
+
+  const fetchAllCitas = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/citas", { headers })
+      const data = await res.json()
+      if (data.success) setAllCitas(data.citas || [])
+    } catch {}
+    setLoading(false)
+  }, [token])
+
   useEffect(() => {
     if (!token) return
     if (tab === "dashboard") fetchDashboard()
     if (tab === "galeria") fetchGaleria()
     if (tab === "publicaciones") fetchPosts()
     if (tab === "resenas") fetchResenas()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas])
+    if (tab === "disponibilidad") fetchDisponibilidad()
+    if (tab === "citas") fetchAllCitas()
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -261,10 +317,11 @@ export default function Admin() {
 
   const navItems: { id: Tab; label: string; icon: typeof ChartBar }[] = [
     { id: "dashboard", label: "Dashboard", icon: ChartBar },
+    { id: "disponibilidad", label: "Disponibilidad", icon: Clock },
+    { id: "citas", label: "Citas", icon: CalendarCheck },
     { id: "galeria", label: "Galería", icon: Image },
     { id: "publicaciones", label: "Publicaciones", icon: NotePencil },
     { id: "resenas", label: "Reseñas", icon: Star },
-    { id: "citas", label: "Citas", icon: CalendarCheck },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
   ]
 
@@ -315,15 +372,17 @@ export default function Admin() {
                 <Spinner size={32} className="text-cyan-400 animate-spin" />
               </motion.div>
             ) : tab === "dashboard" ? (
-              <DashboardTab metrics={metrics} cotizaciones={cotizaciones} agendamentos={agendamentos} />
+              <DashboardTab metrics={metrics} citasPendientes={allCitas.filter(c => (!c.estado || c.estado === 'pendiente')).length} cotizaciones={cotizaciones} agendamentos={agendamentos} />
+            ) : tab === "disponibilidad" ? (
+              <DisponibilidadTab disponibilidad={disponibilidad} excepciones={excepciones} onRefresh={fetchDisponibilidad} headers={headers} />
+            ) : tab === "citas" ? (
+              <CitasManagerTab citas={allCitas} onRefresh={fetchAllCitas} headers={headers} />
             ) : tab === "galeria" ? (
               <GaleriaTab items={galeria} onDelete={deleteGaleria} onRefresh={fetchGaleria} headers={headers} />
             ) : tab === "publicaciones" ? (
               <PublicacionesTab items={posts} onDelete={deletePost} onRefresh={fetchPosts} headers={headers} />
             ) : tab === "resenas" ? (
               <ResenasTab items={resenas} />
-            ) : tab === "citas" ? (
-              <CitasTab items={agendamentos} />
             ) : (
               <CotizacionesTab items={cotizaciones} />
             )}
@@ -352,18 +411,21 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof ChartBar; label: 
   )
 }
 
-function DashboardTab({ metrics, cotizaciones, agendamentos }: { metrics: Metrics | null; cotizaciones: Quote[]; agendamentos: Booking[] }) {
+function DashboardTab({ metrics, citasPendientes, cotizaciones, agendamentos }: {
+  metrics: Metrics | null
+  citasPendientes: number
+  cotizaciones: Quote[]
+  agendamentos: Booking[]
+}) {
   if (!metrics) return null
   return (
     <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6">DASHBOARD</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard icon={CalendarCheck} label="Citas Pendientes" value={citasPendientes} />
+        <StatCard icon={UsersThree} label="Citas Activas" value={metrics.agendamentos} />
         <StatCard icon={CurrencyDollar} label="Cotizaciones" value={metrics.cotizaciones} />
-        <StatCard icon={CalendarCheck} label="Agendados" value={metrics.agendamentos} />
-        <StatCard icon={UsersThree} label="Visitas" value={metrics.visitas} />
-        <StatCard icon={Image} label="Imágenes" value={metrics.galeria} />
-        <StatCard icon={NotePencil} label="Publicaciones" value={metrics.publicaciones} />
-        <StatCard icon={Star} label="Reseñas" value={metrics.resenas} />
+        <StatCard icon={ChartBar} label="Visitas" value={metrics.visitas} />
       </div>
 
       {cotizaciones.length > 0 && (
@@ -721,30 +783,348 @@ function ResenasTab({ items }: { items: Resena[] }) {
   )
 }
 
-function CitasTab({ items }: { items: Booking[] }) {
+function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: {
+  disponibilidad: DisponibilidadItem[]
+  excepciones: ExcepcionFecha[]
+  onRefresh: () => void
+  headers: Record<string, string>
+}) {
+  const [template, setTemplate] = useState<DisponibilidadItem[]>([])
+  const [editExcepcion, setEditExcepcion] = useState({ fecha: "", slots_max: "", motivo: "", activo: true })
+  const [saving, setSaving] = useState(false)
+  const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+
+  useEffect(() => {
+    setTemplate(disponibilidad.length > 0
+      ? disponibilidad
+      : Array.from({ length: 7 }, (_, i) => ({
+          dia_semana: i, activo: i !== 0, hora_inicio: "10:00", hora_fin: "19:00", slots_max: 3
+        }))
+    )
+  }, [disponibilidad])
+
+  const saveTemplate = async () => {
+    setSaving(true)
+    try {
+      await fetch("/api/admin/disponibilidad", {
+        method: "POST", headers,
+        body: JSON.stringify({ template }),
+      })
+      onRefresh()
+    } catch {}
+    setSaving(false)
+  }
+
+  const saveExcepcion = async () => {
+    if (!editExcepcion.fecha) return
+    setSaving(true)
+    try {
+      await fetch("/api/admin/disponibilidad", {
+        method: "POST", headers,
+        body: JSON.stringify({
+          override: {
+            fecha: editExcepcion.fecha,
+            slots_max: editExcepcion.slots_max ? parseInt(editExcepcion.slots_max) : null,
+            activo: editExcepcion.activo,
+            motivo: editExcepcion.motivo,
+          }
+        }),
+      })
+      setEditExcepcion({ fecha: "", slots_max: "", motivo: "", activo: true })
+      onRefresh()
+    } catch {}
+    setSaving(false)
+  }
+
+  const deleteExcepcion = async (fecha: string) => {
+    if (!confirm(`¿Eliminar excepción para ${fecha}?`)) return
+    try {
+      await fetch("/api/admin/disponibilidad", {
+        method: "POST", headers,
+        body: JSON.stringify({ deleteOverride: fecha }),
+      })
+      onRefresh()
+    } catch {}
+  }
+
+  return (
+    <motion.div key="disp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
+        <Clock size={20} className="text-cyan-400" /> DISPONIBILIDAD SEMANAL
+      </h2>
+
+      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+        <div className="space-y-3">
+          {template.map((d) => (
+            <div key={d.dia_semana} className="flex items-center gap-4 flex-wrap">
+              <button
+                onClick={() => setTemplate(template.map(t => t.dia_semana === d.dia_semana ? { ...t, activo: !t.activo } : t))}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
+                  d.activo ? "bg-cyan-400/20 text-cyan-400 border border-cyan-400/30" : "bg-white/5 text-gray-600 border border-white/10"
+                }`}
+              >
+                {d.activo ? <Check size={14} weight="bold" /> : <XCircle size={14} />}
+              </button>
+              <span className={`font-tech text-sm w-24 tracking-wider ${d.activo ? "text-white" : "text-gray-600"}`}>{days[d.dia_semana]}</span>
+              {d.activo && (
+                <>
+                  <input type="time" value={d.hora_inicio} onChange={(e) => setTemplate(template.map(t => t.dia_semana === d.dia_semana ? { ...t, hora_inicio: e.target.value } : t))}
+                    className="neon-input rounded-lg px-3 py-2 w-28 text-xs" />
+                  <span className="text-gray-600 text-xs">a</span>
+                  <input type="time" value={d.hora_fin} onChange={(e) => setTemplate(template.map(t => t.dia_semana === d.dia_semana ? { ...t, hora_fin: e.target.value } : t))}
+                    className="neon-input rounded-lg px-3 py-2 w-28 text-xs" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 text-xs">Slots:</span>
+                    <input type="number" min={1} max={10} value={d.slots_max} onChange={(e) => setTemplate(template.map(t => t.dia_semana === d.dia_semana ? { ...t, slots_max: parseInt(e.target.value) || 1 } : t))}
+                      className="neon-input rounded-lg px-3 py-2 w-16 text-xs text-center" />
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        <button onClick={saveTemplate} disabled={saving}
+          className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] mt-6 disabled:opacity-30">
+          {saving ? "GUARDANDO..." : "GUARDAR DISPONIBILIDAD"}
+        </button>
+      </div>
+
+      <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
+        <CalendarBlank size={16} className="text-cyan-400" /> EXCEPCIONES POR FECHA
+      </h3>
+
+      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label className="font-tech text-xs tracking-wider text-gray-500 mb-1 block">FECHA</label>
+            <input type="date" value={editExcepcion.fecha} onChange={(e) => setEditExcepcion({ ...editExcepcion, fecha: e.target.value })}
+              className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          </div>
+          <div>
+            <label className="font-tech text-xs tracking-wider text-gray-500 mb-1 block">SLOTS (vacío = usar template)</label>
+            <input type="number" min={0} max={10} value={editExcepcion.slots_max} onChange={(e) => setEditExcepcion({ ...editExcepcion, slots_max: e.target.value })}
+              placeholder="Ej: 2" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          </div>
+          <div>
+            <label className="font-tech text-xs tracking-wider text-gray-500 mb-1 block">MOTIVO</label>
+            <input value={editExcepcion.motivo} onChange={(e) => setEditExcepcion({ ...editExcepcion, motivo: e.target.value })}
+              placeholder="Ej: Feriado" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          </div>
+          <div className="flex items-end gap-2">
+            <button onClick={() => setEditExcepcion({ ...editExcepcion, activo: !editExcepcion.activo })}
+              className={`font-tech rounded-xl px-4 py-3 text-xs tracking-wider transition-all ${editExcepcion.activo ? "bg-green-400/10 text-green-400 border border-green-400/30" : "bg-red-400/10 text-red-400 border border-red-400/30"}`}>
+              {editExcepcion.activo ? "DISPONIBLE" : "BLOQUEADO"}
+            </button>
+            <button onClick={saveExcepcion} disabled={saving || !editExcepcion.fecha}
+              className="font-tech neon-button-primary rounded-xl px-4 py-3 text-xs tracking-wider disabled:opacity-30">
+              AGREGAR
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {excepciones.map((ex) => (
+          <div key={ex.id} className="glass rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className={`w-2 h-2 rounded-full ${ex.activo ? "bg-green-400" : "bg-red-400"}`} />
+              <span className="text-white text-sm">{ex.fecha}</span>
+              <span className="text-gray-500 text-xs">{ex.slots_max !== null ? `${ex.slots_max} slots` : "Template"}</span>
+              {ex.motivo && <span className="text-cyan-400/60 text-xs">{ex.motivo}</span>}
+            </div>
+            <button onClick={() => deleteExcepcion(ex.fecha)} className="text-gray-600 hover:text-red-400 transition-colors p-2">
+              <Trash size={16} />
+            </button>
+          </div>
+        ))}
+        {excepciones.length === 0 && <p className="text-center text-gray-600 text-sm py-8">Sin excepciones</p>}
+      </div>
+    </motion.div>
+  )
+}
+
+function CitasManagerTab({ citas, onRefresh, headers }: {
+  citas: Booking[]
+  onRefresh: () => void
+  headers: Record<string, string>
+}) {
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState({ nombre: "", whatsapp: "", fecha: "", hora: "", duracion: 120, descripcion: "", estado: "pendiente", admin_notas: "" })
+  const [creando, setCreando] = useState(false)
+  const [nueva, setNueva] = useState({ nombre: "", whatsapp: "+56", fecha: "", hora: "", duracion: 120, descripcion: "" })
+
+  const updateEstado = async (id: number, estado: string) => {
+    await fetch("/api/admin/citas", {
+      method: "PATCH", headers,
+      body: JSON.stringify({ id, estado }),
+    })
+    onRefresh()
+  }
+
+  const saveEdit = async () => {
+    if (!editId) return
+    await fetch("/api/admin/citas", {
+      method: "PATCH", headers,
+      body: JSON.stringify({ id: editId, ...editForm }),
+    })
+    setEditId(null)
+    onRefresh()
+  }
+
+  const deleteCita = async (id: number) => {
+    if (!confirm("¿Eliminar esta cita?")) return
+    await fetch(`/api/admin/citas?id=${id}`, { method: "DELETE", headers })
+    onRefresh()
+  }
+
+  const crearCita = async () => {
+    if (!nueva.nombre || !nueva.whatsapp || !nueva.fecha) return
+    setCreando(true)
+    await fetch("/api/admin/citas", {
+      method: "POST", headers,
+      body: JSON.stringify(nueva),
+    })
+    setNueva({ nombre: "", whatsapp: "+56", fecha: "", hora: "", duracion: 120, descripcion: "" })
+    setCreando(false)
+    onRefresh()
+  }
+
+  const estadoBadge = (estado: string | null) => {
+    const e = estado || "pendiente"
+    const colors: Record<string, string> = {
+      pendiente: "bg-yellow-400/10 text-yellow-400 border-yellow-400/30",
+      confirmada: "bg-green-400/10 text-green-400 border-green-400/30",
+      cancelada: "bg-red-400/10 text-red-400 border-red-400/30",
+      completada: "bg-blue-400/10 text-blue-400 border-blue-400/30",
+    }
+    return colors[e] || colors.pendiente
+  }
+
   return (
     <motion.div key="citas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
-        <CalendarCheck size={20} className="text-cyan-400" /> CITAS AGENDADAS
+        <CalendarCheck size={20} className="text-cyan-400" /> GESTIÓN DE CITAS
       </h2>
+
+      <div className="glass rounded-2xl p-5 md:p-8 mb-8">
+        <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
+          <Plus size={16} className="text-cyan-400" /> AGREGAR CITA MANUAL
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <input value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })}
+            placeholder="Nombre" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <input value={nueva.whatsapp} onChange={(e) => setNueva({ ...nueva, whatsapp: e.target.value })}
+            placeholder="+56 9 XXXX XXXX" className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <input type="date" value={nueva.fecha} onChange={(e) => setNueva({ ...nueva, fecha: e.target.value })}
+            className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+          <input type="time" value={nueva.hora} onChange={(e) => setNueva({ ...nueva, hora: e.target.value })}
+            className="neon-input rounded-xl px-4 py-3 w-full text-sm" />
+        </div>
+        <button onClick={crearCita} disabled={creando || !nueva.nombre || !nueva.fecha}
+          className="font-tech neon-button-primary rounded-xl px-6 py-3 text-sm tracking-[0.2em] disabled:opacity-30">
+          {creando ? "CREANDO..." : "CREAR CITA"}
+        </button>
+      </div>
+
       <div className="space-y-3">
-        {items.map((a) => (
-          <div key={a.id} className="glass rounded-xl p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-white text-sm font-medium">{a.nombre}</p>
-                <p className="text-cyan-400/60 text-xs font-tech">{a.whatsapp}</p>
-                <p className="text-gray-400 text-xs mt-1">{a.fecha}</p>
-                {a.descripcion && <p className="text-gray-500 text-xs mt-2 italic">"{a.descripcion}"</p>}
+        {citas.map((c) => (
+          <motion.div key={c.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-xl p-4">
+            {editId === c.id ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <input value={editForm.nombre} onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                    className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                  <input value={editForm.whatsapp} onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                    className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                  <input type="date" value={editForm.fecha} onChange={(e) => setEditForm({ ...editForm, fecha: e.target.value })}
+                    className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                  <input type="time" value={editForm.hora} onChange={(e) => setEditForm({ ...editForm, hora: e.target.value })}
+                    className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <select value={editForm.estado} onChange={(e) => setEditForm({ ...editForm, estado: e.target.value })}
+                    className="neon-input rounded-xl px-4 py-2 text-sm">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="confirmada">Confirmada</option>
+                    <option value="completada">Completada</option>
+                    <option value="cancelada">Cancelada</option>
+                  </select>
+                  <div>
+                    <span className="text-gray-600 text-xs block mb-1">Duración (min):</span>
+                    <input type="number" min={30} step={30} value={editForm.duracion}
+                      onChange={(e) => setEditForm({ ...editForm, duracion: parseInt(e.target.value) || 120 })}
+                      className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                  </div>
+                  <input value={editForm.descripcion} onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
+                    placeholder="Descripción" className="neon-input rounded-xl px-4 py-2 w-full text-sm col-span-2" />
+                </div>
+                <input value={editForm.admin_notas} onChange={(e) => setEditForm({ ...editForm, admin_notas: e.target.value })}
+                  placeholder="Notas internas del admin" className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                <div className="flex gap-2">
+                  <button onClick={saveEdit} className="font-tech neon-button-primary rounded-xl px-4 py-2 text-xs tracking-wider">GUARDAR</button>
+                  <button onClick={() => setEditId(null)} className="font-tech neon-button rounded-xl px-4 py-2 text-xs tracking-wider">CANCELAR</button>
+                </div>
               </div>
-              <span className="text-gray-700 text-xs">{new Date(a.creado_en).toLocaleDateString("es-CL")}</span>
-            </div>
-          </div>
+            ) : (
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className={`font-tech text-[10px] tracking-wider px-2 py-0.5 rounded-full border ${estadoBadge(c.estado)}`}>
+                      {(c.estado || "pendiente").toUpperCase()}
+                    </span>
+                    <span className="text-white text-sm font-medium">{c.nombre}</span>
+                    <span className="text-cyan-400/60 text-xs font-tech">{c.whatsapp}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                    <span className="flex items-center gap-1"><CalendarBlank size={12} /> {c.fecha}</span>
+                    {c.hora && <span className="flex items-center gap-1"><Clock size={12} /> {c.hora}</span>}
+                    <span>{c.duracion} min</span>
+                  </div>
+                  {c.descripcion && <p className="text-gray-500 text-xs mt-1 italic">"{c.descripcion}"</p>}
+                  {c.admin_notas && <p className="text-cyan-400/40 text-xs mt-1">📝 {c.admin_notas}</p>}
+                  <p className="text-gray-700 text-xs mt-1">Creado: {new Date(c.creado_en).toLocaleDateString("es-CL")}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {(c.estado || "pendiente") === "pendiente" && (
+                    <button onClick={() => updateEstado(c.id, "confirmada")}
+                      className="text-green-400 hover:bg-green-400/10 p-1.5 rounded-lg transition-all" title="Confirmar">
+                      <Check size={16} weight="bold" />
+                    </button>
+                  )}
+                  {(c.estado || "pendiente") === "confirmada" && (
+                    <button onClick={() => updateEstado(c.id, "completada")}
+                      className="text-blue-400 hover:bg-blue-400/10 p-1.5 rounded-lg transition-all" title="Completada">
+                      <Check size={16} weight="bold" />
+                    </button>
+                  )}
+                  {(c.estado || "pendiente") !== "cancelada" && (c.estado || "pendiente") !== "completada" && (
+                    <button onClick={() => updateEstado(c.id, "cancelada")}
+                      className="text-red-400 hover:bg-red-400/10 p-1.5 rounded-lg transition-all" title="Cancelar">
+                      <XCircle size={16} />
+                    </button>
+                  )}
+                  <button onClick={() => {
+                    setEditId(c.id)
+                    setEditForm({ nombre: c.nombre, whatsapp: c.whatsapp, fecha: c.fecha, hora: c.hora || "", duracion: c.duracion || 120, descripcion: c.descripcion || "", estado: c.estado || "pendiente", admin_notas: c.admin_notas || "" })
+                  }}
+                    className="text-cyan-400 hover:bg-cyan-400/10 p-1.5 rounded-lg transition-all" title="Editar">
+                    <PencilSimple size={16} />
+                  </button>
+                  <button onClick={() => deleteCita(c.id)}
+                    className="text-gray-600 hover:text-red-400 hover:bg-red-400/10 p-1.5 rounded-lg transition-all" title="Eliminar">
+                    <Trash size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
         ))}
       </div>
-      {items.length === 0 && (
+
+      {citas.length === 0 && (
         <div className="text-center py-16">
-          <ListChecks size={48} className="text-gray-700 mx-auto mb-4" />
+          <CalendarCheck size={48} className="text-gray-700 mx-auto mb-4" />
           <p className="font-tech text-gray-600 tracking-wider">NO HAY CITAS AÚN</p>
         </div>
       )}

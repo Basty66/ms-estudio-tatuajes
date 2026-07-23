@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   CalendarBlank,
@@ -26,6 +26,15 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay()
 }
 
+interface DayInfo {
+  date: string
+  day: number
+  dayOfWeek: number
+  available: boolean
+  booked: number
+  max: number
+}
+
 export default function Agenda() {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -36,6 +45,24 @@ export default function Agenda() {
   const [descripcion, setDescripcion] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [daysData, setDaysData] = useState<Map<string, DayInfo>>(new Map())
+  const [loadingDisp, setLoadingDisp] = useState(true)
+
+  useEffect(() => {
+    setLoadingDisp(true)
+    setSelected(null)
+    fetch(`/api/disponibilidad?year=${year}&month=${month}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          const map = new Map<string, DayInfo>()
+          data.days.forEach((d: DayInfo) => map.set(d.date, d))
+          setDaysData(map)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDisp(false))
+  }, [year, month])
 
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfMonth(year, month)
@@ -51,9 +78,9 @@ export default function Agenda() {
   }
 
   const handleSelectDay = (day: number) => {
-    const date = new Date(year, month, day)
-    if (date >= new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
-      setSelected(date)
+    const info = daysData.get(`${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`)
+    if (info && info.available) {
+      setSelected(new Date(year, month, day))
     }
   }
 
@@ -76,8 +103,9 @@ export default function Agenda() {
     }
 
     setSubmitting(true)
-    const fechaStr = formatDate(selected)
+    const fechaStr = `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, "0")}-${String(selected.getDate()).padStart(2, "0")}`
 
+    let apiError = false
     try {
       const res = await fetch("/api/agendar", {
         method: "POST",
@@ -89,18 +117,50 @@ export default function Agenda() {
           descripcion: descripcion.trim(),
         }),
       })
-      await res.json()
+      const data = await res.json()
+      if (!data.success) {
+        apiError = true
+        setError(data.error || "Error al agendar")
+        if (data.error?.includes("completo") || data.error?.includes("disponible")) {
+          // Refresh disponibilidad
+          fetch(`/api/disponibilidad?year=${year}&month=${month}`)
+            .then(r => r.json())
+            .then(d => {
+              if (d.success) {
+                const map = new Map<string, DayInfo>()
+                d.days.forEach((di: DayInfo) => map.set(di.date, di))
+                setDaysData(map)
+              }
+            })
+        }
+      }
     } catch {
-      // continue to WhatsApp even if API fails
+      apiError = true
+      setError("Error de conexión")
     }
 
-    const mensaje = `Hola MS Estudio, soy ${nombre.trim()}. Vi su página web y me interesa agendar una cita para el día ${fechaStr}.${descripcion.trim() ? `\n\nDetalles: ${descripcion.trim()}` : ""}\n\nMi WhatsApp es ${whatsapp.trim()}. Quedo atento.`
+    if (apiError) {
+      setSubmitting(false)
+      return
+    }
+
+    const mensaje = `Hola MS Estudio, soy ${nombre.trim()}. Quiero agendar una cita para el día ${formatDate(selected)}.${descripcion.trim() ? `\n\nDetalles: ${descripcion.trim()}` : ""}\n\nMi WhatsApp es ${whatsapp.trim()}. Quedo atento.`
     window.open(`https://wa.me/56964470668?text=${encodeURIComponent(mensaje)}`, "_blank")
     setSubmitting(false)
   }
 
   const isToday = (day: number) =>
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+
+  const getDayStatus = (day: number): "available" | "full" | "past" | "nodata" | "selected" | "today" => {
+    if (selected?.getDate() === day && selected?.getMonth() === month && selected?.getFullYear() === year) return "selected"
+    if (isPastDay(day)) return "past"
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    const info = daysData.get(dateStr)
+    if (!info) return "nodata"
+    if (info.available) return isToday(day) ? "today" : "available"
+    return "full"
+  }
 
   return (
     <section id="agenda" className="relative py-20 md:py-32 overflow-hidden">
@@ -117,7 +177,7 @@ export default function Agenda() {
           <span className="font-tech text-xs tracking-[0.3em] text-cyan-400/50 uppercase mb-4 block">
             Reserva tu cita
           </span>
-                <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
+          <h2 className="section-title text-4xl md:text-7xl text-white mb-4">
             AGENDA
             <br />
             <span className="premium-gradient">TU CITA</span>
@@ -156,7 +216,7 @@ export default function Agenda() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-3">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -168,9 +228,9 @@ export default function Agenda() {
 
               <div className="flex items-center gap-3">
                 <CalendarBlank size={20} className="text-cyan-400" weight="duotone" />
-                  <span className="font-tech text-white font-semibold tracking-wider text-lg">
-                    {monthNames[month]} {year}
-                  </span>
+                <span className="font-tech text-white font-semibold tracking-wider text-lg">
+                  {monthNames[month]} {year}
+                </span>
               </div>
 
               <motion.button
@@ -183,6 +243,13 @@ export default function Agenda() {
               </motion.button>
             </div>
 
+            {/* Leyenda */}
+            <div className="flex items-center justify-center gap-4 mb-4 text-[10px] font-tech tracking-wider">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-400" /> Disponible</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-700" /> Completo</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-800" /> Pasado</span>
+            </div>
+
             <div className="grid grid-cols-7 gap-1 mb-3">
               {daysOfWeek.map((d) => (
                 <div key={d} className="font-tech text-center text-[11px] tracking-wider text-cyan-400/40 font-semibold py-2">
@@ -192,31 +259,37 @@ export default function Agenda() {
             </div>
 
             <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: firstDay }).map((_, i) => (
+              {loadingDisp && (
+                <div className="col-span-7 flex items-center justify-center py-4">
+                  <Spinner size={20} className="text-cyan-400 animate-spin" />
+                </div>
+              )}
+              {!loadingDisp && Array.from({ length: firstDay }).map((_, i) => (
                 <div key={`e-${i}`} />
               ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
+              {!loadingDisp && Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1
-                const past = isPastDay(day)
-                const isSelected =
-                  selected?.getDate() === day &&
-                  selected?.getMonth() === month &&
-                  selected?.getFullYear() === year
+                const status = getDayStatus(day)
+                const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                const info = daysData.get(dateStr)
 
                 return (
                   <motion.button
                     key={day}
-                    whileTap={{ scale: 0.9 }}
-                    disabled={past}
+                    whileTap={status === "available" ? { scale: 0.9 } : {}}
+                    disabled={status !== "available" && status !== "today"}
                     onClick={() => handleSelectDay(day)}
+                    title={info ? `${info.booked}/${info.max} slots` : ""}
                     className={`text-sm min-h-[40px] py-2.5 rounded-xl transition-all ${
-                      isSelected
+                      status === "selected"
                         ? "bg-cyan-400 text-black font-bold"
-                        : past
+                        : status === "past" || status === "nodata"
                           ? "text-gray-700 cursor-not-allowed"
-                          : isToday(day)
-                            ? "text-cyan-400 font-bold border border-cyan-400/30"
-                            : "text-gray-400 hover:bg-cyan-400/10 hover:text-cyan-400"
+                          : status === "full"
+                            ? "text-gray-600 bg-white/5 cursor-not-allowed"
+                            : status === "today"
+                              ? "text-cyan-400 font-bold border border-cyan-400/30 bg-cyan-400/5"
+                              : "text-gray-300 hover:bg-cyan-400/15 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(0,229,255,0.1)] bg-cyan-400/5"
                     }`}
                   >
                     {day}

@@ -15,9 +15,59 @@ export async function POST(request: Request) {
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
 
+    // Parse fecha - it could be "DD de Month de YYYY" or "YYYY-MM-DD"
+    let dateObj: Date
+    if (fecha.includes("de")) {
+      // Spanish format: "12 de julio de 2026"
+      const parts = fecha.split(" de ")
+      const day = parseInt(parts[0])
+      const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
+      const month = monthNames.indexOf(parts[1].toLowerCase())
+      const year = parseInt(parts[2])
+      dateObj = new Date(year, month, day)
+    } else {
+      dateObj = new Date(fecha + "T12:00:00")
+    }
+
+    const dateStr = dateObj.toISOString().split("T")[0]
+    const dayOfWeek = dateObj.getDay()
+
+    // Check availability template
+    const template = await sql`
+      SELECT * FROM disponibilidad WHERE dia_semana = ${dayOfWeek}
+    `
+    if (template.length === 0 || !template[0].activo) {
+      return Response.json({ success: false, error: "Este día no está disponible" }, { status: 400 })
+    }
+
+    // Check for date override
+    const override = await sql`
+      SELECT * FROM excepciones_fecha WHERE fecha = ${dateStr}::date
+    `
+    if (override.length > 0 && !override[0].activo) {
+      return Response.json({ success: false, error: "Este día no está disponible" }, { status: 400 })
+    }
+
+    const maxSlots = override.length > 0 && override[0].slots_max !== null
+      ? override[0].slots_max
+      : template[0].slots_max
+
+    // Count existing non-cancelled appointments for this date
+    const existing = await sql`
+      SELECT COUNT(*)::int as count FROM agendamentos
+      WHERE fecha = ${dateStr}
+        AND (estado IS NULL OR estado != 'cancelada')
+    `
+    const bookedCount = existing[0]?.count || 0
+
+    if (bookedCount >= maxSlots) {
+      return Response.json({ success: false, error: "Este día ya está completo" }, { status: 400 })
+    }
+
+    // All good, insert
     await sql`
-      INSERT INTO agendamentos (nombre, whatsapp, fecha, descripcion)
-      VALUES (${nombre}, ${whatsapp}, ${fecha}, ${descripcion || ""})
+      INSERT INTO agendamentos (nombre, whatsapp, fecha, descripcion, estado)
+      VALUES (${nombre}, ${whatsapp}, ${dateStr}, ${descripcion || ""}, 'pendiente')
     `
 
     return Response.json({ success: true })

@@ -28,15 +28,20 @@ export async function GET(request: Request) {
 
     const [cotRes, ageRes, visRes, galRes, pubRes, resRes] = await Promise.all([
       sql`SELECT COUNT(*)::int as total FROM cotizaciones`,
-      sql`SELECT COUNT(*)::int as total FROM agendamentos`,
+      sql`SELECT COUNT(*)::int as total FROM agendamentos WHERE estado IS NULL OR estado != 'cancelada'`,
       sql`SELECT COUNT(*)::int as total FROM visitas`,
       sql`SELECT COUNT(*)::int as total FROM galeria`,
       sql`SELECT COUNT(*)::int as total FROM publicaciones`,
       sql`SELECT COUNT(*)::int as total FROM resenas`,
     ])
 
-    const recentCotizaciones = await sql`SELECT * FROM cotizaciones ORDER BY creado_en DESC LIMIT 10`
+    const recentCotizaciones = await sql`SELECT * FROM cotizaciones ORDER BY creado_en DESC LIMIT 5`
     const recentAgendamentos = await sql`SELECT * FROM agendamentos ORDER BY creado_en DESC LIMIT 10`
+
+    const citasPendientes = (await sql`
+      SELECT COUNT(*)::int as total FROM agendamentos
+      WHERE (estado IS NULL OR estado = 'pendiente') AND fecha >= CURRENT_DATE
+    `)[0]?.total || 0
 
     return Response.json({
       success: true,
@@ -47,6 +52,7 @@ export async function GET(request: Request) {
         galeria: galRes[0]?.total || 0,
         publicaciones: pubRes[0]?.total || 0,
         resenas: resRes[0]?.total || 0,
+        citasPendientes,
       },
       recentCotizaciones,
       recentAgendamentos,
