@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://tatuajes-azure.vercel.app/sitemap.xml

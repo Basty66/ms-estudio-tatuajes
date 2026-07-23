@@ -66,7 +66,7 @@ export default function Cotizador() {
 
   const handleCalcular = () => {
     if (!form.tamano || !form.estilo) return
-    setEstimacion(calcularEstimacion(form.tamano, form.estilo))
+    setEstimacion(calcularEstimacion(form.tamano, form.zona, form.estilo))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,14 +144,27 @@ export default function Cotizador() {
               <CheckCircle size={40} className="text-cyan-400" weight="fill" />
             </motion.div>
             <h3 className="section-title text-3xl premium-gradient mb-3">¡COTIZACIÓN ENVIADA!</h3>
-            <p className="text-gray-500 text-sm mb-2 tracking-wider">
-              Te contactaremos por WhatsApp para confirmar los detalles.
+            <p className="text-gray-400 text-sm mb-6">
+              Te contactaremos por WhatsApp en las próximas horas.
             </p>
-            {ultimoEnvio && (
-              <p className="text-gray-600 text-xs mb-6">
-                {ultimoEnvio.estilo && `${ultimoEnvio.estilo} · `}{ultimoEnvio.zona} · {ultimoEnvio.tamano}
-              </p>
-            )}
+
+            <div className="glass rounded-2xl p-5 mb-6 border border-white/5 text-left">
+              <p className="text-cyan-400 text-xs font-tech tracking-wider uppercase mb-3">Próximos pasos</p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded-full bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-[10px] text-cyan-400 font-bold shrink-0 mt-0.5">1</span>
+                  <p className="text-gray-400 text-xs leading-relaxed">Revisamos tu diseño y te enviamos una cotización personalizada por WhatsApp</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded-full bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-[10px] text-cyan-400 font-bold shrink-0 mt-0.5">2</span>
+                  <p className="text-gray-400 text-xs leading-relaxed">Coordinamos fecha, hora y el 50% de abono para reservar</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded-full bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-[10px] text-cyan-400 font-bold shrink-0 mt-0.5">3</span>
+                  <p className="text-gray-400 text-xs leading-relaxed">El día de la cita traes tus ideas y el resto del pago. ¡Nos vemos!</p>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
               {ultimoEnvio && (
                 <a

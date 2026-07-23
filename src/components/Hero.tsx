@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Tag, Heart, Camera, ArrowRight, Sparkle, ShareNetwork, Needle, Flower } from "@phosphor-icons/react"
+import { Tag, Heart, Camera, ArrowRight, Sparkle, ShareNetwork, Needle, Flower, Users, Share } from "@phosphor-icons/react"
 
 const steps = [
   { icon: Tag, title: "01", desc: "ETIQUETA A UN AMIGO" },
@@ -181,6 +181,29 @@ export default function Hero() {
                 </div>
               </motion.div>
             </div>
+          </motion.div>
+
+          {/* Contador + Compartir */}
+          <motion.div variants={itemVariants} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+            <div className="flex items-center gap-3 glass rounded-full px-5 py-3 border border-white/5">
+              <Users size={18} className="text-cyan-400" weight="duotone" />
+              <span className="text-white font-bold text-lg">500+</span>
+              <span className="text-gray-500 text-xs font-tech tracking-wider">Tatuajes realizados</span>
+            </div>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: "MS Estudio de Tatuajes", text: "Mirá el trabajo de MS Estudio de Tatuajes en Melipilla", url: window.location.href })
+                } else {
+                  navigator.clipboard.writeText(window.location.href)
+                  alert("Link copiado!")
+                }
+              }}
+              className="flex items-center gap-2 text-gray-500 hover:text-cyan-400 transition-colors text-xs font-tech tracking-wider"
+            >
+              <Share size={14} />
+              COMPARTIR
+            </button>
           </motion.div>
 
           <motion.div variants={itemVariants} className="mt-14 flex flex-col items-center gap-6">
