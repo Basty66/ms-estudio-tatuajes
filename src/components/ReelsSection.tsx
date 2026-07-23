@@ -108,7 +108,7 @@ export default function ReelsSection() {
             const hasVideo = !!(reel.video_url && reel.video_url.length > 0)
 
             return (
-              <div key={reel.id} className="snap-start shrink-0" style={{ width: "clamp(200px, 42vw, 280px)" }}>
+              <div key={reel.id} className="snap-start shrink-0" style={{ width: "clamp(260px, 50vw, 340px)" }}>
                 <a href={reel.url} target="_blank" rel="noopener noreferrer"
                   className={`block glass rounded-xl overflow-hidden border border-white/5 hover:border-cyan-400/20 transition-all duration-300 group`}
                   onClick={(e) => { if (hasVideo) e.preventDefault() }}
@@ -126,40 +126,26 @@ export default function ReelsSection() {
                         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                       </>
                     ) : igCode(reel.url) ? (
-                      /* Instagram thumbnail via proxy publico */
+                      /* Instagram thumbnail */
                       <div className="absolute inset-0">
                         <img
-                          src={`https://ddinstagram.com/p/${igCode(reel.url)}/media/?size=l`}
+                          src={`https://www.instagram.com/p/${igCode(reel.url)}/media/?size=m`}
                           alt=""
                           className="absolute inset-0 w-full h-full object-cover"
                           loading="lazy"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none"
-                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement
-                            if (fallback) fallback.style.display = ""
-                          }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0" }}
                         />
-                        {/* Fallback si la imagen falla */}
-                        <div className="absolute inset-0 hidden bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-amber-500/10 flex flex-col items-center justify-center gap-4">
-                          <motion.div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur border border-pink-400/30 flex items-center justify-center" animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                            <InstagramLogo size={28} weight="fill" className="text-pink-400" />
-                          </motion.div>
-                          <div className="flex items-center gap-2">
-                            <Play size={12} className="text-white/50" weight="fill" />
-                            <span className="text-white/40 text-[10px] font-tech tracking-wider uppercase">Ver reel</span>
-                          </div>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <motion.div
-                            className="w-14 h-14 rounded-full bg-black/30 backdrop-blur border border-white/10 flex items-center justify-center group-hover:bg-cyan-400/20 group-hover:scale-110 transition-all"
+                            className="w-12 h-12 rounded-full bg-black/20 backdrop-blur border border-white/10 flex items-center justify-center group-hover:bg-cyan-400/20 group-hover:scale-110 transition-all"
                             animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                           >
-                            <Play size={20} className="text-white ml-0.5" weight="fill" />
+                            <Play size={18} className="text-white ml-0.5" weight="fill" />
                           </motion.div>
                         </div>
-                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur flex items-center gap-1">
+                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur flex items-center gap-1">
                           <InstagramLogo size={12} weight="fill" className="text-pink-400" />
                           <span className="text-white/60 text-[9px] font-tech">IG</span>
                         </div>
