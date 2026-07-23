@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     }
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
+
     await sql`
       INSERT INTO cotizaciones (nombre, whatsapp, estilo, zona, tamano, imagen_url)
       VALUES (${nombre}, ${whatsapp}, ${estilo}, ${zona}, ${tamano}, ${imagenBase64 || ""})
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error(error)
-    return Response.json({ success: false, error: "Error al guardar la cotización" }, { status: 500 })
+    console.error("cotizar error:", String(error))
+    return Response.json({ success: false, error: String(error) }, { status: 500 })
   }
 }
