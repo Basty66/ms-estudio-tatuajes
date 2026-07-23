@@ -1136,21 +1136,26 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   const [editForm, setEditForm] = useState({ nombre: "", whatsapp: "", fecha: "", hora: "", duracion: 120, descripcion: "", estado: "pendiente", admin_notas: "" })
   const [creando, setCreando] = useState(false)
   const [nueva, setNueva] = useState({ nombre: "", whatsapp: "+56", fecha: "", hora: "", duracion: 120, descripcion: "" })
+  const [precioModal, setPrecioModal] = useState<{ id: number; estado: string } | null>(null)
+  const [precioInput, setPrecioInput] = useState("")
+  const [confirmando, setConfirmando] = useState(false)
 
-  const updateEstado = async (id: number, estado: string) => {
-    const cita = citas.find(c => c.id === id)
-    let precio = 0
+  const updateEstado = (id: number, estado: string) => {
     if (estado === "confirmada") {
-      const input = prompt("💰 Precio del tatuaje ($):", "")
-      if (input === null) return // Canceló
-      precio = parseInt(input) || 0
+      setPrecioModal({ id, estado })
+    } else {
+      confirmarEstado(id, estado, 0)
     }
+  }
+
+  const confirmarEstado = async (id: number, estado: string, precio: number) => {
+    const cita = citas.find(c => c.id === id)
     await fetch("/api/admin/citas", {
       method: "PATCH", headers,
       body: JSON.stringify({
         id,
         estado,
-        ...(precio > 0 ? { admin_notas: `💰 Precio: $${precio.toLocaleString("es-CL")} | 50% abono: $${Math.round(precio * 0.5).toLocaleString("es-CL")}` } : {}),
+        ...(precio > 0 ? { admin_notas: `💰 $${precio.toLocaleString("es-CL")} | 50%: $${Math.round(precio * 0.5).toLocaleString("es-CL")}` } : {}),
       }),
     })
     if (estado === "confirmada" && precio > 0) {
@@ -1297,6 +1302,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   const filtradas = filtro === "todas" ? citas : citas.filter(c => (c.estado || "pendiente") === filtro)
 
   return (
+    <>
     <motion.div key="citas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
         <CalendarCheck size={20} className="text-cyan-400" /> GESTIÓN DE CITAS
@@ -1447,6 +1453,90 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
         </div>
       )}
     </motion.div>
+
+    {precioModal && (
+      <PrecioModal
+        cita={citas.find(c => c.id === precioModal.id)!}
+        precioInput={precioInput}
+        setPrecioInput={setPrecioInput}
+        confirmando={confirmando}
+        onClose={() => { setPrecioModal(null); setPrecioInput("") }}
+        onConfirm={(valor) => {
+          setConfirmando(true)
+          confirmarEstado(precioModal!.id, precioModal!.estado, valor).then(() => {
+            setPrecioModal(null)
+            setPrecioInput("")
+            setConfirmando(false)
+          })
+        }}
+      />
+    )}
+    </>
+  )
+}
+
+function PrecioModal({ cita, precioInput, setPrecioInput, confirmando, onClose, onConfirm }: {
+  cita: Booking
+  precioInput: string
+  setPrecioInput: (v: string) => void
+  confirmando: boolean
+  onClose: () => void
+  onConfirm: (valor: number) => void
+}) {
+  const raw = precioInput.replace(/\D/g, "")
+  const valor = parseInt(raw) || 0
+  const abono = Math.round(valor * 0.5)
+  const fmt = (n: number) => n.toLocaleString("es-CL")
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="glass-premium rounded-2xl p-6 w-full max-w-sm border border-white/10" onClick={e => e.stopPropagation()}>
+        <h3 className="text-white font-bold text-lg mb-1">💰 Confirmar cita</h3>
+        <p className="text-gray-400 text-sm mb-1">{cita?.nombre}</p>
+        <p className="text-gray-600 text-xs font-tech mb-5">{cita?.descripcion}</p>
+
+        <label className="text-gray-400 text-xs font-tech tracking-wider uppercase mb-2 block">Precio del tatuaje</label>
+        <div className="relative mb-4">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={precioInput ? `$ ${fmt(valor)}` : ""}
+            onChange={(e) => setPrecioInput(e.target.value.replace(/\D/g, ""))}
+            placeholder="$ 0"
+            className="neon-input rounded-xl pl-10 pr-4 py-4 w-full text-xl font-bold text-white"
+            autoFocus
+          />
+        </div>
+
+        {valor > 0 && (
+          <div className="glass rounded-xl p-4 mb-5 border border-cyan-400/10">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-400 text-xs">Valor total</span>
+              <span className="text-white font-bold">$ {fmt(valor)}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-400 text-xs">50% para reservar</span>
+              <span className="text-cyan-400 font-bold text-lg">$ {fmt(abono)}</span>
+            </div>
+            <div className="h-px bg-white/5 my-2" />
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 text-xs">Restante el día de la cita</span>
+              <span className="text-gray-300 text-sm">$ {fmt(valor - abono)}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 font-tech neon-button rounded-xl py-3 text-xs tracking-wider">CANCELAR</button>
+          <button onClick={() => onConfirm(valor)}
+            disabled={valor === 0 || confirmando}
+            className="flex-1 font-tech neon-button-primary rounded-xl py-3 text-xs tracking-wider disabled:opacity-30">
+            {confirmando ? "CONFIRMANDO..." : `CONFIRMAR $ ${fmt(valor)}`}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
