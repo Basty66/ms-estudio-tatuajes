@@ -84,7 +84,7 @@ interface Quote {
   zona: string
   tamano: string
   imagen_url: string
-  creado_en: string
+  created_at: string
 }
 
 interface DisponibilidadItem {
@@ -1159,7 +1159,7 @@ function CotizacionesTab({ items }: { items: Quote[] }) {
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-gray-400">{c.tamano}</span>
                 </div>
               </div>
-              <span className="text-gray-700 text-xs">{new Date(c.creado_en).toLocaleDateString("es-CL")}</span>
+              <span className="text-gray-700 text-xs">{new Date(c.created_at).toLocaleDateString("es-CL")}</span>
             </div>
             {c.imagen_url && (
               <div className="mt-3">

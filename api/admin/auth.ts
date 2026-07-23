@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const pubRes = await sql`SELECT COUNT(*)::int as total FROM publicaciones`
     const resRes = await sql`SELECT COUNT(*)::int as total FROM resenas`
 
-    const recentCotizaciones = await sql`SELECT * FROM cotizaciones ORDER BY creado_en DESC LIMIT 5`
+    const recentCotizaciones = await sql`SELECT * FROM cotizaciones ORDER BY created_at DESC LIMIT 5`
     const recentAgendamentos = await sql`SELECT * FROM agendamentos ORDER BY creado_en DESC LIMIT 10`
 
     const pendientes = await sql`
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       recentAgendamentos,
     })
   } catch (error) {
-    console.error("admin GET error:", error)
-    return Response.json({ success: false, error: String(error) }, { status: 500 })
+    console.error(error)
+    return Response.json({ success: false, error: "Error al obtener métricas" }, { status: 500 })
   }
 }
