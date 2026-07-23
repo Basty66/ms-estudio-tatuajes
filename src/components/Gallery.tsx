@@ -83,7 +83,7 @@ export default function Gallery() {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-50px" }}
                 whileHover={{ y: -8 }}
-                className="group relative rounded-2xl overflow-hidden aspect-[3/4] md:aspect-[4/5] glass-card-dark cursor-pointer"
+                className="group relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[4/5] md:aspect-[3/4] lg:aspect-[4/5] glass-card-dark cursor-pointer"
               >
                 <img
                   src={cat.image}

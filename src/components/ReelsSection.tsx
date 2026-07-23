@@ -107,7 +107,7 @@ export default function ReelsSection() {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {reels.map((reel, i) => {
           const embedUrl = getEmbedUrl(reel)
           const tiktokData = reel.plataforma === "tiktok" ? extractTikTokId(reel.url) : null
