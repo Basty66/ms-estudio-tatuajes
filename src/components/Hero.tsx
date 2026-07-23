@@ -49,7 +49,7 @@ export default function Hero() {
           backgroundSize: "cover",
           backgroundPosition: "center 30%",
           backgroundAttachment: "fixed",
-          filter: "grayscale(100%) brightness(25%) contrast(130%)",
+          filter: "grayscale(100%) brightness(40%) contrast(120%)",
         }}
       />
       <div
@@ -58,13 +58,13 @@ export default function Hero() {
           backgroundImage: `url('${bgImage}')`,
           backgroundSize: "cover",
           backgroundPosition: "center 30%",
-          filter: "grayscale(100%) brightness(25%) contrast(130%)",
+          filter: "grayscale(100%) brightness(40%) contrast(120%)",
         }}
       />
 
       {/* Gradient overlays */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/80 via-black/30 to-black" />
-      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-black/60 via-transparent to-black/60" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/60 via-black/20 to-black/80" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-black/40 via-transparent to-black/40" />
       <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,rgba(0,229,255,0.04)_0%,transparent_60%)]" />
 
       {/* Video — opcional */}
