@@ -35,6 +35,9 @@ interface DayInfo {
   available: boolean
   booked: number
   max: number
+  pendientes: number
+  confirmadas: number
+  completadas: number
 }
 
 export default function Agenda() {
@@ -300,7 +303,7 @@ export default function Agenda() {
                     whileTap={status === "available" || status === "partial" ? { scale: 0.9 } : {}}
                     disabled={status === "past" || status === "nodata" || status === "full"}
                     onClick={() => handleSelectDay(day)}
-                    title={info ? `${info.booked}/${info.max} reservados` : ""}
+                    title={info ? `${info.booked}/${info.max} cupos · ${info.pendientes} pendientes, ${info.confirmadas} confirmadas` : ""}
                     className={`text-sm min-h-[40px] py-2.5 rounded-xl transition-all ${dayColor(status)}`}
                   >
                     {day}

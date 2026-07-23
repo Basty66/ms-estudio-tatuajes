@@ -1009,7 +1009,7 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
                 const info = calMonthData.calDaysMap.get(dateStr)
                 return (
                   <div key={day}
-                    title={info ? `${info.booked}/${info.max} ocupados` : ""}
+                    title={info ? `${info.booked}/${info.max} cupos · ${info.pendientes || 0} pendientes, ${info.confirmadas || 0} confirmadas` : ""}
                     className={`text-xs min-h-[32px] py-1.5 rounded-lg text-center font-tech transition-all ${calMonthData.calColor(status)}`}>
                     {day}
                   </div>

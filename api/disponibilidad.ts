@@ -27,20 +27,29 @@ export async function GET(request: Request) {
       WHERE fecha >= ${firstDay}::date AND fecha <= ${lastDay}::date
     `
 
-    // Get existing appointments for the month (non-cancelled)
+    // Get existing appointments for the month (non-cancelled) with estado breakdown
     const citas = await sql`
-      SELECT fecha, COUNT(*)::int as count
+      SELECT fecha,
+        COUNT(*)::int as booked,
+        COUNT(*) FILTER (WHERE estado IS NULL OR estado = 'pendiente')::int as pendientes,
+        COUNT(*) FILTER (WHERE estado = 'confirmada')::int as confirmadas,
+        COUNT(*) FILTER (WHERE estado = 'completada')::int as completadas
       FROM agendamentos
       WHERE fecha >= ${firstDay} AND fecha <= ${lastDay}
         AND (estado IS NULL OR estado != 'cancelada')
       GROUP BY fecha
     `
 
-    // Build a map of date -> booked slots
-    const bookedMap: Record<string, number> = {}
+    // Build a map of date -> booked slots with breakdown
+    const bookedMap: Record<string, { booked: number; pendientes: number; confirmadas: number; completadas: number }> = {}
     for (const c of citas) {
       const d = c.fecha instanceof Date ? c.fecha.toISOString().split("T")[0] : String(c.fecha).split("T")[0]
-      bookedMap[d] = c.count
+      bookedMap[d] = {
+        booked: c.booked,
+        pendientes: c.pendientes,
+        confirmadas: c.confirmadas,
+        completadas: c.completadas,
+      }
     }
 
     // Build override map
@@ -83,10 +92,10 @@ export async function GET(request: Request) {
         continue
       }
 
-      const booked = bookedMap[dateStr] || 0
-      const available = booked < (maxSlots as number)
+      const dayData = bookedMap[dateStr] || { booked: 0, pendientes: 0, confirmadas: 0, completadas: 0 }
+      const available = dayData.booked < (maxSlots as number)
 
-      days.push({ date: dateStr, day: d, dayOfWeek, available, booked, max: maxSlots as number })
+      days.push({ date: dateStr, day: d, dayOfWeek, available, booked: dayData.booked, max: maxSlots as number, pendientes: dayData.pendientes, confirmadas: dayData.confirmadas, completadas: dayData.completadas })
     }
 
     return Response.json({ success: true, days, template, overrides })
