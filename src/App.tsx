@@ -9,12 +9,15 @@ import Agenda from "./components/Agenda"
 import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
 import WhatsAppFloat from "./components/WhatsAppFloat"
+import Reviews from "./components/Reviews"
+import Admin from "./pages/Admin"
 
 const sections = [
   { id: "inicio", Component: Hero },
   { id: "galeria", Component: Gallery },
   { id: "cotizador", Component: Cotizador },
   { id: "agenda", Component: Agenda },
+  { id: "reviews", Component: Reviews },
   { id: "ubicacion", Component: Ubicacion },
 ]
 
@@ -45,11 +48,12 @@ function ScrollToTop() {
 
 export default function App() {
   const location = useLocation()
+  const isAdmin = location.pathname === "/admin"
 
   return (
     <div className="min-h-screen bg-dark overflow-x-hidden">
 
-      <Navbar />
+      {!isAdmin && <Navbar />}
       <ScrollToTop />
 
       <AnimatePresence mode="wait">
@@ -62,12 +66,13 @@ export default function App() {
         >
           <Routes location={location}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </motion.main>
       </AnimatePresence>
 
-      <Footer />
-      <WhatsAppFloat />
+      {!isAdmin && <Footer />}
+      {!isAdmin && <WhatsAppFloat />}
     </div>
   )
 }

@@ -156,6 +156,17 @@
   transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+.neon-input option {
+  background: #111;
+  color: #fff;
+  padding: 8px;
+}
+
+.neon-input optgroup {
+  background: #111;
+  color: #fff;
+}
+
 .neon-input:focus {
   border-color: rgba(0, 229, 255, 0.4);
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.08);
