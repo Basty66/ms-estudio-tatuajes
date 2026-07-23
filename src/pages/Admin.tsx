@@ -119,7 +119,9 @@ export default function Admin() {
   const [token, setToken] = useState<string | null>(localStorage.getItem("admin_token"))
 
   useEffect(() => {
-    if (sessionStorage.getItem("admin_access") !== "true") {
+    const hasToken = !!token
+    const hasAccess = sessionStorage.getItem("admin_access") === "true"
+    if (!hasToken && !hasAccess) {
       window.location.replace("/")
       return
     }
