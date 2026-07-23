@@ -9,6 +9,8 @@ import {
   User,
   Note,
   Spinner,
+  CheckCircle,
+  Clock,
 } from "@phosphor-icons/react"
 
 const daysOfWeek = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
@@ -47,6 +49,7 @@ export default function Agenda() {
   const [error, setError] = useState<string | null>(null)
   const [daysData, setDaysData] = useState<Map<string, DayInfo>>(new Map())
   const [loadingDisp, setLoadingDisp] = useState(true)
+  const [confirmed, setConfirmed] = useState<{ fecha: string; nombre: string; whatsapp: string; descripcion: string } | null>(null)
 
   useEffect(() => {
     setLoadingDisp(true)
@@ -144,8 +147,12 @@ export default function Agenda() {
       return
     }
 
-    const mensaje = `Hola MS Estudio, soy ${nombre.trim()}. Quiero agendar una cita para el día ${formatDate(selected)}.${descripcion.trim() ? `\n\nDetalles: ${descripcion.trim()}` : ""}\n\nMi WhatsApp es ${whatsapp.trim()}. Quedo atento.`
-    window.open(`https://wa.me/56964470668?text=${encodeURIComponent(mensaje)}`, "_blank")
+    setConfirmed({
+      fecha: formatDate(selected),
+      nombre: nombre.trim(),
+      whatsapp: `+56${digits}`,
+      descripcion: descripcion.trim(),
+    })
     setSubmitting(false)
   }
 
@@ -328,24 +335,70 @@ export default function Agenda() {
             <p className="font-tech text-xs text-red-400 tracking-wider text-center">{error}</p>
           )}
 
-          <motion.button
-            whileHover={!submitting ? { scale: 1.02 } : {}}
-            whileTap={!submitting ? { scale: 0.98 } : {}}
-            onClick={handleSubmit}
-            disabled={submitting || !nombre.trim() || !whatsapp.trim() || !selected}
-            className="font-tech neon-button-primary w-full rounded-2xl px-6 py-4 mt-6 flex items-center justify-center gap-3 text-base tracking-[0.2em] font-bold disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <Spinner size={22} className="animate-spin" />
-            ) : (
-              <WhatsappLogo size={22} weight="fill" />
+          <AnimatePresence>
+            {confirmed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                className="glass rounded-2xl p-6 mt-6 text-center border border-cyan-400/20"
+              >
+                <CheckCircle size={40} className="text-cyan-400 mx-auto mb-3" weight="duotone" />
+                <h3 className="font-tech text-lg text-white tracking-[0.15em] mb-1">CITA AGENDADA</h3>
+                <p className="text-sm text-cyan-300/80 font-tech tracking-wider mb-3">
+                  {confirmed.fecha}
+                </p>
+                <div className="flex items-center justify-center gap-2 text-gray-400 text-xs mb-4">
+                  <Clock size={14} weight="duotone" />
+                  <span className="font-tech tracking-wider">Pendiente de confirmación (hasta 30 min)</span>
+                </div>
+                <p className="text-gray-500 text-xs mb-5 font-tech tracking-wider">
+                  El admin revisará tu solicitud y te confirmará la hora. Si necesitas hablar antes, contáctanos por WhatsApp.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <a
+                    href={`https://wa.me/56964470668?text=${encodeURIComponent(`Hola MS Estudio, soy ${confirmed.nombre}. Agendé una cita para el ${confirmed.fecha}.${confirmed.descripcion ? `\n\nDetalles: ${confirmed.descripcion}` : ""}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-tech neon-button-primary w-full rounded-xl px-6 py-3 flex items-center justify-center gap-2 text-sm tracking-[0.2em] font-bold"
+                  >
+                    <WhatsappLogo size={18} weight="fill" />
+                    CONTACTAR POR WHATSAPP
+                  </a>
+                  <button
+                    onClick={() => setConfirmed(null)}
+                    className="font-tech text-gray-500 hover:text-white text-xs tracking-[0.2em] py-2 transition-colors"
+                  >
+                    AGENDAR OTRA CITA
+                  </button>
+                </div>
+              </motion.div>
             )}
-            {submitting ? "PROCESANDO..." : "AGENDA TU CITA POR WHATSAPP"}
-          </motion.button>
+          </AnimatePresence>
 
-          <p className="font-tech text-center text-gray-700 text-xs mt-4 tracking-[0.2em] uppercase">
-            Se abrirá WhatsApp con tu mensaje personalizado
-          </p>
+          {!confirmed && (
+            <>
+              <motion.button
+                whileHover={!submitting ? { scale: 1.02 } : {}}
+                whileTap={!submitting ? { scale: 0.98 } : {}}
+                onClick={handleSubmit}
+                disabled={submitting || !nombre.trim() || !whatsapp.trim() || !selected}
+                className="font-tech neon-button-primary w-full rounded-2xl px-6 py-4 mt-6 flex items-center justify-center gap-3 text-base tracking-[0.2em] font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <Spinner size={22} className="animate-spin" />
+                ) : (
+                  <WhatsappLogo size={22} weight="fill" />
+                )}
+                {submitting ? "PROCESANDO..." : "AGENDA TU CITA"}
+              </motion.button>
+
+              <p className="font-tech text-center text-gray-700 text-xs mt-4 tracking-[0.2em] uppercase">
+                Recibirás confirmación del admin en minutos
+              </p>
+            </>
+          )}
         </motion.div>
       </div>
     </section>

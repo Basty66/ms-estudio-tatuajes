@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { password } = await request.json()
 
     if (password === process.env.ADMIN_PASSWORD) {
-      const token = btoa(`admin:${Date.now()}:${Math.random().toString(36).slice(2)}`)
+      const token = btoa(process.env.ADMIN_PASSWORD!)
       return Response.json({ success: true, token })
     }
 
@@ -19,7 +19,9 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization")
-  if (!auth || auth !== `Bearer ${process.env.ADMIN_PASSWORD}`) {
+  const token = auth?.replace("Bearer ", "")
+  const decoded = token ? atob(token) : ""
+  if (!auth || !token || decoded !== process.env.ADMIN_PASSWORD) {
     return Response.json({ success: false, error: "No autorizado" }, { status: 401 })
   }
 
