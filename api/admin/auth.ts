@@ -6,12 +6,8 @@ export async function POST(request: Request) {
   try {
     const { password } = await request.json()
 
-    const pw = process.env.ADMIN_PASSWORD
-    if (!pw) {
-      return Response.json({ success: false, error: "ADMIN_PASSWORD no configurada" }, { status: 500 })
-    }
-    if (password === pw) {
-      const token = btoa(pw)
+    if (password === process.env.ADMIN_PASSWORD) {
+      const token = btoa(process.env.ADMIN_PASSWORD!)
       return Response.json({ success: true, token })
     }
 
@@ -32,22 +28,21 @@ export async function GET(request: Request) {
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!)
 
-    const [cotRes, ageRes, visRes, galRes, pubRes, resRes] = await Promise.all([
-      sql`SELECT COUNT(*)::int as total FROM cotizaciones`,
-      sql`SELECT COUNT(*)::int as total FROM agendamentos WHERE estado IS NULL OR estado != 'cancelada'`,
-      sql`SELECT COUNT(*)::int as total FROM visitas`,
-      sql`SELECT COUNT(*)::int as total FROM galeria`,
-      sql`SELECT COUNT(*)::int as total FROM publicaciones`,
-      sql`SELECT COUNT(*)::int as total FROM resenas`,
-    ])
+    const cotRes = await sql`SELECT COUNT(*)::int as total FROM cotizaciones`
+    const ageRes = await sql`SELECT COUNT(*)::int as total FROM agendamentos WHERE estado IS NULL OR estado != 'cancelada'`
+    const visRes = await sql`SELECT COUNT(*)::int as total FROM visitas`
+    const galRes = await sql`SELECT COUNT(*)::int as total FROM galeria`
+    const pubRes = await sql`SELECT COUNT(*)::int as total FROM publicaciones`
+    const resRes = await sql`SELECT COUNT(*)::int as total FROM resenas`
 
     const recentCotizaciones = await sql`SELECT * FROM cotizaciones ORDER BY creado_en DESC LIMIT 5`
     const recentAgendamentos = await sql`SELECT * FROM agendamentos ORDER BY creado_en DESC LIMIT 10`
 
-    const citasPendientes = (await sql`
+    const pendientes = await sql`
       SELECT COUNT(*)::int as total FROM agendamentos
       WHERE (estado IS NULL OR estado = 'pendiente') AND fecha >= CURRENT_DATE
-    `)[0]?.total || 0
+    `
+    const citasPendientes = pendientes[0]?.total || 0
 
     return Response.json({
       success: true,
