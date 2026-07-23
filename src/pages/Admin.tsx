@@ -117,6 +117,14 @@ const estilosGallery = [
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(localStorage.getItem("admin_token"))
+
+  useEffect(() => {
+    if (sessionStorage.getItem("admin_access") !== "true") {
+      window.location.replace("/")
+      return
+    }
+    sessionStorage.removeItem("admin_access")
+  }, [])
   const [password, setPassword] = useState("")
   const [showPass, setShowPass] = useState(false)
   const [loginError, setLoginError] = useState("")

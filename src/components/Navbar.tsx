@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { List, X } from "@phosphor-icons/react"
@@ -21,6 +21,21 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
+
+  const tapCount = useRef(0)
+  const tapTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  const handleLogoTripleTap = () => {
+    tapCount.current += 1
+    clearTimeout(tapTimer.current)
+    tapTimer.current = setTimeout(() => { tapCount.current = 0 }, 800)
+
+    if (tapCount.current >= 3) {
+      tapCount.current = 0
+      sessionStorage.setItem("admin_access", "true")
+      navigate("/admin")
+    }
+  }
 
   const handleNav = (href: string) => {
     setOpen(false)
@@ -45,7 +60,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
         <button
-          onClick={() => handleNav("#inicio")}
+          onClick={handleLogoTripleTap}
           className="group relative"
         >
           <span className="text-3xl font-bold tracking-[0.15em] text-white neon-text">
