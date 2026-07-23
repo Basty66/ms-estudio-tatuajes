@@ -126,14 +126,29 @@ export default function ReelsSection() {
                         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                       </>
                     ) : igCode(reel.url) ? (
-                      /* Instagram thumbnail via proxy */
+                      /* Instagram thumbnail via proxy publico */
                       <div className="absolute inset-0">
                         <img
-                          src={`/api/instagram-thumb?code=${igCode(reel.url)}`}
+                          src={`https://ddinstagram.com/p/${igCode(reel.url)}/media/?size=l`}
                           alt=""
                           className="absolute inset-0 w-full h-full object-cover"
                           loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none"
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement
+                            if (fallback) fallback.style.display = ""
+                          }}
                         />
+                        {/* Fallback si la imagen falla */}
+                        <div className="absolute inset-0 hidden bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-amber-500/10 flex flex-col items-center justify-center gap-4">
+                          <motion.div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur border border-pink-400/30 flex items-center justify-center" animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                            <InstagramLogo size={28} weight="fill" className="text-pink-400" />
+                          </motion.div>
+                          <div className="flex items-center gap-2">
+                            <Play size={12} className="text-white/50" weight="fill" />
+                            <span className="text-white/40 text-[10px] font-tech tracking-wider uppercase">Ver reel</span>
+                          </div>
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <motion.div
