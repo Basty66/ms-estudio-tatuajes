@@ -30,7 +30,7 @@ export default function Hero() {
       .catch(() => {})
   }, [])
 
-  const bgImage = heroImage || "https://images.unsplash.com/photo-1611501275010-a5f652551b23?w=1920&q=80"
+  const bgImage = heroImage || "/images/hero-bg.png"
 
   return (
     <section id="inicio" className="relative min-h-screen flex flex-col justify-center overflow-hidden">
@@ -49,7 +49,7 @@ export default function Hero() {
           backgroundSize: "cover",
           backgroundPosition: "center 30%",
           backgroundAttachment: "fixed",
-          filter: "grayscale(100%) brightness(12%) contrast(150%)",
+          filter: "grayscale(100%) brightness(25%) contrast(130%)",
         }}
       />
       <div
@@ -58,12 +58,12 @@ export default function Hero() {
           backgroundImage: `url('${bgImage}')`,
           backgroundSize: "cover",
           backgroundPosition: "center 30%",
-          filter: "grayscale(100%) brightness(12%) contrast(150%)",
+          filter: "grayscale(100%) brightness(25%) contrast(130%)",
         }}
       />
 
       {/* Gradient overlays */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/90 via-black/40 to-black" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/80 via-black/30 to-black" />
       <div className="absolute inset-0 z-[1] bg-gradient-to-r from-black/60 via-transparent to-black/60" />
       <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,rgba(0,229,255,0.04)_0%,transparent_60%)]" />
 
