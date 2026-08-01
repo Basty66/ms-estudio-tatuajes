@@ -94,7 +94,8 @@ Sitio web profesional para estudio de tatuajes en Melipilla, Chile. Sistema comp
 
 ### Variables de entorno (Vercel)
 ```
-ADMIN_PASSWORD=admin123
+ADMIN_PASSWORD=<contraseña larga y aleatoria>
+JWT_SECRET=<genera con: openssl rand -base64 48>
 NEON_DATABASE_URL=postgresql://...
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...

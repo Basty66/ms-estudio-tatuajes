@@ -1,48 +1,49 @@
 import { neon } from "@neondatabase/serverless"
 import { notifyArtist } from "./lib/telegram"
+import { parseDateStr, todayStr } from "./lib/fecha"
+import { checkRateLimit, getClientIp, tooManyRequests } from "./lib/ratelimit"
 
 export const config = { runtime: "edge" }
 
+const MAX_NOMBRE = 100
+const MAX_DESCRIPCION = 1000
+
 export async function POST(request: Request) {
   try {
+    // Rate limit: máx 5 agendamientos por IP por minuto
+    if (!checkRateLimit(`agendar:${getClientIp(request)}`, 5, 60_000)) {
+      return tooManyRequests()
+    }
+
     const { nombre, whatsapp, fecha, descripcion } = await request.json()
 
     if (!nombre || !whatsapp || !fecha) {
       return Response.json({ success: false, error: "Faltan campos requeridos" }, { status: 400 })
     }
+    if (typeof nombre !== "string" || nombre.length > MAX_NOMBRE) {
+      return Response.json({ success: false, error: "Nombre inválido" }, { status: 400 })
+    }
+    if (descripcion && (typeof descripcion !== "string" || descripcion.length > MAX_DESCRIPCION)) {
+      return Response.json({ success: false, error: "Descripción demasiado larga" }, { status: 400 })
+    }
     if (!/^\+56\d{9}$/.test(whatsapp)) {
       return Response.json({ success: false, error: "WhatsApp inválido" }, { status: 400 })
     }
 
-    const sql = neon(process.env.NEON_DATABASE_URL!)
-
-    // Parse fecha - it could be "DD de Month de YYYY" or "YYYY-MM-DD"
-    let dateObj: Date
-    if (fecha.includes("de")) {
-      // Spanish format: "12 de julio de 2026"
-      const parts = fecha.split(" de ")
-      const day = parseInt(parts[0])
-      const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
-      const month = monthNames.indexOf(parts[1].toLowerCase())
-      const year = parseInt(parts[2])
-      dateObj = new Date(year, month, day)
-    } else {
-      dateObj = new Date(fecha + "T12:00:00")
-    }
-
-    const dateStr = dateObj.toISOString().split("T")[0]
-    const dayOfWeek = dateObj.getDay()
-
-    if (isNaN(dayOfWeek)) {
+    // Parsear fecha (solo se acepta YYYY-MM-DD) sin bug de zona horaria
+    const parsed = parseDateStr(String(fecha))
+    if (!parsed) {
       return Response.json({ success: false, error: "Fecha inválida" }, { status: 400 })
     }
+    const { dateStr, dayOfWeek } = parsed
 
-    const todayStr = new Date().toISOString().split("T")[0]
-    if (dateStr < todayStr) {
+    if (dateStr < todayStr()) {
       return Response.json({ success: false, error: "No se puede agendar en una fecha pasada" }, { status: 400 })
     }
 
-    // Check availability template
+    const sql = neon(process.env.NEON_DATABASE_URL!)
+
+    // Comprobar template semanal
     const template = await sql`
       SELECT * FROM disponibilidad WHERE dia_semana = ${dayOfWeek}
     `
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       return Response.json({ success: false, error: "Este día no está disponible" }, { status: 400 })
     }
 
-    // Check for date override
+    // Comprobar excepción de fecha
     const override = await sql`
       SELECT * FROM excepciones_fecha WHERE fecha = ${dateStr}::date
     `
@@ -62,23 +63,22 @@ export async function POST(request: Request) {
       ? override[0].slots_max
       : template[0].slots_max
 
-    // Count existing non-cancelled appointments for this date
-    const existing = await sql`
-      SELECT COUNT(*)::int as count FROM agendamentos
-      WHERE fecha = ${dateStr}
-        AND (estado IS NULL OR estado != 'cancelada')
+    // Inserción condicional atómica: solo inserta si aún hay cupo.
+    // Esto evita la race condition de contar y luego insertar en pasos separados.
+    const inserted = await sql`
+      INSERT INTO agendamentos (nombre, whatsapp, fecha, descripcion, estado)
+      SELECT ${nombre}, ${whatsapp}, ${dateStr}, ${descripcion || ""}, 'pendiente'
+      WHERE (
+        SELECT COUNT(*) FROM agendamentos
+        WHERE fecha = ${dateStr}
+          AND (estado IS NULL OR estado != 'cancelada')
+      ) < ${maxSlots}
+      RETURNING id
     `
-    const bookedCount = existing[0]?.count || 0
 
-    if (bookedCount >= maxSlots) {
+    if (inserted.length === 0) {
       return Response.json({ success: false, error: "Este día ya está completo" }, { status: 400 })
     }
-
-    // All good, insert
-    await sql`
-      INSERT INTO agendamentos (nombre, whatsapp, fecha, descripcion, estado)
-      VALUES (${nombre}, ${whatsapp}, ${dateStr}, ${descripcion || ""}, 'pendiente')
-    `
 
     await notifyArtist(
       `<b>🔔 NUEVA CITA</b>\n` +

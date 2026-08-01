@@ -1,13 +1,27 @@
 import { neon } from "@neondatabase/serverless"
+import { createToken, verifyRequest, unauthorized } from "../lib/auth"
 
 export const config = { runtime: "edge" }
+
+/**
+ * Comparación en tiempo constante para evitar timing attacks al comparar la contraseña.
+ */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return result === 0
+}
 
 export async function POST(request: Request) {
   try {
     const { password } = await request.json()
+    const expected = process.env.ADMIN_PASSWORD || ""
 
-    if (password === process.env.ADMIN_PASSWORD) {
-      const token = btoa(process.env.ADMIN_PASSWORD!)
+    if (typeof password === "string" && expected && safeEqual(password, expected)) {
+      const token = await createToken()
       return Response.json({ success: true, token })
     }
 
@@ -18,11 +32,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const auth = request.headers.get("authorization")
-  const token = auth?.replace("Bearer ", "")
-  const decoded = token ? atob(token) : ""
-  if (!auth || !token || decoded !== process.env.ADMIN_PASSWORD) {
-    return Response.json({ success: false, error: "No autorizado" }, { status: 401 })
+  if (!(await verifyRequest(request))) {
+    return unauthorized()
   }
 
   try {

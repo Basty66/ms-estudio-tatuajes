@@ -133,7 +133,7 @@ const estilosGallery = [
 ]
 
 export default function Admin() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem("admin_token"))
+  const [token, setToken] = useState<string | null>(sessionStorage.getItem("admin_token"))
 
   useEffect(() => {
     const hasToken = !!token
@@ -178,7 +178,7 @@ export default function Admin() {
       })
       const data = await res.json()
       if (data.success) {
-        localStorage.setItem("admin_token", data.token)
+        sessionStorage.setItem("admin_token", data.token)
         setToken(data.token)
       } else {
         setLoginError(data.error || "Contraseña incorrecta")
@@ -190,7 +190,7 @@ export default function Admin() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("admin_token")
+    sessionStorage.removeItem("admin_token")
     setToken(null)
     setPassword("")
   }

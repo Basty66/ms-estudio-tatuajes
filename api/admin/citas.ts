@@ -1,17 +1,11 @@
 import { neon } from "@neondatabase/serverless"
+import { verifyRequest, unauthorized } from "../lib/auth"
 
 export const config = { runtime: "edge" }
 
-function checkAuth(request: Request): boolean {
-  const auth = request.headers.get("authorization")
-  const token = auth?.replace("Bearer ", "")
-  const decoded = token ? atob(token) : ""
-  return decoded === process.env.ADMIN_PASSWORD
-}
-
 export async function GET(request: Request) {
-  if (!checkAuth(request)) {
-    return Response.json({ success: false, error: "No autorizado" }, { status: 401 })
+  if (!(await verifyRequest(request))) {
+    return unauthorized()
   }
 
   try {
@@ -35,8 +29,8 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!checkAuth(request)) {
-    return Response.json({ success: false, error: "No autorizado" }, { status: 401 })
+  if (!(await verifyRequest(request))) {
+    return unauthorized()
   }
 
   try {
@@ -92,8 +86,8 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!checkAuth(request)) {
-    return Response.json({ success: false, error: "No autorizado" }, { status: 401 })
+  if (!(await verifyRequest(request))) {
+    return unauthorized()
   }
 
   try {
@@ -124,8 +118,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!checkAuth(request)) {
-    return Response.json({ success: false, error: "No autorizado" }, { status: 401 })
+  if (!(await verifyRequest(request))) {
+    return unauthorized()
   }
 
   try {
