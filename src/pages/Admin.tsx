@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { descargarPdfConsentimiento } from "../lib/pdfConsentimiento"
 import {
   Lock,
   Eye,
@@ -1873,73 +1874,24 @@ function ConsentimientosTab({ items, onRefresh, headers }: {
   }
 
   const descargarFicha = (c: any) => {
-    const esc = (v: unknown) =>
-      String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    const doc = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<title>Consentimiento informado - ${esc(c.nombre)}</title>
-<style>
-  body { font-family: Arial, sans-serif; color: #111; max-width: 720px; margin: 40px auto; padding: 0 20px; }
-  h1 { font-size: 20px; text-align: center; margin-bottom: 4px; }
-  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 24px; }
-  p, li { font-size: 13px; line-height: 1.5; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  td { padding: 4px 8px; border-bottom: 1px solid #eee; }
-  td.k { color: #555; width: 40%; }
-  .firma-box { border: 1px solid #999; padding: 16px; margin-top: 8px; max-width: 320px; }
-  .firma-box img { max-height: 120px; }
-  .footer { margin-top: 32px; font-size: 11px; color: #777; text-align: center; }
-</style>
-</head>
-<body>
-  <h1>CONSENTIMIENTO INFORMADO — TATUAJE</h1>
-  <p style="text-align:center;font-size:12px;color:#555;">MS Estudio de Tatuajes · Matness Tattoos · Melipilla, Chile</p>
-
-  <h2>Datos personales</h2>
-  <table>
-    <tr><td class="k">Nombre completo</td><td>${esc(c.nombre)}</td></tr>
-    <tr><td class="k">RUT</td><td>${esc(c.rut)}</td></tr>
-    <tr><td class="k">Fecha de nacimiento</td><td>${esc(c.fecha_nacimiento)}</td></tr>
-    <tr><td class="k">Teléfono</td><td>${esc(c.telefono)}</td></tr>
-    <tr><td class="k">Email</td><td>${esc(c.email)}</td></tr>
-  </table>
-
-  <h2>Datos del tatuaje</h2>
-  <table>
-    <tr><td class="k">Zona del cuerpo</td><td>${esc(c.zona_tatuaje)}</td></tr>
-    <tr><td class="k">Descripción</td><td>${esc(c.descripcion_tatuaje)}</td></tr>
-  </table>
-
-  <h2>Declaración de salud</h2>
-  <p>${alertasDe(c).length > 0 ? `Señaló: ${alertasDe(c).join(", ")}.` : "No señaló condiciones de salud relevantes."}</p>
-  ${c.alergias && c.alergias_detalle ? `<p>Alergias: ${esc(c.alergias_detalle)}</p>` : ""}
-  ${c.medicamentos ? `<p>Medicamentos: ${esc(c.medicamentos)}</p>` : ""}
-
-  <h2>Declaraciones</h2>
-  <ul>
-    <li>Confirmo que soy mayor de 18 años.</li>
-    <li>Entiendo que un tatuaje es permanente y conozco los riesgos (infección, reacción alérgica, cicatrización).</li>
-    <li>Me comprometo a seguir las indicaciones de cuidado post-tatuaje del estudio.</li>
-    <li>Declaro que toda la información entregada es verdadera y completa.</li>
-    <li>Autorizo el tratamiento de mis datos personales para fines del servicio.</li>
-  </ul>
-
-  <h2>Firma</h2>
-  <div class="firma-box"><img src="${esc(c.firma_url)}" alt="Firma"></div>
-  <p style="font-size:11px;color:#555;">Firmado electrónicamente el ${new Date(c.firmado_en || c.creado_en).toLocaleString("es-CL")}</p>
-
-  <p class="footer">Documento generado desde el panel admin. Copia oficial del estudio.</p>
-</body>
-</html>`
-    const blob = new Blob([doc], { type: "text/html;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `consentimiento-${String(c.nombre || "cliente").replace(/[^a-zA-Z0-9_]/g, "-")}.html`
-    a.click()
-    URL.revokeObjectURL(url)
+    descargarPdfConsentimiento({
+      nombre: c.nombre,
+      rut: c.rut,
+      fechaNacimiento: String(c.fecha_nacimiento || "").slice(0, 10),
+      telefono: c.telefono,
+      email: c.email,
+      zonaTatuaje: c.zona_tatuaje,
+      descripcionTatuaje: c.descripcion_tatuaje,
+      saludMarcadas: [
+        ...alertasDe(c),
+        ...(c.bajo_efectos ? ["Bajo efectos de alcohol/drogas hoy"] : []),
+      ],
+      alergiasDetalle: c.alergias_detalle,
+      medicamentos: c.medicamentos,
+      firmaUrl: c.firma_url,
+      firmadoEn: new Date(c.firmado_en || c.creado_en).toLocaleString("es-CL"),
+      origen: "admin",
+    })
   }
 
   const tieneAlertas = (c: any) =>
