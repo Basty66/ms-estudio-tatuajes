@@ -28,6 +28,7 @@ import {
   CaretRight,
   TrendUp,
   WhatsappLogo,
+  House,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -196,6 +197,7 @@ export default function Admin() {
     sessionStorage.removeItem("admin_token")
     setToken(null)
     setPassword("")
+    window.location.replace("/")
   }
 
   const fetchDashboard = useCallback(async () => {
@@ -409,12 +411,20 @@ export default function Admin() {
             <span className="section-title text-xl premium-gradient">MS</span>
             <span className="font-tech text-xs tracking-[0.2em] text-gray-600 hidden sm:inline">ADMIN PANEL</span>
           </div>
-          <button
-            onClick={handleLogout}
-            className="font-tech flex items-center gap-2 text-xs tracking-wider text-gray-500 hover:text-red-400 transition-colors"
-          >
-            <SignOut size={16} /> SALIR
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.location.replace("/")}
+              className="font-tech flex items-center gap-2 text-xs tracking-wider text-gray-500 hover:text-cyan-400 transition-colors"
+            >
+              <House size={16} /> INICIO
+            </button>
+            <button
+              onClick={handleLogout}
+              className="font-tech flex items-center gap-2 text-xs tracking-wider text-gray-500 hover:text-red-400 transition-colors"
+            >
+              <SignOut size={16} /> SALIR
+            </button>
+          </div>
         </div>
       </header>
 
