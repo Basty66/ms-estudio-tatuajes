@@ -29,6 +29,7 @@ import {
   TrendUp,
   WhatsappLogo,
   House,
+  DownloadSimple,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -1871,6 +1872,76 @@ function ConsentimientosTab({ items, onRefresh, headers }: {
     } catch { /* noop */ }
   }
 
+  const descargarFicha = (c: any) => {
+    const esc = (v: unknown) =>
+      String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    const doc = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Consentimiento informado - ${esc(c.nombre)}</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #111; max-width: 720px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 20px; text-align: center; margin-bottom: 4px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 24px; }
+  p, li { font-size: 13px; line-height: 1.5; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 4px 8px; border-bottom: 1px solid #eee; }
+  td.k { color: #555; width: 40%; }
+  .firma-box { border: 1px solid #999; padding: 16px; margin-top: 8px; max-width: 320px; }
+  .firma-box img { max-height: 120px; }
+  .footer { margin-top: 32px; font-size: 11px; color: #777; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>CONSENTIMIENTO INFORMADO — TATUAJE</h1>
+  <p style="text-align:center;font-size:12px;color:#555;">MS Estudio de Tatuajes · Matness Tattoos · Melipilla, Chile</p>
+
+  <h2>Datos personales</h2>
+  <table>
+    <tr><td class="k">Nombre completo</td><td>${esc(c.nombre)}</td></tr>
+    <tr><td class="k">RUT</td><td>${esc(c.rut)}</td></tr>
+    <tr><td class="k">Fecha de nacimiento</td><td>${esc(c.fecha_nacimiento)}</td></tr>
+    <tr><td class="k">Teléfono</td><td>${esc(c.telefono)}</td></tr>
+    <tr><td class="k">Email</td><td>${esc(c.email)}</td></tr>
+  </table>
+
+  <h2>Datos del tatuaje</h2>
+  <table>
+    <tr><td class="k">Zona del cuerpo</td><td>${esc(c.zona_tatuaje)}</td></tr>
+    <tr><td class="k">Descripción</td><td>${esc(c.descripcion_tatuaje)}</td></tr>
+  </table>
+
+  <h2>Declaración de salud</h2>
+  <p>${alertasDe(c).length > 0 ? `Señaló: ${alertasDe(c).join(", ")}.` : "No señaló condiciones de salud relevantes."}</p>
+  ${c.alergias && c.alergias_detalle ? `<p>Alergias: ${esc(c.alergias_detalle)}</p>` : ""}
+  ${c.medicamentos ? `<p>Medicamentos: ${esc(c.medicamentos)}</p>` : ""}
+
+  <h2>Declaraciones</h2>
+  <ul>
+    <li>Confirmo que soy mayor de 18 años.</li>
+    <li>Entiendo que un tatuaje es permanente y conozco los riesgos (infección, reacción alérgica, cicatrización).</li>
+    <li>Me comprometo a seguir las indicaciones de cuidado post-tatuaje del estudio.</li>
+    <li>Declaro que toda la información entregada es verdadera y completa.</li>
+    <li>Autorizo el tratamiento de mis datos personales para fines del servicio.</li>
+  </ul>
+
+  <h2>Firma</h2>
+  <div class="firma-box"><img src="${esc(c.firma_url)}" alt="Firma"></div>
+  <p style="font-size:11px;color:#555;">Firmado electrónicamente el ${new Date(c.firmado_en || c.creado_en).toLocaleString("es-CL")}</p>
+
+  <p class="footer">Documento generado desde el panel admin. Copia oficial del estudio.</p>
+</body>
+</html>`
+    const blob = new Blob([doc], { type: "text/html;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `consentimiento-${String(c.nombre || "cliente").replace(/[^a-zA-Z0-9_]/g, "-")}.html`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const tieneAlertas = (c: any) =>
     c.alergias || c.problemas_coagulacion || c.diabetes || c.enfermedad_cardiaca ||
     c.epilepsia || c.vih_hepatitis || c.embarazo_lactancia
@@ -1985,11 +2056,19 @@ function ConsentimientosTab({ items, onRefresh, headers }: {
                 <p className="text-gray-500 text-sm text-center py-8">Cargando ficha...</p>
               ) : detalle ? (
                 <div className="space-y-5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <h3 className="section-title text-xl text-white">{detalle.nombre}</h3>
-                    <button onClick={() => setDetalle(null)} className="text-gray-500 hover:text-white">
-                      <X size={22} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => descargarFicha(detalle)}
+                        className="text-gray-500 hover:text-cyan-400 transition-colors flex items-center gap-1.5 text-xs font-tech tracking-wider"
+                      >
+                        <DownloadSimple size={16} /> DESCARGAR
+                      </button>
+                      <button onClick={() => setDetalle(null)} className="text-gray-500 hover:text-white">
+                        <X size={22} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm">

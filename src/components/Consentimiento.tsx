@@ -5,11 +5,13 @@ import {
   IdentificationCard,
   Cake,
   DeviceMobile,
+  Envelope,
   Warning,
   PencilSimple,
   CheckCircle,
   Eraser,
   ShieldCheck,
+  DownloadSimple,
 } from "@phosphor-icons/react"
 
 const easeOut = [0.23, 1, 0.32, 1] as const
@@ -139,6 +141,78 @@ export default function Consentimiento() {
     setFlags((f) => ({ ...f, [key]: !f[key] }))
   }
 
+  const esc = (v: unknown) =>
+    String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+  const descargarCopia = () => {
+    const saludMarcadas = healthFlags.filter((f) => flags[f.key])
+    const doc = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Consentimiento informado - ${esc(form.nombre)}</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #111; max-width: 720px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 20px; text-align: center; margin-bottom: 4px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 24px; }
+  p, li { font-size: 13px; line-height: 1.5; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 4px 8px; border-bottom: 1px solid #eee; }
+  td.k { color: #555; width: 40%; }
+  .firma-box { border: 1px solid #999; padding: 16px; margin-top: 8px; max-width: 320px; }
+  .firma-box img { max-height: 120px; }
+  .footer { margin-top: 32px; font-size: 11px; color: #777; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>CONSENTIMIENTO INFORMADO — TATUAJE</h1>
+  <p style="text-align:center;font-size:12px;color:#555;">MS Estudio de Tatuajes · Matness Tattoos · Melipilla, Chile</p>
+
+  <h2>Datos personales</h2>
+  <table>
+    <tr><td class="k">Nombre completo</td><td>${esc(form.nombre)}</td></tr>
+    <tr><td class="k">RUT</td><td>${esc(form.rut)}</td></tr>
+    <tr><td class="k">Fecha de nacimiento</td><td>${esc(form.fecha_nacimiento)}</td></tr>
+    <tr><td class="k">Teléfono</td><td>${esc(form.telefono)}</td></tr>
+    <tr><td class="k">Email</td><td>${esc(form.email)}</td></tr>
+  </table>
+
+  <h2>Datos del tatuaje</h2>
+  <table>
+    <tr><td class="k">Zona del cuerpo</td><td>${esc(form.zona_tatuaje)}</td></tr>
+    <tr><td class="k">Descripción</td><td>${esc(form.descripcion_tatuaje)}</td></tr>
+  </table>
+
+  <h2>Declaración de salud</h2>
+  <p>${saludMarcadas.length > 0 ? `Señaló: ${saludMarcadas.map((f) => esc(f.label)).join(", ")}.` : "No señaló condiciones de salud relevantes."}</p>
+  ${form.alergias ? `<p>Alergias: ${esc(form.alergias_detalle)}</p>` : ""}
+  ${form.medicamentos ? `<p>Medicamentos: ${esc(form.medicamentos)}</p>` : ""}
+
+  <h2>Declaraciones</h2>
+  <ul>
+    <li>Confirmo que soy mayor de 18 años.</li>
+    <li>Entiendo que un tatuaje es permanente y conozco los riesgos (infección, reacción alérgica, cicatrización).</li>
+    <li>Me comprometo a seguir las indicaciones de cuidado post-tatuaje del estudio.</li>
+    <li>Declaro que toda la información entregada es verdadera y completa.</li>
+    <li>Autorizo el tratamiento de mis datos personales para fines del servicio.</li>
+  </ul>
+
+  <h2>Firma</h2>
+  <div class="firma-box"><img src="${esc(form.firma_url)}" alt="Firma"></div>
+  <p style="font-size:11px;color:#555;">Firmado electrónicamente el ${new Date().toLocaleString("es-CL")}</p>
+
+  <p class="footer">Documento generado automáticamente. Copia para el cliente.</p>
+</body>
+</html>`
+    const blob = new Blob([doc], { type: "text/html;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `consentimiento-${String(form.nombre || "cliente").replace(/[^a-zA-Z0-9_]/g, "-")}.html`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -200,10 +274,17 @@ export default function Consentimiento() {
             <h2 className="section-title text-3xl md:text-4xl text-white mb-3">
               CONSENTIMIENTO REGISTRADO
             </h2>
-            <p className="text-gray-400 leading-relaxed">
+            <p className="text-gray-400 leading-relaxed mb-8">
               Tu consentimiento fue firmado y enviado correctamente. El estudio ya tiene tu
               información. ¡Nos vemos pronto!
             </p>
+            <button
+              onClick={descargarCopia}
+              className="hero-cta-primary font-tech text-sm tracking-[0.15em] px-6 py-4 inline-flex items-center gap-2"
+            >
+              <DownloadSimple size={18} weight="bold" />
+              DESCARGAR COPIA
+            </button>
           </motion.div>
         </div>
       </section>
@@ -272,6 +353,15 @@ export default function Consentimiento() {
                   placeholder="+569XXXXXXXX *"
                   value={form.telefono}
                   onChange={(e) => setField("telefono", e.target.value)}
+                />
+              </Field>
+              <Field icon={<Envelope size={18} />}>
+                <input
+                  type="email"
+                  className="neon-input w-full rounded-lg px-4 py-3 pl-11 text-sm"
+                  placeholder="Email (opcional)"
+                  value={form.email}
+                  onChange={(e) => setField("email", e.target.value)}
                 />
               </Field>
             </div>
