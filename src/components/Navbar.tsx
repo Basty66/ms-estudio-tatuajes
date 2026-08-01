@@ -161,8 +161,9 @@ export default function Navbar() {
                 <button
                   key={link.href}
                   onClick={() => handleNav(link.href)}
-                  className="font-tech text-left py-3 px-4 rounded-lg text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/5 transition-all duration-300 tracking-[0.2em] uppercase text-sm"
+                  className="font-tech group relative text-left py-3 px-4 rounded-lg text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 hover:shadow-[inset_0_0_24px_rgba(0,229,255,0.08)] active:bg-cyan-400/25 active:text-white active:scale-[0.98] transition-all duration-300 tracking-[0.2em] uppercase text-sm overflow-hidden"
                 >
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-[3px] rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.8)] transition-all duration-300 group-hover:h-3/5" />
                   {link.label}
                 </button>
               ))}
