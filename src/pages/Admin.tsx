@@ -7,9 +7,11 @@ import {
   ChartBar,
   Image,
   NotePencil,
+  ClipboardText,
   Star,
   SignOut,
   Trash,
+  X,
   UploadSimple,
   Plus,
   CalendarCheck,
@@ -120,7 +122,7 @@ interface ExcepcionFecha {
   motivo: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas"
+type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "consentimientos"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -152,6 +154,7 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>("dashboard")
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [cotizaciones, setCotizaciones] = useState<Quote[]>([])
+  const [consentimientos, setConsentimientos] = useState<any[]>([])
   const [agendamentos, setAgendamentos] = useState<Booking[]>([])
   const [galeria, setGaleria] = useState<GalleryItem[]>([])
   const [posts, setPosts] = useState<Post[]>([])
@@ -222,6 +225,17 @@ export default function Admin() {
       const data = await res.json()
       if (data.success) setCotizaciones(data.cotizaciones)
     } catch { setErrorMsg("Error al cargar cotizaciones") }
+    setLoading(false)
+  }, [token])
+
+  const fetchConsentimientos = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/consentimientos", { headers })
+      const data = await res.json()
+      if (data.success) setConsentimientos(data.consentimientos)
+    } catch { setErrorMsg("Error al cargar consentimientos") }
     setLoading(false)
   }, [token])
 
@@ -309,8 +323,9 @@ export default function Admin() {
     if (tab === "disponibilidad") fetchDisponibilidad()
     if (tab === "citas") fetchAllCitas()
     if (tab === "cotizaciones") fetchCotizaciones()
+    if (tab === "consentimientos") fetchConsentimientos()
     if (tab === "finanzas") fetchFinanzas()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchFinanzas])
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchConsentimientos, fetchFinanzas])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -382,6 +397,7 @@ export default function Admin() {
     { id: "publicaciones", label: "Publicaciones", icon: NotePencil },
     { id: "resenas", label: "Reseñas", icon: Star },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
+    { id: "consentimientos", label: "Consentimientos", icon: ClipboardText },
     { id: "finanzas", label: "Finanzas", icon: TrendUp },
   ]
 
@@ -473,6 +489,8 @@ export default function Admin() {
               <ResenasTab items={resenas} />
             ) : tab === "cotizaciones" ? (
               <CotizacionesTab items={cotizaciones} onRefresh={fetchCotizaciones} headers={headers} />
+            ) : tab === "consentimientos" ? (
+              <ConsentimientosTab items={consentimientos} onRefresh={fetchConsentimientos} headers={headers} />
             ) : tab === "finanzas" ? (
               <FinanzasTab items={finanzas} summary={finanzasSummary} onRefresh={fetchFinanzas} headers={headers} />
             ) : null}
@@ -1814,5 +1832,225 @@ function FinanzasTab({ items, summary, onRefresh, headers }: {
         )}
       </div>
     </motion.div>
+  )
+}
+
+function ConsentimientosTab({ items, onRefresh, headers }: {
+  items: any[]
+  onRefresh: () => void
+  headers: Record<string, string>
+}) {
+  const [detalle, setDetalle] = useState<any | null>(null)
+  const [cargandoDetalle, setCargandoDetalle] = useState(false)
+
+  const verDetalle = async (id: number) => {
+    setCargandoDetalle(true)
+    try {
+      const res = await fetch(`/api/admin/consentimientos?id=${id}`, { headers })
+      const data = await res.json()
+      if (data.success) setDetalle(data.consentimiento)
+    } catch { /* noop */ }
+    setCargandoDetalle(false)
+  }
+
+  const eliminar = async (id: number) => {
+    if (!confirm("¿Eliminar este consentimiento? Esta acción no se puede deshacer.")) return
+    try {
+      await fetch(`/api/admin/consentimientos?id=${id}`, { method: "DELETE", headers })
+      onRefresh()
+    } catch { /* noop */ }
+  }
+
+  const tieneAlertas = (c: any) =>
+    c.alergias || c.problemas_coagulacion || c.diabetes || c.enfermedad_cardiaca ||
+    c.epilepsia || c.vih_hepatitis || c.embarazo_lactancia
+
+  const alertasDe = (c: any): string[] => {
+    const a: string[] = []
+    if (c.alergias) a.push("Alergias")
+    if (c.problemas_coagulacion) a.push("Coagulación")
+    if (c.diabetes) a.push("Diabetes")
+    if (c.enfermedad_cardiaca) a.push("Cardíaca")
+    if (c.epilepsia) a.push("Epilepsia")
+    if (c.vih_hepatitis) a.push("VIH/Hepatitis")
+    if (c.embarazo_lactancia) a.push("Embarazo")
+    return a
+  }
+
+  const fmtFecha = (f: string) => {
+    try { return new Date(f).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" }) }
+    catch { return f }
+  }
+
+  return (
+    <motion.div key="consentimientos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="section-title text-2xl text-white">Consentimientos</h2>
+          <p className="font-tech text-xs text-gray-600 tracking-wider mt-1">
+            {items.length} firmados
+          </p>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="neon-button rounded-lg px-4 py-2 text-xs font-tech tracking-wider"
+        >
+          ACTUALIZAR
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="glass rounded-2xl p-12 text-center">
+          <ClipboardText size={40} className="text-gray-700 mx-auto mb-3" weight="duotone" />
+          <p className="text-gray-500 text-sm">Aún no hay consentimientos firmados.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((c) => (
+            <div
+              key={c.id}
+              className="glass rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-white font-semibold">{c.nombre}</span>
+                  <span className="text-gray-600 text-xs">{c.rut}</span>
+                  {tieneAlertas(c) && (
+                    <span className="text-[10px] font-tech tracking-wider text-red-400 bg-red-400/10 border border-red-400/20 rounded px-2 py-0.5">
+                      ⚠ {alertasDe(c).join(" · ")}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                  <span>{c.telefono}</span>
+                  {c.zona_tatuaje && <span>· {c.zona_tatuaje}</span>}
+                  <span>· {fmtFecha(c.firmado_en || c.creado_en)}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`https://wa.me/${String(c.telefono).replace(/\+/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="neon-button rounded-lg px-3 py-2 text-xs font-tech tracking-wider"
+                >
+                  WHATSAPP
+                </a>
+                <button
+                  onClick={() => verDetalle(c.id)}
+                  className="neon-button-primary rounded-lg px-3 py-2 text-xs font-tech tracking-wider"
+                >
+                  VER FICHA
+                </button>
+                <button
+                  onClick={() => eliminar(c.id)}
+                  className="text-gray-600 hover:text-red-400 transition-colors px-2"
+                  aria-label="Eliminar"
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {(detalle || cargandoDetalle) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setDetalle(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-premium rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              {cargandoDetalle ? (
+                <p className="text-gray-500 text-sm text-center py-8">Cargando ficha...</p>
+              ) : detalle ? (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="section-title text-xl text-white">{detalle.nombre}</h3>
+                    <button onClick={() => setDetalle(null)} className="text-gray-500 hover:text-white">
+                      <X size={22} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <Info label="RUT" value={detalle.rut} />
+                    <Info label="Teléfono" value={detalle.telefono} />
+                    <Info label="Nacimiento" value={fmtFecha(detalle.fecha_nacimiento)} />
+                    <Info label="Email" value={detalle.email || "—"} />
+                    <Info label="Zona" value={detalle.zona_tatuaje || "—"} />
+                    <Info label="Firmado" value={fmtFecha(detalle.firmado_en)} />
+                  </div>
+
+                  {detalle.descripcion_tatuaje && (
+                    <Info label="Descripción del tatuaje" value={detalle.descripcion_tatuaje} />
+                  )}
+
+                  <div>
+                    <p className="font-tech text-xs text-cyan-400 tracking-wider uppercase mb-2">Salud</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        ["Alergias", detalle.alergias],
+                        ["Coagulación", detalle.problemas_coagulacion],
+                        ["Diabetes", detalle.diabetes],
+                        ["Cardíaca", detalle.enfermedad_cardiaca],
+                        ["Epilepsia", detalle.epilepsia],
+                        ["VIH/Hepatitis", detalle.vih_hepatitis],
+                        ["Embarazo/Lactancia", detalle.embarazo_lactancia],
+                        ["Bajo efectos", detalle.bajo_efectos],
+                      ].map(([label, val]) => (
+                        <span
+                          key={label as string}
+                          className={`text-[11px] font-tech tracking-wider rounded px-2 py-1 border ${
+                            val
+                              ? "text-red-400 bg-red-400/10 border-red-400/20"
+                              : "text-gray-600 bg-white/[0.02] border-white/5"
+                          }`}
+                        >
+                          {val ? "⚠ " : "○ "}{label as string}
+                        </span>
+                      ))}
+                    </div>
+                    {detalle.alergias && detalle.alergias_detalle && (
+                      <p className="text-gray-400 text-xs mt-2">Detalle alergias: {detalle.alergias_detalle}</p>
+                    )}
+                    {detalle.medicamentos && (
+                      <p className="text-gray-400 text-xs mt-1">Medicamentos: {detalle.medicamentos}</p>
+                    )}
+                  </div>
+
+                  {detalle.firma_url && (
+                    <div>
+                      <p className="font-tech text-xs text-cyan-400 tracking-wider uppercase mb-2">Firma</p>
+                      <div className="bg-white rounded-lg p-3 inline-block">
+                        <img src={detalle.firma_url} alt="Firma" className="max-h-32" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="font-tech text-[10px] text-gray-600 tracking-wider uppercase">{label}</p>
+      <p className="text-gray-200 text-sm">{value}</p>
+    </div>
   )
 }

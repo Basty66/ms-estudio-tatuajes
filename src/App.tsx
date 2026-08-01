@@ -7,6 +7,7 @@ import SobreElTatuador from "./components/SobreElTatuador"
 import Gallery from "./components/Gallery"
 import CuidadosPost from "./components/CuidadosPost"
 import Cotizador from "./components/Cotizador"
+import Consentimiento from "./components/Consentimiento"
 import Agenda from "./components/Agenda"
 import FAQ from "./components/FAQ"
 import BlogSection from "./components/BlogSection"
@@ -16,8 +17,8 @@ import WhatsAppFloat from "./components/WhatsAppFloat"
 import Reviews from "./components/Reviews"
 import Admin from "./pages/Admin"
 
-const sectionIds = ["inicio", "sobre", "galeria", "cuidados", "cotizador", "agenda", "faq", "blog", "reviews", "ubicacion"]
-const components = [Hero, SobreElTatuador, Gallery, CuidadosPost, Cotizador, Agenda, FAQ, BlogSection, Reviews, Ubicacion]
+const sectionIds = ["inicio", "sobre", "galeria", "cuidados", "cotizador", "consentimiento", "agenda", "faq", "blog", "reviews", "ubicacion"]
+const components = [Hero, SobreElTatuador, Gallery, CuidadosPost, Cotizador, Consentimiento, Agenda, FAQ, BlogSection, Reviews, Ubicacion]
 
 function HomePage() {
   return (
