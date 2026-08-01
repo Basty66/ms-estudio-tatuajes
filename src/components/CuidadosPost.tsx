@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { FirstAid, Drop, Sun, Clock, X, Warning } from "@phosphor-icons/react"
+import { FirstAid, Drop, Sun, Clock, X, Warning, ArrowClockwise } from "@phosphor-icons/react"
 
 const cuidados = [
   {
@@ -48,6 +48,16 @@ const cuidados = [
       "Pus, mal olor o dolor intenso",
       "Fiebre — consulta al médico inmediatamente",
       "Ante cualquier duda, escríbeme por WhatsApp",
+    ],
+  },
+  {
+    icon: ArrowClockwise,
+    title: "Retoque y seguimiento",
+    items: [
+      "Espera al menos 30 días para evaluar el resultado final",
+      "Si pierde color o detalle, coordina el retoque por WhatsApp",
+      "Ante cualquier duda, envíame una foto del tatuaje",
+      "Deja que la piel sane por completo antes de una nueva sesión",
     ],
   },
 ]
