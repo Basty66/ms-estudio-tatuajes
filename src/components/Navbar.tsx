@@ -65,11 +65,48 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
         <button
           onClick={handleLogoTripleTap}
-          className="group relative"
+          className="group relative flex items-center gap-2.5"
+          aria-label="MS Estudio de Tatuajes"
         >
-          <span className="text-3xl font-bold tracking-[0.15em] text-white neon-text">
-            MS
-          </span>
+          <svg
+            width="34"
+            height="34"
+            viewBox="0 0 40 40"
+            fill="none"
+            className="transition-transform duration-500 group-hover:rotate-[8deg]"
+          >
+            <rect
+              x="1.5"
+              y="1.5"
+              width="37"
+              height="37"
+              rx="3"
+              stroke="rgba(0,229,255,0.5)"
+              strokeWidth="1"
+              className="group-hover:stroke-cyan-400 transition-colors duration-300"
+            />
+            <path
+              d="M9 28 L9 12 L14.5 22 L20 12 L20 28"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            <path
+              d="M31 14 Q23 14 23 18.5 Q23 22 27 22 Q31 22 31 25.5 Q31 30 23 29"
+              stroke="#00e5ff"
+              strokeWidth="2"
+              strokeLinecap="round"
+              fill="none"
+              style={{ filter: "drop-shadow(0 0 4px rgba(0,229,255,0.6))" }}
+            />
+          </svg>
+          <div className="hidden sm:flex flex-col leading-none">
+            <span className="font-display text-lg tracking-[0.12em] text-white">MATNESS</span>
+            <span className="font-tech text-[8px] tracking-[0.35em] text-cyan-400/70 uppercase">
+              Tattoo Studio
+            </span>
+          </div>
         </button>
 
         <nav className="hidden md:flex items-center gap-1">

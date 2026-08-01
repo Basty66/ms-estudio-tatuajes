@@ -600,3 +600,118 @@
   .ink-blob-2 { width: 250px; height: 250px; }
   .ink-blob-3 { width: 150px; height: 150px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   HERO REFINADO — neón como acento puntual, no baño de luz
+   ═══════════════════════════════════════════════════════════ */
+
+.hero-image-desktop {
+  background-size: cover;
+  background-position: center 30%;
+  background-attachment: fixed;
+  filter: grayscale(100%) brightness(42%) contrast(118%);
+  transform: scale(1.05);
+  animation: hero-ken-burns 20s ease-in-out infinite alternate;
+}
+
+@keyframes hero-ken-burns {
+  0% { transform: scale(1.05) translate(0, 0); }
+  100% { transform: scale(1.14) translate(-1.5%, -1.5%); }
+}
+
+/* Grano de película sutil — textura premium */
+.hero-grain {
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* Un solo glow neón, difuso y discreto */
+.hero-accent-glow {
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.14), transparent 68%);
+  filter: blur(90px);
+  animation: hero-glow-breathe 8s ease-in-out infinite;
+}
+
+@keyframes hero-glow-breathe {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+/* La palabra en neón — glow contenido, no exagerado */
+.hero-neon-word {
+  text-shadow: 0 0 18px rgba(0, 229, 255, 0.45), 0 0 40px rgba(0, 229, 255, 0.2);
+}
+.hero-neon-word::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0.08em;
+  width: 100%;
+  height: 3px;
+  background: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: hero-underline 1s cubic-bezier(0.23, 1, 0.32, 1) 1.1s forwards;
+}
+
+@keyframes hero-underline {
+  to { transform: scaleX(1); }
+}
+
+/* CTA primario — neón sólido, esquinas rectas, hover con brillo */
+.hero-cta-primary {
+  position: relative;
+  background: #00e5ff;
+  color: #001519;
+  font-weight: 700;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: pointer;
+}
+.hero-cta-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+.hero-cta-primary:hover::before { left: 100%; }
+.hero-cta-primary:hover {
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Línea de scroll animada */
+.hero-scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(180deg, #00e5ff, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.hero-scroll-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  background: linear-gradient(180deg, #fff, transparent);
+  animation: hero-scroll-drop 2s ease-in-out infinite;
+}
+
+@keyframes hero-scroll-drop {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(250%); }
+}
+
+@media (max-width: 768px) {
+  .hero-accent-glow { width: 300px; height: 250px; filter: blur(60px); }
+}
