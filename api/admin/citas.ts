@@ -59,10 +59,10 @@ export async function PATCH(request: Request) {
     if (fecha !== undefined) { sets.push(`fecha = $${vals.length + 1}`); vals.push(fecha) }
     if (descripcion !== undefined) { sets.push(`descripcion = $${vals.length + 1}`); vals.push(descripcion) }
     if (baucher !== undefined) {
-      if (typeof baucher !== "string" || baucher.length > 300_000) {
-        return Response.json({ success: false, error: "Baucher inválido (máx 300 KB)" }, { status: 400 })
+      if (typeof baucher !== "string" || baucher.length > 300_000 || !baucher.startsWith("data:image/")) {
+        return Response.json({ success: false, error: "Baucher inválido (debe ser imagen, máx 300 KB)" }, { status: 400 })
       }
-      sets.push(`baucher = $${vals.length + 1}`); vals.push(baucher || "")
+      sets.push(`baucher = $${vals.length + 1}`); vals.push(baucher)
     }
 
     if (sets.length === 0) {
