@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { FirstAid, Drop, Sun, Clock, X, Warning, ArrowClockwise } from "@phosphor-icons/react"
+import CuidadosVideo from "./CuidadosVideo"
 
 const cuidados = [
   {
@@ -86,6 +87,8 @@ export default function CuidadosPost() {
             Seguí estas instrucciones para que tu tatuaje cure perfecto y mantenga sus colores para siempre.
           </p>
         </motion.div>
+
+        <CuidadosVideo />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {cuidados.map((cat, i) => {

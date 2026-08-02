@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import Navbar from "./components/Navbar"
 import Preloader from "./components/Preloader"
 import Hero from "./components/Hero"
+import TattooMarquee from "./components/TattooMarquee"
 import SobreElTatuador from "./components/SobreElTatuador"
 import LaserBorrado from "./components/LaserBorrado"
 import Gallery from "./components/Gallery"
@@ -32,6 +33,7 @@ function HomePage() {
           </section>
         )
       })}
+      <TattooMarquee />
     </>
   )
 }
