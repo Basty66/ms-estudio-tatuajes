@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { Play, Pause, Video, SpeakerHigh, SpeakerX } from "@phosphor-icons/react"
+import { Play, Video, SpeakerHigh, SpeakerX } from "@phosphor-icons/react"
 
 const VIDEO_URL = "/videos/cuidados.mp4"
 const POSTER_URL = "/images/tatuaje2.jpg"
@@ -70,19 +70,14 @@ export default function CuidadosVideo() {
           </div>
         )}
 
-        {/* Overlay de estado */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center transition-opacity duration-300">
+        {/* Overlay de estado: desaparece al reproducir */}
+        <div className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-opacity duration-500 ${playing ? "opacity-0" : "opacity-100"}`}>
           <motion.div
-            key={playing ? "pause" : "play"}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="w-12 h-12 rounded-full bg-black/40 backdrop-blur border border-white/10 flex items-center justify-center"
           >
-            {playing ? (
-              <Pause size={18} className="text-white" weight="fill" />
-            ) : (
-              <Play size={18} className="text-white ml-0.5" weight="fill" />
-            )}
+            <Play size={18} className="text-white ml-0.5" weight="fill" />
           </motion.div>
         </div>
 
