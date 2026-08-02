@@ -32,8 +32,8 @@ const faqs = [
     a: "Desde los 18 años con consentimiento informado. Entre 16-17 solo con autorización notarial de ambos padres presentes.",
   },
   {
-    q: "¿Hacés retoques gratis?",
-    a: "Sí, el primer retoque es gratuito dentro de los 3 meses posteriores al tatuaje, siempre que hayas seguido los cuidados indicados.",
+    q: "¿Cuánto cuesta un retoque?",
+    a: "El retoque tiene un valor según el tamaño y la complejidad del tatuaje. Coordina por WhatsApp, envía una foto y te paso el valor exacto.",
   },
 ]
 
