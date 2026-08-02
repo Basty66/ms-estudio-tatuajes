@@ -1,7 +1,8 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Routes, Route, useLocation } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import Navbar from "./components/Navbar"
+import Preloader from "./components/Preloader"
 import Hero from "./components/Hero"
 import SobreElTatuador from "./components/SobreElTatuador"
 import LaserBorrado from "./components/LaserBorrado"
@@ -51,6 +52,12 @@ function ScrollToTop() {
 export default function App() {
   const location = useLocation()
   const isAdmin = location.pathname === "/admin"
+  const [preloading, setPreloading] = useState(true)
+
+  useEffect(() => {
+    document.body.style.overflow = preloading ? "hidden" : ""
+    return () => { document.body.style.overflow = "" }
+  }, [preloading])
 
   return (
     <div className="min-h-screen bg-dark overflow-x-hidden relative">
@@ -62,6 +69,19 @@ export default function App() {
           backgroundSize: "200px 200px",
         }}
       />
+
+      <AnimatePresence>
+        {preloading && !isAdmin && (
+          <motion.div
+            key="preloader"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            className="fixed inset-0 z-[100]"
+          >
+            <Preloader onDone={() => setPreloading(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {!isAdmin && <Navbar />}
       <ScrollToTop />
