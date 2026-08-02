@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import Navbar from "./components/Navbar"
 import Hero from "./components/Hero"
 import SobreElTatuador from "./components/SobreElTatuador"
+import LaserBorrado from "./components/LaserBorrado"
 import Gallery from "./components/Gallery"
 import CuidadosPost from "./components/CuidadosPost"
 import Cotizador from "./components/Cotizador"
@@ -17,8 +18,8 @@ import WhatsAppFloat from "./components/WhatsAppFloat"
 import Reviews from "./components/Reviews"
 import Admin from "./pages/Admin"
 
-const sectionIds = ["inicio", "sobre", "galeria", "cuidados", "cotizador", "consentimiento", "agenda", "faq", "blog", "reviews", "ubicacion"]
-const components = [Hero, SobreElTatuador, Gallery, CuidadosPost, Cotizador, Consentimiento, Agenda, FAQ, BlogSection, Reviews, Ubicacion]
+const sectionIds = ["inicio", "sobre", "laser", "galeria", "cuidados", "cotizador", "consentimiento", "agenda", "faq", "blog", "reviews", "ubicacion"]
+const components = [Hero, SobreElTatuador, LaserBorrado, Gallery, CuidadosPost, Cotizador, Consentimiento, Agenda, FAQ, BlogSection, Reviews, Ubicacion]
 
 function HomePage() {
   return (

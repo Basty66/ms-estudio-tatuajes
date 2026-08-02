@@ -1110,7 +1110,7 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
                       ? `${dateStr}\n${info.booked}/${info.max} cupos usados\n${info.pendientes || 0} pendientes\n${info.confirmadas || 0} confirmadas`
                       : dateStr}
                     className={`aspect-square flex items-center justify-center text-[11px] rounded-lg font-tech transition-all cursor-default ${calMonthData.calColor(status)}`}>
-                    {day}
+                    <span className={status === "full" ? "line-through decoration-red-400/80 decoration-2" : undefined}>{day}</span>
                   </div>
                 )
               })}
