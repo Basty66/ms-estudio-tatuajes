@@ -34,7 +34,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { id, estado, admin_notas, duracion, hora, nombre, whatsapp, fecha, descripcion } = await request.json()
+    const { id, estado, admin_notas, duracion, hora, nombre, whatsapp, fecha, descripcion, baucher } = await request.json()
     if (!id) {
       return Response.json({ success: false, error: "ID requerido" }, { status: 400 })
     }
@@ -58,6 +58,12 @@ export async function PATCH(request: Request) {
     if (whatsapp !== undefined) { sets.push(`whatsapp = $${vals.length + 1}`); vals.push(whatsapp) }
     if (fecha !== undefined) { sets.push(`fecha = $${vals.length + 1}`); vals.push(fecha) }
     if (descripcion !== undefined) { sets.push(`descripcion = $${vals.length + 1}`); vals.push(descripcion) }
+    if (baucher !== undefined) {
+      if (typeof baucher !== "string" || baucher.length > 300_000) {
+        return Response.json({ success: false, error: "Baucher inválido (máx 300 KB)" }, { status: 400 })
+      }
+      sets.push(`baucher = $${vals.length + 1}`); vals.push(baucher || "")
+    }
 
     if (sets.length === 0) {
       return Response.json({ success: false, error: "Sin campos a actualizar" }, { status: 400 })
@@ -66,17 +72,6 @@ export async function PATCH(request: Request) {
     vals.push(id)
     const query = `UPDATE agendamentos SET ${sets.join(", ")} WHERE id = $${vals.length} RETURNING *`
     const result = await sql.query(query, vals)
-
-    const cita = result[0]
-    if (cita && estado && ["confirmada", "completada"].includes(estado)) {
-      const yaExiste = await sql`SELECT id FROM finanzas WHERE agendamiento_id = ${cita.id} LIMIT 1`
-      if (yaExiste.length === 0) {
-        await sql`
-          INSERT INTO finanzas (tipo, categoria, concepto, monto, fecha, agendamiento_id)
-          VALUES ('ingreso', 'tatuaje', ${'Cita ' + estado + ': ' + (cita.nombre || 'Cliente')}, 0, ${cita.fecha || new Date().toISOString().split('T')[0]}, ${cita.id})
-        `
-      }
-    }
 
     return Response.json({ success: true, cita: result[0] || null })
   } catch (error) {

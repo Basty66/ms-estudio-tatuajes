@@ -47,6 +47,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agendamentos' AND column_name='hora') THEN
     ALTER TABLE agendamentos ADD COLUMN hora TEXT DEFAULT '';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agendamentos' AND column_name='baucher') THEN
+    ALTER TABLE agendamentos ADD COLUMN baucher TEXT DEFAULT '';
+  END IF;
 END $$;
 
 INSERT INTO disponibilidad (dia_semana, activo, hora_inicio, hora_fin, slots_max)

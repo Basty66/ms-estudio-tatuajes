@@ -14,6 +14,7 @@ import {
   Trash,
   X,
   UploadSimple,
+  Upload,
   Plus,
   CalendarCheck,
   CurrencyDollar,
@@ -82,6 +83,7 @@ interface Booking {
   descripcion: string
   estado: string
   admin_notas: string
+  baucher?: string
   creado_en: string
 }
 
@@ -1178,7 +1180,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
 }) {
   const [filtro, setFiltro] = useState<string>("todas")
   const [editId, setEditId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState({ nombre: "", whatsapp: "", fecha: "", hora: "", duracion: 120, descripcion: "", estado: "pendiente", admin_notas: "" })
+  const [editForm, setEditForm] = useState({ nombre: "", whatsapp: "", fecha: "", hora: "", duracion: 120, descripcion: "", estado: "pendiente", admin_notas: "", baucher: "" })
   const [creando, setCreando] = useState(false)
   const [nueva, setNueva] = useState({ nombre: "", whatsapp: "+56", fecha: "", hora: "", duracion: 120, descripcion: "" })
   const [precioModal, setPrecioModal] = useState<{ id: number; estado: string } | null>(null)
@@ -1186,7 +1188,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   const [confirmando, setConfirmando] = useState(false)
 
   const updateEstado = (id: number, estado: string) => {
-    if (estado === "confirmada") {
+    if (estado === "confirmada" || estado === "completada") {
       setPrecioModal({ id, estado })
     } else {
       confirmarEstado(id, estado, 0)
@@ -1195,21 +1197,24 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
 
   const confirmarEstado = async (id: number, estado: string, precio: number) => {
     const cita = citas.find(c => c.id === id)
+    const notaPrecio = estado === "confirmada"
+      ? `💰 $${precio.toLocaleString("es-CL")} | 50%: $${Math.round(precio * 0.5).toLocaleString("es-CL")}`
+      : `💰 $${precio.toLocaleString("es-CL")}`
     await fetch("/api/admin/citas", {
       method: "PATCH", headers,
       body: JSON.stringify({
         id,
         estado,
-        ...(precio > 0 ? { admin_notas: `💰 $${precio.toLocaleString("es-CL")} | 50%: $${Math.round(precio * 0.5).toLocaleString("es-CL")}` } : {}),
+        ...(precio > 0 ? { admin_notas: notaPrecio } : {}),
       }),
     })
-    if (estado === "confirmada" && precio > 0) {
+    if (estado === "completada" && precio > 0) {
       await fetch("/api/admin/finanzas", {
         method: "POST", headers,
         body: JSON.stringify({
           tipo: "ingreso",
           categoria: "tatuaje",
-          concepto: `Cita: ${cita?.nombre || "Cliente"} - ${cita?.descripcion || "Tatuaje"}`,
+          concepto: `Cita completada: ${cita?.nombre || "Cliente"} - ${cita?.descripcion || "Tatuaje"}`,
           monto: precio,
           fecha: cita?.fecha || new Date().toISOString().split("T")[0],
           agendamiento_id: id,
@@ -1428,6 +1433,35 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
                 </div>
                 <input value={editForm.admin_notas} onChange={(e) => setEditForm({ ...editForm, admin_notas: e.target.value })}
                   placeholder="Notas internas del admin" className="neon-input rounded-xl px-4 py-2 w-full text-sm" />
+                <div>
+                  <span className="text-gray-600 text-xs block mb-1">Baucher del abono 50% (comprobante de transferencia):</span>
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer inline-flex items-center gap-2 font-tech text-xs tracking-wider neon-button rounded-xl px-4 py-2">
+                      <Upload size={14} />
+                      {editForm.baucher ? "REEMPLAZAR IMAGEN" : "SUBIR BAUCHER"}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          if (file.size > 250_000) { alert("Imagen demasiado grande (máx ~190 KB). Comprime el comprobante antes de subirlo."); return }
+                          const reader = new FileReader()
+                          reader.onload = () => setEditForm({ ...editForm, baucher: String(reader.result) })
+                          reader.readAsDataURL(file)
+                        }} />
+                    </label>
+                    {editForm.baucher && (
+                      <>
+                        <a href={editForm.baucher} target="_blank" rel="noreferrer" title="Ver baucher">
+                          <img src={editForm.baucher} className="h-12 w-12 object-cover rounded-lg border border-cyan-400/30" />
+                        </a>
+                        <button onClick={() => setEditForm({ ...editForm, baucher: "" })}
+                          className="text-red-400 hover:bg-red-400/10 p-1.5 rounded-lg" title="Quitar baucher">
+                          <Trash size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button onClick={saveEdit} className="font-tech neon-button-primary rounded-xl px-4 py-2 text-xs tracking-wider">GUARDAR</button>
                   <button onClick={() => setEditId(null)} className="font-tech neon-button rounded-xl px-4 py-2 text-xs tracking-wider">CANCELAR</button>
@@ -1450,6 +1484,13 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
                   </div>
                   {c.descripcion && <p className="text-gray-500 text-xs mt-1 italic">"{c.descripcion}"</p>}
                   {c.admin_notas && <p className="text-cyan-400/40 text-xs mt-1">📝 {c.admin_notas}</p>}
+                  {c.baucher && (
+                    <a href={c.baucher} target="_blank" rel="noreferrer" title="Ver baucher del abono 50%"
+                      className="inline-flex items-center gap-1.5 text-xs text-cyan-400/70 mt-1.5 hover:text-cyan-300">
+                      <img src={c.baucher} className="h-8 w-8 object-cover rounded border border-cyan-400/20" />
+                      Baucher 50%
+                    </a>
+                  )}
                   <p className="text-gray-700 text-xs mt-1">Creado: {new Date(c.creado_en).toLocaleDateString("es-CL")}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -1479,7 +1520,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
                   )}
                   <button onClick={() => {
                     setEditId(c.id)
-                    setEditForm({ nombre: c.nombre, whatsapp: c.whatsapp, fecha: c.fecha, hora: c.hora || "", duracion: c.duracion || 120, descripcion: c.descripcion || "", estado: c.estado || "pendiente", admin_notas: c.admin_notas || "" })
+                    setEditForm({ nombre: c.nombre, whatsapp: c.whatsapp, fecha: c.fecha, hora: c.hora || "", duracion: c.duracion || 120, descripcion: c.descripcion || "", estado: c.estado || "pendiente", admin_notas: c.admin_notas || "", baucher: c.baucher || "" })
                   }}
                     className="text-cyan-400 hover:bg-cyan-400/10 p-1.5 rounded-lg transition-all" title="Editar">
                     <PencilSimple size={16} />
@@ -1511,6 +1552,7 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
         precioInput={precioInput}
         setPrecioInput={setPrecioInput}
         confirmando={confirmando}
+        modo={precioModal.estado === "completada" ? "completar" : "confirmar"}
         onClose={() => { setPrecioModal(null); setPrecioInput("") }}
         onConfirm={(valor) => {
           setConfirmando(true)
@@ -1526,27 +1568,31 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
   )
 }
 
-function PrecioModal({ cita, precioInput, setPrecioInput, confirmando, onClose, onConfirm }: {
+function PrecioModal({ cita, precioInput, setPrecioInput, confirmando, onClose, onConfirm, modo = "confirmar" }: {
   cita: Booking
   precioInput: string
   setPrecioInput: (v: string) => void
   confirmando: boolean
   onClose: () => void
   onConfirm: (valor: number) => void
+  modo?: "confirmar" | "completar"
 }) {
   const raw = precioInput.replace(/\D/g, "")
   const valor = parseInt(raw) || 0
   const abono = Math.round(valor * 0.5)
   const fmt = (n: number) => n.toLocaleString("es-CL")
+  const esCompletar = modo === "completar"
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="glass-premium rounded-2xl p-6 w-full max-w-sm border border-white/10" onClick={e => e.stopPropagation()}>
-        <h3 className="text-white font-bold text-lg mb-1">💰 Confirmar cita</h3>
+        <h3 className="text-white font-bold text-lg mb-1">{esCompletar ? "💰 Sesión completada" : "💰 Confirmar cita"}</h3>
         <p className="text-gray-400 text-sm mb-1">{cita?.nombre}</p>
         <p className="text-gray-600 text-xs font-tech mb-5">{cita?.descripcion}</p>
 
-        <label className="text-gray-400 text-xs font-tech tracking-wider uppercase mb-2 block">Precio del tatuaje</label>
+        <label className="text-gray-400 text-xs font-tech tracking-wider uppercase mb-2 block">
+          {esCompletar ? "Precio final cobrado" : "Precio del tatuaje"}
+        </label>
         <div className="relative mb-4">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
           <input
@@ -1561,29 +1607,39 @@ function PrecioModal({ cita, precioInput, setPrecioInput, confirmando, onClose, 
         </div>
 
         {valor > 0 && (
-          <div className="glass rounded-xl p-4 mb-5 border border-cyan-400/10">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-400 text-xs">Valor total</span>
-              <span className="text-white font-bold">$ {fmt(valor)}</span>
+          esCompletar ? (
+            <div className="glass rounded-xl p-4 mb-5 border border-blue-400/10">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-xs">Ingreso a registrar en finanzas</span>
+                <span className="text-white font-bold text-lg">$ {fmt(valor)}</span>
+              </div>
+              <p className="text-gray-600 text-[11px] mt-2">El abono del 50% queda respaldado por el baucher adjunto en la cita.</p>
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-400 text-xs">50% para reservar</span>
-              <span className="text-cyan-400 font-bold text-lg">$ {fmt(abono)}</span>
+          ) : (
+            <div className="glass rounded-xl p-4 mb-5 border border-cyan-400/10">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-400 text-xs">Valor total</span>
+                <span className="text-white font-bold">$ {fmt(valor)}</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-400 text-xs">50% para reservar</span>
+                <span className="text-cyan-400 font-bold text-lg">$ {fmt(abono)}</span>
+              </div>
+              <div className="h-px bg-white/5 my-2" />
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 text-xs">Restante el día de la cita</span>
+                <span className="text-gray-300 text-sm">$ {fmt(valor - abono)}</span>
+              </div>
             </div>
-            <div className="h-px bg-white/5 my-2" />
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500 text-xs">Restante el día de la cita</span>
-              <span className="text-gray-300 text-sm">$ {fmt(valor - abono)}</span>
-            </div>
-          </div>
+          )
         )}
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 font-tech neon-button rounded-xl py-3 text-xs tracking-wider">CANCELAR</button>
           <button onClick={() => onConfirm(valor)}
-            disabled={valor === 0 || confirmando}
+            disabled={(!esCompletar && valor === 0) || confirmando}
             className="flex-1 font-tech neon-button-primary rounded-xl py-3 text-xs tracking-wider disabled:opacity-30">
-            {confirmando ? "CONFIRMANDO..." : `CONFIRMAR $ ${fmt(valor)}`}
+            {confirmando ? "GUARDANDO..." : esCompletar ? (valor > 0 ? `REGISTRAR $ ${fmt(valor)}` : "COMPLETAR SIN INGRESO") : `CONFIRMAR $ ${fmt(valor)}`}
           </button>
         </div>
       </div>
