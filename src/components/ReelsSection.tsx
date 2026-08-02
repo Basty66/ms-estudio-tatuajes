@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { InstagramLogo, TiktokLogo, Spinner, Play } from "@phosphor-icons/react"
+import { InstagramLogo, TiktokLogo, Spinner, Play, SpeakerHigh, SpeakerX, ArrowSquareOut } from "@phosphor-icons/react"
 
 interface Reel {
   id: number
@@ -22,35 +22,120 @@ function extractIG(url: string) {
   return m ? m[1] : null
 }
 
-function IgCard({ reel }: { reel: Reel }) {
-  const code = extractIG(reel.url)
+/* Reel con archivo mp4 local: se reproduce al pasar el mouse, con enlace al Instagram del cliente */
+function VideoCard({ reel }: { reel: Reel }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [muted, setMuted] = useState(true)
+
+  const toggleMute = () => {
+    const video = videoRef.current
+    if (!video) return
+    const next = !video.muted
+    video.muted = next
+    setMuted(next)
+  }
+
+  const togglePlay = () => {
+    const video = videoRef.current
+    if (!video) return
+    if (video.paused) {
+      video.play().catch(() => {})
+      setPlaying(true)
+    } else {
+      video.pause()
+      video.currentTime = 0
+      setPlaying(false)
+    }
+  }
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const onHover = () => {
+      video.play().catch(() => {})
+      setPlaying(true)
+    }
+    const onLeave = () => {
+      video.pause()
+      video.currentTime = 0
+      setPlaying(false)
+    }
+    video.addEventListener("mouseenter", onHover)
+    video.addEventListener("mouseleave", onLeave)
+    return () => {
+      video.removeEventListener("mouseenter", onHover)
+      video.removeEventListener("mouseleave", onLeave)
+    }
+  }, [])
 
   return (
     <div className="snap-start shrink-0 w-[clamp(200px, 40vw, 260px)]">
       <div className="relative rounded-2xl overflow-hidden border border-white/5 group bg-black aspect-[9/16]">
-        <iframe
-          src={`https://www.instagram.com/reel/${code}/embed/`}
-          title={reel.titulo || "Reel de Instagram"}
-          loading="lazy"
-          scrolling="no"
-          frameBorder="0"
-          allowFullScreen
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-          className="absolute inset-0 w-full h-full"
+        <video
+          ref={videoRef}
+          src={reel.video_url}
+          muted={muted}
+          loop
+          playsInline
+          preload="metadata"
+          onClick={togglePlay}
+          className="w-full h-full object-cover cursor-pointer"
         />
 
-        {/* Badge plataforma */}
-        <div className="absolute top-2.5 left-2.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur flex items-center gap-1 pointer-events-none">
+        {/* Overlay de estado: desaparece al reproducir */}
+        <div className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-opacity duration-500 ${playing ? "opacity-0" : "opacity-100"}`}>
+          <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur border border-white/10 flex items-center justify-center">
+            <Play size={16} className="text-white ml-0.5" weight="fill" />
+          </div>
+        </div>
+
+        {/* Badge plataforma → abre el reel en Instagram */}
+        <a
+          href={reel.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Ver este reel en Instagram"
+          title="Ver en Instagram"
+          className="absolute top-2.5 left-2.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center gap-1 hover:border-pink-400/40 hover:text-pink-400 transition-all z-10"
+        >
           <InstagramLogo size={11} weight="fill" className="text-pink-400" />
-          <span className="text-white/60 text-[9px] font-tech">Reel</span>
+          <span className="text-white/70 text-[9px] font-tech">Instagram</span>
+        </a>
+
+        {/* Botón de audio */}
+        <button
+          onClick={toggleMute}
+          aria-label={muted ? "Activar audio" : "Silenciar"}
+          className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white/70 hover:text-cyan-400 hover:border-cyan-400/30 transition-all opacity-60 hover:opacity-100 group-hover:opacity-100"
+        >
+          {muted ? <SpeakerX size={14} weight="fill" /> : <SpeakerHigh size={14} weight="fill" />}
+        </button>
+
+        {/* Título + enlace a Instagram */}
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
+          {reel.titulo ? (
+            <p className="text-white/70 text-[10px] font-tech tracking-wider truncate drop-shadow">{reel.titulo}</p>
+          ) : <span />}
+          <a
+            href={reel.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Ver este reel en Instagram"
+            className="pointer-events-auto shrink-0 px-2 py-1 rounded-full bg-pink-500/15 border border-pink-400/20 backdrop-blur flex items-center gap-1 text-pink-300 text-[9px] font-tech tracking-wider hover:bg-pink-500/25 transition-all"
+          >
+            Ver en IG <ArrowSquareOut size={9} />
+          </a>
         </div>
       </div>
     </div>
   )
 }
 
+/* Reel sin archivo: tarjeta con enlace a la plataforma */
 function LinkCard({ reel }: { reel: Reel }) {
   const ytCode = extractYT(reel.url)
+  const igCode = extractIG(reel.url)
   const isTikTok = reel.plataforma === "tiktok"
 
   return (
@@ -64,7 +149,7 @@ function LinkCard({ reel }: { reel: Reel }) {
         {ytCode ? (
           <img src={`https://img.youtube.com/vi/${ytCode}/hqdefault.jpg`} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-400/10 via-cyan-400/5 to-red-400/10" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${igCode ? "from-pink-500/10 via-transparent to-amber-500/10" : "from-gray-400/10 via-cyan-400/5 to-red-400/10"}`} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -84,8 +169,19 @@ function LinkCard({ reel }: { reel: Reel }) {
             <span className="text-white/60 text-[9px] font-tech">YouTube</span>
           </div>
         )}
+        {igCode && (
+          <div className="absolute top-2.5 left-2.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur flex items-center gap-1">
+            <InstagramLogo size={11} weight="fill" className="text-pink-400" />
+            <span className="text-white/60 text-[9px] font-tech">Reel</span>
+          </div>
+        )}
+        <div className="absolute bottom-2.5 left-0 right-0 flex justify-center">
+          <span className="text-white/60 text-[9px] font-tech tracking-wider flex items-center gap-1">
+            Ver en la plataforma <ArrowSquareOut size={10} />
+          </span>
+        </div>
         {reel.titulo && (
-          <div className="absolute bottom-2.5 left-2.5 right-2.5">
+          <div className="absolute bottom-8 left-2.5 right-2.5">
             <p className="text-white/70 text-[10px] font-tech tracking-wider truncate">{reel.titulo}</p>
           </div>
         )}
@@ -109,8 +205,8 @@ export default function ReelsSection() {
   if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={28} className="text-cyan-400 animate-spin" /></div>
   if (reels.length === 0) return null
 
-  const igReels = reels.filter(r => r.plataforma === "instagram" && extractIG(r.url))
-  const linkReels = reels.filter(r => r.plataforma !== "instagram" || !extractIG(r.url))
+  const videoReels = reels.filter(r => r.video_url && r.video_url.length > 0)
+  const linkReels = reels.filter(r => !r.video_url || r.video_url.length === 0)
 
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 py-12 md:py-20 overflow-hidden">
@@ -122,9 +218,9 @@ export default function ReelsSection() {
 
       <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 px-1"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {[...igReels, ...linkReels].map(reel =>
-          reel.plataforma === "instagram" && extractIG(reel.url) ? (
-            <IgCard key={reel.id} reel={reel} />
+        {[...videoReels, ...linkReels].map(reel =>
+          reel.video_url && reel.video_url.length > 0 ? (
+            <VideoCard key={reel.id} reel={reel} />
           ) : (
             <LinkCard key={reel.id} reel={reel} />
           )

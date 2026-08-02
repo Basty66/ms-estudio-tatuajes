@@ -2192,6 +2192,7 @@ function ReelsTab({ items, onRefresh, headers }: {
 }) {
   const [url, setUrl] = useState("")
   const [titulo, setTitulo] = useState("")
+  const [videoUrl, setVideoUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -2204,12 +2205,13 @@ function ReelsTab({ items, onRefresh, headers }: {
       const res = await fetch("/api/admin/reels", {
         method: "POST",
         headers,
-        body: JSON.stringify({ url: url.trim(), titulo: titulo.trim(), plataforma }),
+        body: JSON.stringify({ url: url.trim(), titulo: titulo.trim(), plataforma, video_url: videoUrl.trim() }),
       })
       const data = await res.json()
       if (data.success) {
         setUrl("")
         setTitulo("")
+        setVideoUrl("")
         setMsg({ ok: true, text: "Reel agregado correctamente" })
         onRefresh()
       } else {
@@ -2252,6 +2254,12 @@ function ReelsTab({ items, onRefresh, headers }: {
             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40"
           />
         </div>
+        <input
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          placeholder="URL del archivo de video (opcional, ej: /videos/reels/1.mp4)"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 mb-3"
+        />
         <div className="flex items-center gap-3">
           <button
             onClick={addReel}
@@ -2266,7 +2274,7 @@ function ReelsTab({ items, onRefresh, headers }: {
           )}
         </div>
         <p className="text-gray-600 text-[11px] mt-3">
-          La plataforma se detecta automáticamente. Los reels de Instagram muestran vista previa y se reproducen al pasar el mouse.
+          La plataforma se detecta automáticamente. Si agregas un archivo mp4 local, el reel se reproduce al pasar el mouse; si no, muestra un enlace a la plataforma.
         </p>
       </div>
 
