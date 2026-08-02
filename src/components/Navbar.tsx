@@ -14,6 +14,7 @@ const links = [
   { href: "#agenda", label: "Agenda" },
   { href: "#faq", label: "FAQ" },
   { href: "#blog", label: "Blog" },
+  { href: "#reels", label: "Reels" },
   { href: "#ubicacion", label: "Ubicación" },
 ]
 

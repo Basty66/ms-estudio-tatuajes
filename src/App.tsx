@@ -18,10 +18,11 @@ import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
 import WhatsAppFloat from "./components/WhatsAppFloat"
 import Reviews from "./components/Reviews"
+import ReelsSection from "./components/ReelsSection"
 import Admin from "./pages/Admin"
 
-const sectionIds = ["inicio", "sobre", "laser", "galeria", "cuidados", "cotizador", "consentimiento", "agenda", "faq", "blog", "reviews", "ubicacion"]
-const components = [Hero, SobreElTatuador, LaserBorrado, Gallery, CuidadosPost, Cotizador, Consentimiento, Agenda, FAQ, BlogSection, Reviews, Ubicacion]
+const sectionIds = ["inicio", "sobre", "laser", "galeria", "cuidados", "cotizador", "consentimiento", "agenda", "faq", "blog", "reviews", "reels", "ubicacion"]
+const components = [Hero, SobreElTatuador, LaserBorrado, Gallery, CuidadosPost, Cotizador, Consentimiento, Agenda, FAQ, BlogSection, Reviews, ReelsSection, Ubicacion]
 
 function HomePage() {
   return (

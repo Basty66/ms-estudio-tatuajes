@@ -32,6 +32,7 @@ import {
   WhatsappLogo,
   House,
   DownloadSimple,
+  InstagramLogo,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -99,8 +100,17 @@ interface Quote {
   estado: string
 }
 
-interface FinanzaItem {
+interface Reel {
   id: number
+  url: string
+  titulo: string
+  plataforma: string
+  video_url?: string
+  orden: number
+  creado_en: string
+}
+
+interface FinanzaItem {  id: number
   tipo: string
   categoria: string
   concepto: string
@@ -127,7 +137,7 @@ interface ExcepcionFecha {
   motivo: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "consentimientos"
+type Tab = "dashboard" | "galeria" | "publicaciones" | "reels" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "consentimientos"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -169,6 +179,7 @@ export default function Admin() {
   const [allCitas, setAllCitas] = useState<Booking[]>([])
   const [finanzas, setFinanzas] = useState<FinanzaItem[]>([])
   const [finanzasSummary, setFinanzasSummary] = useState<any>(null)
+  const [reels, setReels] = useState<Reel[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState("")
 
@@ -283,6 +294,17 @@ export default function Admin() {
     setLoading(false)
   }, [token])
 
+  const fetchReels = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/reels", { headers })
+      const data = await res.json()
+      if (data.success) setReels(data.reels)
+    } catch { setErrorMsg("Error al cargar reels") }
+    setLoading(false)
+  }, [token])
+
   const fetchResenas = useCallback(async () => {
     if (!token) return
     setLoading(true)
@@ -325,13 +347,14 @@ export default function Admin() {
     if (tab === "dashboard") { fetchDashboard(); fetchAllCitas() }
     if (tab === "galeria") fetchGaleria()
     if (tab === "publicaciones") fetchPosts()
+    if (tab === "reels") fetchReels()
     if (tab === "resenas") fetchResenas()
     if (tab === "disponibilidad") fetchDisponibilidad()
     if (tab === "citas") fetchAllCitas()
     if (tab === "cotizaciones") fetchCotizaciones()
     if (tab === "consentimientos") fetchConsentimientos()
     if (tab === "finanzas") fetchFinanzas()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchConsentimientos, fetchFinanzas])
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchReels, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchConsentimientos, fetchFinanzas])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -401,6 +424,7 @@ export default function Admin() {
     { id: "citas", label: "Citas", icon: CalendarCheck },
     { id: "galeria", label: "Galería", icon: Image },
     { id: "publicaciones", label: "Publicaciones", icon: NotePencil },
+    { id: "reels", label: "Reels", icon: InstagramLogo },
     { id: "resenas", label: "Reseñas", icon: Star },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
     { id: "consentimientos", label: "Consentimientos", icon: ClipboardText },
@@ -499,6 +523,8 @@ export default function Admin() {
               <GaleriaTab items={galeria} onDelete={deleteGaleria} onRefresh={fetchGaleria} headers={headers} />
             ) : tab === "publicaciones" ? (
               <PublicacionesTab items={posts} onDelete={deletePost} onRefresh={fetchPosts} headers={headers} />
+            ) : tab === "reels" ? (
+              <ReelsTab items={reels} onRefresh={fetchReels} headers={headers} />
             ) : tab === "resenas" ? (
               <ResenasTab items={resenas} />
             ) : tab === "cotizaciones" ? (
@@ -2149,5 +2175,136 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="font-tech text-[10px] text-gray-600 tracking-wider uppercase">{label}</p>
       <p className="text-gray-200 text-sm">{value}</p>
     </div>
+  )
+}
+
+function detectPlatform(url: string): string {
+  if (/instagram\.com\/(reel|p)\//i.test(url)) return "instagram"
+  if (/youtube\.com|youtu\.be/i.test(url)) return "youtube"
+  if (/tiktok\.com/i.test(url)) return "tiktok"
+  return "instagram"
+}
+
+function ReelsTab({ items, onRefresh, headers }: {
+  items: Reel[]
+  onRefresh: () => void
+  headers: Record<string, string>
+}) {
+  const [url, setUrl] = useState("")
+  const [titulo, setTitulo] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const addReel = async () => {
+    if (!url.trim()) return
+    setSaving(true)
+    setMsg(null)
+    try {
+      const plataforma = detectPlatform(url)
+      const res = await fetch("/api/admin/reels", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ url: url.trim(), titulo: titulo.trim(), plataforma }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setUrl("")
+        setTitulo("")
+        setMsg({ ok: true, text: "Reel agregado correctamente" })
+        onRefresh()
+      } else {
+        setMsg({ ok: false, text: data.error || "Error al agregar" })
+      }
+    } catch {
+      setMsg({ ok: false, text: "Error de conexión" })
+    }
+    setSaving(false)
+  }
+
+  const deleteReel = async (id: number) => {
+    try {
+      await fetch(`/api/admin/reels?id=${id}`, { method: "DELETE", headers })
+      onRefresh()
+    } catch {
+      setMsg({ ok: false, text: "Error al eliminar" })
+    }
+  }
+
+  return (
+    <motion.div key="reels" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6">REELS</h2>
+
+      <div className="glass rounded-2xl p-5 mb-6">
+        <h3 className="font-tech text-sm tracking-[0.15em] text-gray-400 mb-4 flex items-center gap-2">
+          <Plus size={16} className="text-cyan-400" /> AGREGAR REEL
+        </h3>
+        <div className="grid md:grid-cols-2 gap-3 mb-3">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="URL del reel (Instagram, YouTube Shorts o TikTok)"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40"
+          />
+          <input
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Título (opcional)"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={addReel}
+            disabled={saving || !url.trim()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 text-xs font-tech tracking-wider hover:bg-cyan-400/20 transition-all disabled:opacity-40"
+          >
+            {saving ? <Spinner size={14} className="animate-spin" /> : <Plus size={14} />}
+            AGREGAR
+          </button>
+          {msg && (
+            <span className={`text-xs font-tech ${msg.ok ? "text-emerald-400" : "text-red-400"}`}>{msg.text}</span>
+          )}
+        </div>
+        <p className="text-gray-600 text-[11px] mt-3">
+          La plataforma se detecta automáticamente. Los reels de Instagram muestran vista previa y se reproducen al pasar el mouse.
+        </p>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="glass rounded-2xl p-8 text-center">
+          <InstagramLogo size={28} className="text-gray-700 mx-auto mb-3" />
+          <p className="text-gray-600 text-sm">No hay reels todavía. Agrega el primero con la URL de un reel de Instagram.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {items.map((r) => (
+            <div key={r.id} className="glass rounded-xl px-4 py-3 flex items-center gap-3">
+              <span
+                className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${
+                  r.plataforma === "instagram"
+                    ? "bg-pink-500/10 border-pink-500/20 text-pink-400"
+                    : r.plataforma === "youtube"
+                      ? "bg-red-500/10 border-red-500/20 text-red-400"
+                      : "bg-gray-500/10 border-gray-500/20 text-gray-300"
+                }`}
+              >
+                <InstagramLogo size={15} weight="fill" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm truncate">{r.titulo || r.url}</p>
+                <p className="text-gray-600 text-[11px] font-tech tracking-wider truncate">{r.plataforma.toUpperCase()} · {r.url}</p>
+              </div>
+              <button
+                onClick={() => deleteReel(r.id)}
+                className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-red-400 hover:border-red-400/30 transition-all shrink-0"
+                aria-label="Eliminar"
+              >
+                <Trash size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
   )
 }
