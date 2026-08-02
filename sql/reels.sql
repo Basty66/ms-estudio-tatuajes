@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS reels (
   url TEXT NOT NULL,
   titulo TEXT DEFAULT '',
   plataforma TEXT NOT NULL DEFAULT 'instagram',
+  video_url TEXT DEFAULT '',
   activo BOOLEAN DEFAULT true,
   orden INTEGER DEFAULT 0,
   creado_en TIMESTAMP DEFAULT NOW()

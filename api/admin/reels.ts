@@ -35,10 +35,12 @@ export async function POST(request: Request) {
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
     const result = await sql`
-      INSERT INTO reels (url, titulo, plataforma)
-      VALUES (${url}, ${titulo || ""}, ${plataforma})
+      INSERT INTO reels (url, titulo, plataforma, video_url)
+      VALUES (${url}, ${titulo || ""}, ${plataforma}, ${video_url || ""})
       RETURNING *
     `
+
+
 
     return Response.json({ success: true, reel: result[0] })
   } catch (error) {

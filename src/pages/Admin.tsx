@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { put } from "@vercel/blob/client"
 import { descargarPdfConsentimiento } from "../lib/pdfConsentimiento"
+
 import {
   Lock,
   Eye,
@@ -2196,23 +2198,58 @@ function ReelsTab({ items, onRefresh, headers }: {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
+  const MAX_VIDEO_MB = 200
+
+  const handleVideoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!f.type.startsWith("video/")) { setMsg({ ok: false, text: "Solo se permiten archivos de video" }); return }
+    if (f.size > MAX_VIDEO_MB * 1024 * 1024) { setMsg({ ok: false, text: `El video supera los ${MAX_VIDEO_MB} MB` }); return }
+    setVideoFile(f)
+    setMsg(null)
+  }
+
+  const subirVideo = async (): Promise<string | null> => {
+    if (!videoFile) return null
+    setSubiendo(true)
+    setMsg(null)
+    try {
+      const blob = await upload(`reels/${videoFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`, videoFile, {
+        access: "public",
+        handleUploadUrl: "/api/admin/blob-upload",
+        headers,
+        multipart: videoFile.size > 10 * 1024 * 1024,
+      })
+      setSubiendo(false)
+      return blob.url
+    } catch (err) {
+      console.error("Error al subir video", err)
+      setSubiendo(false)
+      setMsg({ ok: false, text: "Error al subir el video. Probá con otro archivo." })
+      return null
+    }
+  }
+
   const addReel = async () => {
     if (!url.trim()) return
     setSaving(true)
     setMsg(null)
     try {
       const plataforma = detectPlatform(url)
+      const videoSubido = videoFile ? await subirVideo() : videoUrl.trim() || null
+      if (videoFile && !videoSubido) { setSaving(false); return }
       const res = await fetch("/api/admin/reels", {
         method: "POST",
         headers,
-        body: JSON.stringify({ url: url.trim(), titulo: titulo.trim(), plataforma, video_url: videoUrl.trim() }),
+        body: JSON.stringify({ url: url.trim(), titulo: titulo.trim(), plataforma, video_url: videoSubido || "" }),
       })
       const data = await res.json()
       if (data.success) {
         setUrl("")
         setTitulo("")
         setVideoUrl("")
-        setMsg({ ok: true, text: "Reel agregado correctamente" })
+        setVideoFile(null)
+        setMsg({ ok: true, text: videoSubido ? "Reel subido con video local" : "Reel agregado correctamente" })
         onRefresh()
       } else {
         setMsg({ ok: false, text: data.error || "Error al agregar" })
