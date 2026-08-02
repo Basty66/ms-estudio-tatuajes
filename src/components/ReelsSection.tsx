@@ -70,8 +70,9 @@ function VideoCard({ reel }: { reel: Reel }) {
   }, [])
 
   return (
-    <div className="snap-start shrink-0 w-[clamp(200px, 40vw, 260px)]">
+    <div className="snap-start shrink-0 w-[300px]">
       <div className="relative rounded-2xl overflow-hidden border border-white/5 group bg-black aspect-[9/16]">
+
         <video
           ref={videoRef}
           src={reel.video_url}
@@ -80,8 +81,9 @@ function VideoCard({ reel }: { reel: Reel }) {
           playsInline
           preload="metadata"
           onClick={togglePlay}
-          className="w-full h-full object-cover cursor-pointer"
+          className="w-full h-full object-contain cursor-pointer"
         />
+
 
         {/* Overlay de estado: desaparece al reproducir */}
         <div className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-opacity duration-500 ${playing ? "opacity-0" : "opacity-100"}`}>
@@ -139,13 +141,15 @@ function LinkCard({ reel }: { reel: Reel }) {
   const isTikTok = reel.plataforma === "tiktok"
 
   return (
-    <div className="snap-start shrink-0 w-[clamp(200px, 40vw, 260px)]">
+    <div className="snap-start shrink-0 w-[300px]">
       <a
+
         href={reel.url}
         target="_blank"
         rel="noopener noreferrer"
         className="relative block rounded-2xl overflow-hidden border border-white/5 group bg-black aspect-[9/16]"
       >
+
         {ytCode ? (
           <img src={`https://img.youtube.com/vi/${ytCode}/hqdefault.jpg`} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
         ) : (
