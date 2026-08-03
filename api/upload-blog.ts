@@ -1,57 +1,72 @@
-import { put } from "@vercel/blob"
-import { checkRateLimit, getClientIp, tooManyRequests } from "./lib/ratelimit"
+import { verifyRequest, unauthorized } from "../lib/auth"
 
-export const config = { runtime: "nodejs" }
+export const config = { runtime: "edge" }
 
-const MAX_SIZE = 5 * 1024 * 1024 // 5 MB para blog
+const MAX_SIZE = 5 * 1024 * 1024
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+const IMAGE_EXT = /\.(jpg|jpeg|png|webp|gif)$/i
+
+function b64(str: string): string {
+  return btoa(str)
+}
+
+async function hmacSha256Hex(payload: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  )
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload))
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("")
+}
 
 export async function POST(request: Request) {
+  if (!(await verifyRequest(request))) {
+    return unauthorized()
+  }
+
   try {
-    const ip = getClientIp(request)
-    if (!checkRateLimit(`upload-blog:${ip}`, 10, 60_000)) {
-      return tooManyRequests()
+    const body = await request.json()
+
+    let pathname: string | undefined
+    if (body.type === "blob.generate-client-token") {
+      pathname = body.payload?.pathname
+    } else if (typeof body.filename === "string") {
+      const safeName = body.filename.replace(/[^a-zA-Z0-9._-]/g, "_")
+      pathname = `blog/${Date.now()}-${safeName}`
     }
 
-    const { image } = await request.json()
-
-    if (!image || typeof image !== "string" || !image.startsWith("data:image")) {
+    if (!pathname || !pathname.startsWith("blog/") || !IMAGE_EXT.test(pathname)) {
       return Response.json(
-        { success: false, error: "Imagen inválida" },
+        { success: false, error: "Solo se permiten imágenes (jpg, png, webp, gif)" },
         { status: 400 },
       )
     }
 
-    // Validar tamaño del base64
-    const base64Data = image.split(",")[1] || ""
-    const sizeInBytes = Math.ceil((base64Data.length * 3) / 4)
-    if (sizeInBytes > MAX_SIZE) {
-      return Response.json(
-        { success: false, error: "La imagen no puede superar 5 MB" },
-        { status: 400 },
-      )
+    const rwToken = process.env.BLOB_READ_WRITE_TOKEN
+    if (!rwToken) {
+      return Response.json({ success: false, error: "Blob no configurado" }, { status: 500 })
     }
 
-    // Convertir base64 a Buffer (Node.js compatible)
-    const buffer = Buffer.from(base64Data, "base64")
+    const storeId = rwToken.split("_")[3] || ""
 
-    // Determinar extensión
-    const mimeMatch = image.match(/data:image\/(\w+)/)
-    const ext = mimeMatch?.[1] || "jpg"
-    const contentType = `image/${ext === "jpg" ? "jpeg" : ext === "svg" ? "svg+xml" : ext}`
-
-    // Subir a Vercel Blob
-    const filename = `blog/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const blob = await put(filename, buffer, {
-      contentType,
-      access: "public",
-    })
-
-    return Response.json({ success: true, url: blob.url })
-  } catch (error) {
-    console.error("upload-blog error:", String(error))
-    return Response.json(
-      { success: false, error: "Error al subir la imagen" },
-      { status: 500 },
+    const payload = b64(
+      JSON.stringify({
+        pathname,
+        allowedContentTypes: ALLOWED_TYPES,
+        maximumSizeInBytes: MAX_SIZE,
+        validUntil: Date.now() + 10 * 60 * 1000,
+      }),
     )
+
+    const securedKey = await hmacSha256Hex(payload, rwToken)
+    const clientToken = `vercel_blob_client_${storeId}_${b64(`${securedKey}.${payload}`)}`
+
+    return Response.json({ clientToken })
+  } catch (error) {
+    console.error(error)
+    return Response.json({ success: false, error: "Error al preparar la subida" }, { status: 500 })
   }
 }

@@ -811,26 +811,20 @@ function PublicacionesTab({ items, onDelete, onRefresh, headers }: { items: Post
 
     setUploadingImage(true)
     try {
-      const reader = new FileReader()
-      reader.onload = async (ev) => {
-        const base64 = ev.target?.result as string
-        setImagePreview(base64)
+      setImagePreview(URL.createObjectURL(file))
 
-        const res = await fetch("/api/upload-blog", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64 }),
-        })
-        const data = await res.json()
-        if (data.success) {
-          setForm({ ...form, imagen_url: data.url })
-        }
-        setUploadingImage(false)
-      }
-      reader.readAsDataURL(file)
-    } catch {
-      setUploadingImage(false)
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+      const blob = await upload(`blog/${Date.now()}-${safe}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload-blog",
+        headers,
+      })
+      setForm({ ...form, imagen_url: blob.url })
+    } catch (err) {
+      console.error("Error al subir imagen", err)
+      alert("Error al subir la imagen. Probá con otra.")
     }
+    setUploadingImage(false)
   }
 
   const handleCreate = async () => {
