@@ -395,7 +395,11 @@ export default function Admin() {
           className="glass rounded-3xl p-8 md:p-12 w-full max-w-sm"
         >
           <div className="w-16 h-16 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mx-auto mb-8">
-            <Lock size={28} className="text-cyan-400" weight="duotone" />
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect x="1.5" y="1.5" width="37" height="37" rx="3" stroke="rgba(0,229,255,0.5)" strokeWidth="1"/>
+              <path d="M9 28 L9 12 L14.5 22 L20 12 L20 28" stroke="#fff" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+              <path d="M31 14 Q23 14 23 18.5 Q23 22 27 22 Q31 22 31 25.5 Q31 30 23 29" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" fill="none" style={{ filter: "drop-shadow(0 0 6px rgba(0,229,255,0.7))" }}/>
+            </svg>
           </div>
           <h1 className="section-title text-3xl text-center premium-gradient mb-2">ADMIN</h1>
           <p className="font-tech text-center text-gray-600 text-xs tracking-[0.2em] mb-8">ACCESO RESTRINGIDO</p>
@@ -455,7 +459,11 @@ export default function Admin() {
       <header className="sticky top-0 z-50 glass-strong border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="section-title text-xl premium-gradient">MS</span>
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+              <rect x="1.5" y="1.5" width="37" height="37" rx="3" stroke="rgba(0,229,255,0.5)" strokeWidth="1"/>
+              <path d="M9 28 L9 12 L14.5 22 L20 12 L20 28" stroke="#fff" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+              <path d="M31 14 Q23 14 23 18.5 Q23 22 27 22 Q31 22 31 25.5 Q31 30 23 29" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" fill="none" style={{ filter: "drop-shadow(0 0 4px rgba(0,229,255,0.6))" }}/>
+            </svg>
             <span className="font-tech text-xs tracking-[0.2em] text-gray-600 hidden sm:inline">ADMIN PANEL</span>
           </div>
           <div className="flex items-center gap-2">
