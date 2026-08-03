@@ -31,12 +31,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Convertir base64 a Uint8Array (más compatible que Buffer)
-    const binaryString = atob(base64Data)
-    const bytes = new Uint8Array(binaryString.length)
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i)
-    }
+    // Convertir base64 a Buffer (Node.js compatible)
+    const buffer = Buffer.from(base64Data, "base64")
 
     // Determinar extensión
     const mimeMatch = image.match(/data:image\/(\w+)/)
@@ -45,7 +41,7 @@ export async function POST(request: Request) {
 
     // Subir a Vercel Blob
     const filename = `blog/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const blob = await put(filename, bytes, {
+    const blob = await put(filename, buffer, {
       contentType,
       access: "public",
     })
