@@ -169,7 +169,7 @@ export default function Agenda() {
     const info = daysData.get(dateStr)
     if (!info) return "nodata"
     if (!info.available) return "full"
-    if (info.booked > 0) return isToday(day) ? "today" : "partial"
+    if (info.booked > 0) return "partial"
     return isToday(day) ? "today" : "available"
   }
 

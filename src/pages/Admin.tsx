@@ -1162,12 +1162,15 @@ function DisponibilidadTab({ disponibilidad, excepciones, onRefresh, headers }: 
   })()
 
   useEffect(() => {
-    setTemplate(disponibilidad.length > 0
-      ? disponibilidad
-      : Array.from({ length: 7 }, (_, i) => ({
-          dia_semana: i, activo: i !== 0, hora_inicio: "10:00", hora_fin: "19:00", slots_max: 3
-        }))
-    )
+    const allDays = Array.from({ length: 7 }, (_, i) => ({
+      dia_semana: i, activo: i !== 0, hora_inicio: "10:00", hora_fin: "19:00", slots_max: 3
+    }))
+    if (disponibilidad.length > 0) {
+      const map = new Map(disponibilidad.map((d) => [d.dia_semana, d]))
+      setTemplate(allDays.map((d) => map.get(d.dia_semana) || d))
+    } else {
+      setTemplate(allDays)
+    }
   }, [disponibilidad])
 
   const saveTemplate = async () => {

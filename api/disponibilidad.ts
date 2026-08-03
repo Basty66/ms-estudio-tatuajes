@@ -20,6 +20,12 @@ export async function GET(request: Request) {
 
     // Get availability template
     const template = await sql`SELECT * FROM disponibilidad ORDER BY dia_semana`
+    const templateMap = new Map(template.map((t: any) => [t.dia_semana, t]))
+    for (let i = 0; i <= 6; i++) {
+      if (!templateMap.has(i)) {
+        template.push({ dia_semana: i, activo: false, hora_inicio: "10:00", hora_fin: "19:00", slots_max: 3 })
+      }
+    }
 
     // Get date overrides
     const overrides = await sql`
