@@ -1,4 +1,4 @@
-import { verifyRequest, unauthorized } from "../lib/auth"
+import { verifyRequest, unauthorized } from "./lib/auth"
 
 export const config = { runtime: "edge" }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
 
     return Response.json({ clientToken })
   } catch (error) {
-    console.error(error)
+    console.error("upload-blog error:", String(error))
     return Response.json({ success: false, error: "Error al preparar la subida" }, { status: 500 })
   }
 }
