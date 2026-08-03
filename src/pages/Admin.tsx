@@ -816,7 +816,7 @@ function PublicacionesTab({ items, onDelete, onRefresh, headers }: { items: Post
         const base64 = ev.target?.result as string
         setImagePreview(base64)
 
-        const res = await fetch("/api/upload-carnet", {
+        const res = await fetch("/api/upload-blog", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: base64 }),
