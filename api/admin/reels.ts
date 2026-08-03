@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 import { verifyRequest, unauthorized } from "../lib/auth"
 
-export const config = { runtime: "nodejs" }
+export const config = { runtime: "edge" }
 
 export async function GET(request: Request) {
   if (!(await verifyRequest(request))) {
