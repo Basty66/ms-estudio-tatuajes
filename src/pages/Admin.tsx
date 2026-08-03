@@ -142,7 +142,7 @@ interface ExcepcionFecha {
   motivo: string
 }
 
-type Tab = "dashboard" | "galeria" | "publicaciones" | "reels" | "resenas" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "consentimientos"
+type Tab = "dashboard" | "galeria" | "publicaciones" | "reels" | "resenas" | "testimonios" | "disponibilidad" | "citas" | "cotizaciones" | "finanzas" | "consentimientos"
 
 const estilosGallery = [
   { value: "general", label: "General" },
@@ -175,6 +175,7 @@ export default function Admin() {
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [cotizaciones, setCotizaciones] = useState<Quote[]>([])
   const [consentimientos, setConsentimientos] = useState<any[]>([])
+  const [testimonios, setTestimonios] = useState<any[]>([])
   const [agendamentos, setAgendamentos] = useState<Booking[]>([])
   const [galeria, setGaleria] = useState<GalleryItem[]>([])
   const [posts, setPosts] = useState<Post[]>([])
@@ -258,6 +259,17 @@ export default function Admin() {
       const data = await res.json()
       if (data.success) setConsentimientos(data.consentimientos)
     } catch { setErrorMsg("Error al cargar consentimientos") }
+    setLoading(false)
+  }, [token])
+
+  const fetchTestimonios = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/testimonios", { headers })
+      const data = await res.json()
+      if (data.success) setTestimonios(data.testimonios)
+    } catch { setErrorMsg("Error al cargar testimonios") }
     setLoading(false)
   }, [token])
 
@@ -354,12 +366,13 @@ export default function Admin() {
     if (tab === "publicaciones") fetchPosts()
     if (tab === "reels") fetchReels()
     if (tab === "resenas") fetchResenas()
+    if (tab === "testimonios") fetchTestimonios()
     if (tab === "disponibilidad") fetchDisponibilidad()
     if (tab === "citas") fetchAllCitas()
     if (tab === "cotizaciones") fetchCotizaciones()
     if (tab === "consentimientos") fetchConsentimientos()
     if (tab === "finanzas") fetchFinanzas()
-  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchReels, fetchResenas, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchConsentimientos, fetchFinanzas])
+  }, [tab, token, fetchDashboard, fetchGaleria, fetchPosts, fetchReels, fetchResenas, fetchTestimonios, fetchDisponibilidad, fetchAllCitas, fetchCotizaciones, fetchConsentimientos, fetchFinanzas])
 
   const deleteGaleria = async (id: number) => {
     if (!confirm("¿Eliminar esta imagen?")) return
@@ -431,6 +444,7 @@ export default function Admin() {
     { id: "publicaciones", label: "Publicaciones", icon: NotePencil },
     { id: "reels", label: "Reels", icon: InstagramLogo },
     { id: "resenas", label: "Reseñas", icon: Star },
+    { id: "testimonios", label: "Testimonios", icon: Star },
     { id: "cotizaciones", label: "Cotizaciones", icon: CurrencyDollar },
     { id: "consentimientos", label: "Consentimientos", icon: ClipboardText },
     { id: "finanzas", label: "Finanzas", icon: TrendUp },
@@ -532,6 +546,8 @@ export default function Admin() {
               <ReelsTab items={reels} onRefresh={fetchReels} headers={headers} />
             ) : tab === "resenas" ? (
               <ResenasTab items={resenas} />
+            ) : tab === "testimonios" ? (
+              <TestimoniosTab items={testimonios} onRefresh={fetchTestimonios} headers={headers} />
             ) : tab === "cotizaciones" ? (
               <CotizacionesTab items={cotizaciones} onRefresh={fetchCotizaciones} headers={headers} />
             ) : tab === "consentimientos" ? (
@@ -999,6 +1015,87 @@ function ResenasTab({ items }: { items: Resena[] }) {
         <div className="text-center py-16">
           <Star size={48} className="text-gray-700 mx-auto mb-4" />
           <p className="font-tech text-gray-600 tracking-wider">NO HAY RESEÑAS AÚN</p>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+function TestimoniosTab({ items, onRefresh, headers }: { items: any[]; onRefresh: () => void; headers: Record<string, string> }) {
+  const aprobar = async (id: number, aprobado: boolean) => {
+    await fetch("/api/admin/testimonios", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ id, aprobado }),
+    })
+    onRefresh()
+  }
+
+  const eliminar = async (id: number) => {
+    if (!confirm("¿Eliminar este testimonio?")) return
+    await fetch(`/api/admin/testimonios?id=${id}`, { method: "DELETE", headers })
+    onRefresh()
+  }
+
+  return (
+    <motion.div key="testimonios" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <h2 className="font-tech text-lg tracking-[0.2em] text-white mb-6 flex items-center gap-2">
+        <Star size={20} className="text-cyan-400" /> TESTIMONIOS DE CLIENTES
+      </h2>
+      <p className="font-tech text-xs text-gray-600 tracking-wider mb-6">
+        Testimonios enviados por visitantes del sitio. Aprueba los que quieras mostrar en la landing.
+      </p>
+
+      <div className="space-y-3">
+        {items.map((t) => (
+          <div key={t.id} className={`glass rounded-xl p-4 border ${t.aprobado ? "border-cyan-400/20" : "border-white/5"}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={12}
+                        weight={i < t.rating ? "fill" : "regular"}
+                        className={i < t.rating ? "text-yellow-400" : "text-gray-700"}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-white text-sm font-medium">{t.nombre}</span>
+                  <span className={`text-[10px] font-tech tracking-wider px-2 py-0.5 rounded-full ${t.aprobado ? "bg-cyan-400/10 text-cyan-400" : "bg-gray-700/30 text-gray-500"}`}>
+                    {t.aprobado ? "Aprobado" : "Pendiente"}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm mt-1">{t.texto}</p>
+                <p className="text-gray-700 text-xs mt-2">
+                  {new Date(t.creado_en).toLocaleDateString("es-CL")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => aprobar(t.id, !t.aprobado)}
+                  className={`neon-button rounded-lg px-3 py-2 text-xs font-tech tracking-wider ${t.aprobado ? "text-gray-500" : "text-cyan-400"}`}
+                >
+                  {t.aprobado ? "OCULTAR" : "APROBAR"}
+                </button>
+                <button
+                  onClick={() => eliminar(t.id)}
+                  className="text-gray-600 hover:text-red-400 transition-colors px-2"
+                  aria-label="Eliminar"
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {items.length === 0 && (
+        <div className="text-center py-16">
+          <Star size={48} className="text-gray-700 mx-auto mb-4" />
+          <p className="font-tech text-gray-600 tracking-wider">NO HAY TESTIMONIOS AÚN</p>
         </div>
       )}
     </motion.div>
