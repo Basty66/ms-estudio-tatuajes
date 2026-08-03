@@ -3,12 +3,12 @@ import { motion } from "framer-motion"
 import { Star, GoogleLogo, Quotes } from "@phosphor-icons/react"
 import TestimonioForm from "./TestimonioForm"
 
-interface Resena {
+interface GoogleReview {
   id: number
   autor: string
   texto: string
   rating: number
-  fuente: string
+  foto: string
 }
 
 interface Testimonio {
@@ -23,15 +23,27 @@ interface Testimonio {
 const easeOut = [0.23, 1, 0.32, 1] as const
 
 export default function Reviews() {
-  const [resenas, setResenas] = useState<Resena[]>([])
+  const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
+  const [googleRating, setGoogleRating] = useState(0)
+  const [googleTotal, setGoogleTotal] = useState(0)
+  const [googleConfigured, setGoogleConfigured] = useState(false)
   const [testimonios, setTestimonios] = useState<Testimonio[]>([])
 
   const fetchData = () => {
-    fetch("/api/resenas")
+    // Google Reviews
+    fetch("/api/google-reviews")
       .then((r) => r.json())
-      .then((data) => { if (data.success) setResenas(data.resenas) })
+      .then((data) => {
+        if (data.success) {
+          setGoogleReviews(data.reviews || [])
+          setGoogleRating(data.rating || 0)
+          setGoogleTotal(data.total || 0)
+          setGoogleConfigured(data.configured)
+        }
+      })
       .catch(() => {})
 
+    // Testimonios aprobados
     fetch("/api/testimonios")
       .then((r) => r.json())
       .then((data) => { if (data.success) setTestimonios(data.testimonios) })
@@ -40,7 +52,10 @@ export default function Reviews() {
 
   useEffect(() => { fetchData() }, [])
 
-  if (resenas.length === 0 && testimonios.length === 0) return null
+  const hasGoogleReviews = googleConfigured && googleReviews.length > 0
+  const hasTestimonios = testimonios.length > 0
+
+  if (!hasGoogleReviews && !hasTestimonios) return null
 
   return (
     <section id="reviews" className="relative py-20 md:py-32 overflow-hidden">
@@ -62,11 +77,32 @@ export default function Reviews() {
             <br />
             <span className="premium-gradient">TESTIMONIOS</span>
           </h2>
+
+          {/* Rating promedio de Google */}
+          {hasGoogleReviews && googleRating > 0 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <div className="flex">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    size={20}
+                    weight={i < Math.round(googleRating) ? "fill" : "regular"}
+                    className={i < Math.round(googleRating) ? "text-yellow-400" : "text-gray-700"}
+                  />
+                ))}
+              </div>
+              <span className="text-white font-semibold text-lg">{googleRating}</span>
+              <span className="text-gray-500 text-sm">
+                · {googleTotal} reseñas en Google
+              </span>
+            </div>
+          )}
+
           <div className="w-12 h-[1px] bg-cyan-400/30 mx-auto mt-6" />
         </motion.div>
 
         {/* Reseñas de Google */}
-        {resenas.length > 0 && (
+        {hasGoogleReviews && (
           <div className="mb-16">
             <div className="flex items-center gap-2 mb-6">
               <GoogleLogo size={20} className="text-gray-500" weight="fill" />
@@ -75,7 +111,7 @@ export default function Reviews() {
               </h3>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {resenas.slice(0, 6).map((r, i) => (
+              {googleReviews.map((r, i) => (
                 <motion.div
                   key={r.id}
                   initial={{ opacity: 0, y: 40 }}
@@ -84,20 +120,37 @@ export default function Reviews() {
                   transition={{ duration: 0.7, delay: i * 0.1, ease: easeOut }}
                   className="glass-card rounded-2xl p-6"
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex">
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <Star
-                          key={j}
-                          size={14}
-                          weight={j < r.rating ? "fill" : "regular"}
-                          className={j < r.rating ? "text-yellow-400" : "text-gray-700"}
-                        />
-                      ))}
+                  <div className="flex items-center gap-3 mb-3">
+                    {r.foto ? (
+                      <img
+                        src={r.foto}
+                        alt={r.autor}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-cyan-400/20 flex items-center justify-center">
+                        <span className="text-cyan-400 text-xs font-bold">
+                          {r.autor.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-white text-sm font-medium">{r.autor}</p>
+                      <div className="flex">
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <Star
+                            key={j}
+                            size={12}
+                            weight={j < r.rating ? "fill" : "regular"}
+                            className={j < r.rating ? "text-yellow-400" : "text-gray-700"}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-gray-400 text-sm mb-4 leading-relaxed">{r.texto}</p>
-                  <p className="font-tech text-xs tracking-[0.15em] text-gray-500">{r.autor}</p>
+                  {r.texto && (
+                    <p className="text-gray-400 text-sm leading-relaxed">{r.texto}</p>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -105,7 +158,7 @@ export default function Reviews() {
         )}
 
         {/* Testimonios de clientes */}
-        {testimonios.length > 0 && (
+        {hasTestimonios && (
           <div className="mb-16">
             <div className="flex items-center gap-2 mb-6">
               <Quotes size={20} className="text-cyan-400" weight="fill" />

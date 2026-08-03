@@ -72,6 +72,8 @@ Definir en Vercel → Settings → Environment Variables. **No poner los valores
 | `JWT_SECRET` | Secret para firmar los JWT. Fallback a `ADMIN_PASSWORD` si falta, pero debe estar definido. Generar con `openssl rand -base64 48` |
 | `TELEGRAM_BOT_TOKEN` | Token del bot de Telegram |
 | `TELEGRAM_CHAT_ID` | Chat ID que recibe las notificaciones |
+| `GOOGLE_PLACES_API_KEY` | API Key de Google Cloud (Places API). Gratis: $200/mes de crédito. Ver setup abajo. |
+| `GOOGLE_PLACE_ID` | Place ID de "MS Estudio de Tatuajes" en Google Maps |
 
 ## Deploy
 
@@ -102,3 +104,38 @@ Verificar siempre que los typechecks y el build pasen antes de hacer push.
   si el tráfico crece.
 - Subir imágenes de cotización a un blob store (Vercel Blob / S3 / Cloudinary) y guardar solo la
   URL, en vez de base64 en la base de datos.
+
+## Setup Google Reviews (gratis)
+
+### Paso 1: Crear proyecto en Google Cloud
+1. Ir a https://console.cloud.google.com
+2. Crear nuevo proyecto: "MS Estudio - Reviews"
+3. Seleccionar el proyecto
+
+### Paso 2: Habilitar APIs
+1. APIs & Services → Library
+2. Buscar y habilitar: **Places API**
+3. Buscar y habilitar: **Maps JavaScript API** (opcional, para futuro)
+
+### Paso 3: Crear API Key
+1. APIs & Services → Credentials
+2. Create Credentials → API Key
+3. Copiar la key generada
+4. (Recomendado) Restringir la key a solo Places API
+
+### Paso 4: Obtener Place ID
+1. Ir a https://developers.google.com/maps/documentation/places/web-service/place-id
+2. Buscar "MS Estudio de Tatuajes Melipilla"
+3. Copiar el Place ID (empieza con `ChIJ...`)
+
+### Paso 5: Configurar en Vercel
+1. Vercel → Settings → Environment Variables
+2. Agregar:
+   - `GOOGLE_PLACES_API_KEY` = tu API key
+   - `GOOGLE_PLACE_ID` = tu Place ID
+3. Redesplegar
+
+### Notas
+- Google da $200/mes gratis. Un estudio con 100 reseñas no gasta nada.
+- Las reseñas se cachean 30 min para no exceder cuota.
+- Si no se configuran las env vars, la sección de Google Reviews no aparece (no rompe nada).
