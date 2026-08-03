@@ -37,6 +37,7 @@ import {
   DownloadSimple,
   InstagramLogo,
   ShieldCheck,
+  Camera,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -780,6 +781,41 @@ function GaleriaTab({ items, onDelete, onRefresh, headers }: { items: GalleryIte
 function PublicacionesTab({ items, onDelete, onRefresh, headers }: { items: Post[]; onDelete: (id: number) => void; onRefresh: () => void; headers: Record<string, string> }) {
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ titulo: "", contenido: "", imagen_url: "", tipo: "post" })
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen no puede superar 5 MB")
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string
+        setImagePreview(base64)
+
+        const res = await fetch("/api/upload-carnet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64 }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setForm({ ...form, imagen_url: data.url })
+        }
+        setUploadingImage(false)
+      }
+      reader.readAsDataURL(file)
+    } catch {
+      setUploadingImage(false)
+    }
+  }
 
   const handleCreate = async () => {
     if (!form.titulo.trim()) return
@@ -793,6 +829,7 @@ function PublicacionesTab({ items, onDelete, onRefresh, headers }: { items: Post
       const data = await res.json()
       if (data.success) {
         setForm({ titulo: "", contenido: "", imagen_url: "", tipo: "post" })
+        setImagePreview(null)
         onRefresh()
       }
     } catch (e) { console.error("Error al crear publicación", e) }
@@ -823,12 +860,45 @@ function PublicacionesTab({ items, onDelete, onRefresh, headers }: { items: Post
             rows={4}
             className="neon-input rounded-xl px-4 py-3 w-full text-sm resize-none"
           />
-          <input
-            value={form.imagen_url}
-            onChange={(e) => setForm({ ...form, imagen_url: e.target.value })}
-            placeholder="URL de imagen (opcional)"
-            className="neon-input rounded-xl px-4 py-3 w-full text-sm"
-          />
+
+          {/* Upload de imagen */}
+          <div>
+            {imagePreview || form.imagen_url ? (
+              <div className="relative inline-block">
+                <img
+                  src={imagePreview || form.imagen_url}
+                  alt="Preview"
+                  className="max-h-40 rounded-xl border border-white/10"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setImagePreview(null); setForm({ ...form, imagen_url: "" }) }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+                {uploadingImage && (
+                  <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+                    <Spinner size={24} className="animate-spin text-cyan-400" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <label className="flex items-center gap-3 rounded-xl px-4 py-4 border border-dashed border-white/20 bg-white/[0.02] text-gray-400 hover:border-cyan-400/40 hover:bg-cyan-400/5 transition-all cursor-pointer">
+                <Camera size={24} weight="duotone" className="text-cyan-400" />
+                <div>
+                  <p className="text-sm">Subir imagen desde tu dispositivo</p>
+                  <p className="text-[10px] text-gray-500">JPG o PNG, máximo 5 MB</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <select
               value={form.tipo}

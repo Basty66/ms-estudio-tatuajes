@@ -89,8 +89,15 @@ export default function BlogSection() {
                 onClick={() => setExpanded(expanded === post.id ? null : post.id)}
                 className="w-full text-left"
               >
+                {post.imagen_url && expanded === post.id && (
+                  <img
+                    src={post.imagen_url}
+                    alt={post.titulo}
+                    className="w-full h-48 md:h-64 object-cover"
+                  />
+                )}
                 <div className="flex items-start gap-4 p-5">
-                  {post.imagen_url && (
+                  {post.imagen_url && expanded !== post.id && (
                     <img
                       src={post.imagen_url}
                       alt={post.titulo}
@@ -109,7 +116,7 @@ export default function BlogSection() {
                       <motion.p
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
-                        className="text-gray-400 text-xs leading-relaxed mt-3"
+                        className="text-gray-400 text-xs leading-relaxed mt-3 whitespace-pre-line"
                       >
                         {post.contenido}
                       </motion.p>
