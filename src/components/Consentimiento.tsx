@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { descargarPdfConsentimiento } from "../lib/pdfConsentimiento"
 import {
   User,
@@ -13,6 +13,8 @@ import {
   Eraser,
   ShieldCheck,
   DownloadSimple,
+  Camera,
+  X,
 } from "@phosphor-icons/react"
 
 const easeOut = [0.23, 1, 0.32, 1] as const
@@ -66,6 +68,9 @@ export default function Consentimiento() {
     alergias_detalle: "",
     medicamentos: "",
     mayor_edad: false,
+    menor_edad: false,
+    nombre_padre: "",
+    rut_padre: "",
     acepta_riesgos: false,
     acepta_cuidados: false,
     acepta_veracidad: false,
@@ -76,6 +81,7 @@ export default function Consentimiento() {
   const [enviado, setEnviado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [firmaData, setFirmaData] = useState<string | null>(null)
+  const [carnetPreview, setCarnetPreview] = useState<string | null>(null)
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const drawing = useRef(false)
@@ -144,6 +150,32 @@ export default function Consentimiento() {
     setFlags((f) => ({ ...f, [key]: !f[key] }))
   }
 
+  const handleCarnetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 200 * 1024) {
+      setError("La imagen del carnet no puede superar 200 KB.")
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Solo se permiten imágenes (JPG, PNG, etc.).")
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setCarnetPreview(ev.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+    setError(null)
+  }
+
+  const removeCarnet = () => {
+    setCarnetPreview(null)
+  }
+
   const descargarCopia = () => {
     if (!firmaData) return
     descargarPdfConsentimiento({
@@ -163,6 +195,10 @@ export default function Consentimiento() {
       firmaUrl: firmaData,
       firmadoEn: new Date().toLocaleString("es-CL"),
       origen: "cliente",
+      menorEdad: form.menor_edad,
+      nombrePadre: form.nombre_padre,
+      rutPadre: form.rut_padre,
+      carnetPadreUrl: carnetPreview || undefined,
     })
   }
 
@@ -178,10 +214,26 @@ export default function Consentimiento() {
       setError("Teléfono inválido. Debe ser +569XXXXXXXX.")
       return
     }
-    if (!form.mayor_edad) {
-      setError("Debes confirmar que eres mayor de edad.")
+
+    // Validar edad
+    const esMenor = form.menor_edad
+    if (!form.mayor_edad && !esMenor) {
+      setError("Debes confirmar si eres mayor o menor de edad.")
       return
     }
+
+    // Validar datos del padre si es menor
+    if (esMenor) {
+      if (!form.nombre_padre || !form.rut_padre) {
+        setError("Completa los datos del padre/madre responsable.")
+        return
+      }
+      if (!carnetPreview) {
+        setError("Debes adjuntar la imagen del carnet del padre/madre.")
+        return
+      }
+    }
+
     if (!form.acepta_riesgos || !form.acepta_cuidados || !form.acepta_veracidad || !form.acepta_datos) {
       setError("Debes aceptar todas las declaraciones para continuar.")
       return
@@ -195,7 +247,34 @@ export default function Consentimiento() {
     try {
       const firma_url = canvasRef.current!.toDataURL("image/png")
       setFirmaData(firma_url)
-      const payload = { ...form, ...flags, firma_url }
+
+      // Subir carnet a Vercel Blob si es menor
+      let carnet_url = ""
+      if (esMenor && carnetPreview) {
+        const uploadRes = await fetch("/api/upload-carnet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: carnetPreview }),
+        })
+        const uploadData = await uploadRes.json()
+        if (uploadData.success) {
+          carnet_url = uploadData.url
+        } else {
+          setError("Error al subir la imagen del carnet. Intenta de nuevo.")
+          setEnviando(false)
+          return
+        }
+      }
+
+      const payload = {
+        ...form,
+        ...flags,
+        firma_url,
+        menor_edad: esMenor,
+        nombre_padre: esMenor ? form.nombre_padre : "",
+        rut_padre: esMenor ? form.rut_padre : "",
+        carnet_padre_url: carnet_url,
+      }
 
       const res = await fetch("/api/consentimiento", {
         method: "POST",
@@ -418,12 +497,135 @@ export default function Consentimiento() {
               Declaraciones
             </h3>
             <div className="space-y-2.5">
-              <CheckRow
-                checked={form.mayor_edad}
-                onChange={() => setField("mayor_edad", !form.mayor_edad)}
-                label="Confirmo que soy mayor de 18 años. *"
-                highlight
-              />
+              {/* Opción de mayor/menor de edad */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setField("mayor_edad", true)
+                    setField("menor_edad", false)
+                    removeCarnet()
+                  }}
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-all duration-300 border ${
+                    form.mayor_edad
+                      ? "border-cyan-400/50 bg-cyan-400/10 text-white"
+                      : "border-white/8 bg-white/[0.02] text-gray-400 hover:border-white/20"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      form.mayor_edad ? "border-cyan-400 bg-cyan-400" : "border-white/30"
+                    }`}
+                  >
+                    {form.mayor_edad && <CheckCircle size={12} weight="bold" className="text-black" />}
+                  </span>
+                  Soy mayor de 18 años
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setField("menor_edad", true)
+                    setField("mayor_edad", false)
+                  }}
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-all duration-300 border ${
+                    form.menor_edad
+                      ? "border-cyan-400/50 bg-cyan-400/10 text-white"
+                      : "border-white/8 bg-white/[0.02] text-gray-400 hover:border-white/20"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      form.menor_edad ? "border-cyan-400 bg-cyan-400" : "border-white/30"
+                    }`}
+                  >
+                    {form.menor_edad && <CheckCircle size={12} weight="bold" className="text-black" />}
+                  </span>
+                  Soy menor de 18 años
+                </button>
+              </div>
+
+              {/* Formulario de autorización parental */}
+              <AnimatePresence>
+                {form.menor_edad && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="glass rounded-xl p-5 mt-3 space-y-4 border border-cyan-400/20">
+                      <div className="flex items-center gap-2 text-cyan-400">
+                        <ShieldCheck size={18} weight="fill" />
+                        <span className="font-tech text-xs tracking-wider uppercase">
+                          Autorización Parental
+                        </span>
+                      </div>
+                      <p className="text-gray-400 text-xs">
+                        Como eres menor de 18 años, necesitas el consentimiento de tu padre o madre
+                        responsable. Los datos del adulto responsable quedarán registrados.
+                      </p>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <Field icon={<User size={18} />}>
+                          <input
+                            className="neon-input w-full rounded-lg px-4 py-3 pl-11 text-sm"
+                            placeholder="Nombre completo del padre/madre *"
+                            value={form.nombre_padre}
+                            onChange={(e) => setField("nombre_padre", e.target.value)}
+                          />
+                        </Field>
+                        <Field icon={<IdentificationCard size={18} />}>
+                          <input
+                            className="neon-input w-full rounded-lg px-4 py-3 pl-11 text-sm"
+                            placeholder="RUT del padre/madre *"
+                            value={form.rut_padre}
+                            onChange={(e) => setField("rut_padre", e.target.value)}
+                          />
+                        </Field>
+                      </div>
+
+                      {/* Upload de carnet */}
+                      <div>
+                        <p className="text-gray-400 text-xs mb-2">
+                          Foto del carnet de identidad del padre/madre responsable *
+                        </p>
+                        {carnetPreview ? (
+                          <div className="relative inline-block">
+                            <img
+                              src={carnetPreview}
+                              alt="Carnet del padre"
+                              className="max-h-40 rounded-lg border border-white/10"
+                            />
+                            <button
+                              type="button"
+                              onClick={removeCarnet}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-3 rounded-lg px-4 py-4 border border-dashed border-white/20 bg-white/[0.02] text-gray-400 hover:border-cyan-400/40 hover:bg-cyan-400/5 transition-all cursor-pointer">
+                            <Camera size={24} weight="duotone" className="text-cyan-400" />
+                            <div>
+                              <p className="text-sm">Subir foto del carnet</p>
+                              <p className="text-[10px] text-gray-500">JPG o PNG, máximo 200 KB</p>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleCarnetUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {aceptaciones.map((a) => (
                 <CheckRow
                   key={a.key}

@@ -12,6 +12,11 @@ export interface DatosConsentimientoPdf {
   firmaUrl: string
   firmadoEn?: string
   origen: "cliente" | "admin"
+  // Autorización parental
+  menorEdad?: boolean
+  nombrePadre?: string
+  rutPadre?: string
+  carnetPadreUrl?: string
 }
 
 const COLOR_DARK: [number, number, number] = [5, 6, 8]
@@ -129,18 +134,36 @@ export async function descargarPdfConsentimiento(d: DatosConsentimientoPdf) {
   if (d.alergiasDetalle) field("Detalle de alergias", d.alergiasDetalle)
   if (d.medicamentos) field("Medicamentos", d.medicamentos)
 
+  // ─── Autorización Parental (si aplica) ───
+  if (d.menorEdad && d.nombrePadre) {
+    title("Autorización Parental")
+    doc.setFont("helvetica", "normal")
+    doc.setTextColor(...COLOR_TEXT)
+    doc.setFontSize(9.5)
+    const textoMenor = "El/la suscribiente, menor de edad, cuenta con el consentimiento de su padre/madre responsable para la realización del tatuaje."
+    const lines = doc.splitTextToSize(textoMenor, CONTENT) as string[]
+    doc.text(lines, M, y)
+    y += lines.length * 4.6 + 4
+
+    field("Nombre del padre/madre", d.nombrePadre)
+    field("RUT del padre/madre", d.rutPadre || "")
+  }
+
   // ─── Declaraciones ───
-  bullets(
-    "Declaraciones",
-    [
-      "Confirmo que soy mayor de 18 años.",
-      "Entiendo que un tatuaje es permanente y conozco los riesgos (infección, reacción alérgica, cicatrización).",
-      "Me comprometo a seguir las indicaciones de cuidado post-tatuaje del estudio.",
-      "Declaro que toda la información entregada es verdadera y completa.",
-      "Autorizo el tratamiento de mis datos personales para fines del servicio.",
-    ],
-    "",
-  )
+  const declaraciones = [
+    "Entiendo que un tatuaje es permanente y conozco los riesgos (infección, reacción alérgica, cicatrización).",
+    "Me comprometo a seguir las indicaciones de cuidado post-tatuaje del estudio.",
+    "Declaro que toda la información entregada es verdadera y completa.",
+    "Autorizo el tratamiento de mis datos personales para fines del servicio.",
+  ]
+
+  if (d.menorEdad) {
+    declaraciones.unshift("Soy menor de 18 años cuento con autorización de mi padre/madre responsable.")
+  } else {
+    declaraciones.unshift("Confirmo que soy mayor de 18 años.")
+  }
+
+  bullets("Declaraciones", declaraciones, "")
 
   // ─── Firma ───
   title("Firma")

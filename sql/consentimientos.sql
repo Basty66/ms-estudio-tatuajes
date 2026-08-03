@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS consentimientos (
   -- Vínculo opcional con una cita
   agendamiento_id INTEGER,
 
+  -- Autorización parental (para menores de edad)
+  menor_edad BOOLEAN DEFAULT false,
+  nombre_padre TEXT DEFAULT '',
+  rut_padre TEXT DEFAULT '',
+  carnet_padre_url TEXT DEFAULT '',
+
   creado_en TIMESTAMP DEFAULT NOW()
 );
 

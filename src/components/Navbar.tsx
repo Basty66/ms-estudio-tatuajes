@@ -1,32 +1,58 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { List, X } from "@phosphor-icons/react"
+import { List, X, CaretDown } from "@phosphor-icons/react"
 
-const links = [
-  { href: "#inicio", label: "Inicio" },
-  { href: "#sobre", label: "Sobre mí" },
-  { href: "#laser", label: "Láser" },
-  { href: "#galeria", label: "Galería" },
-  { href: "#cuidados", label: "Cuidados" },
-  { href: "#cotizador", label: "Cotizador" },
-  { href: "#consentimiento", label: "Consentimiento" },
-  { href: "#agenda", label: "Agenda" },
-  { href: "#faq", label: "FAQ" },
-  { href: "#blog", label: "Blog" },
-  { href: "#reels", label: "Reels" },
-  { href: "#ubicacion", label: "Ubicación" },
+const navGroups = [
+  {
+    label: "Servicios",
+    items: [
+      { href: "#galeria", label: "Galería" },
+      { href: "#cotizador", label: "Cotizador" },
+      { href: "#agenda", label: "Agenda" },
+      { href: "#laser", label: "Láser" },
+    ],
+  },
+  {
+    label: "Info",
+    items: [
+      { href: "#sobre", label: "Sobre mí" },
+      { href: "#cuidados", label: "Cuidados" },
+      { href: "#consentimiento", label: "Consentimiento" },
+      { href: "#faq", label: "FAQ" },
+    ],
+  },
+  {
+    label: "Más",
+    items: [
+      { href: "#blog", label: "Blog" },
+      { href: "#reels", label: "Reels" },
+      { href: "#ubicacion", label: "Ubicación" },
+    ],
+  },
 ]
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const navigate = useNavigate()
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
   const tapCount = useRef(0)
@@ -46,6 +72,7 @@ export default function Navbar() {
 
   const handleNav = (href: string) => {
     setOpen(false)
+    setActiveDropdown(null)
     const id = href.replace("#", "")
     const el = document.getElementById(id)
     if (el) {
@@ -65,15 +92,16 @@ export default function Navbar() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-18 flex items-center justify-between">
+        {/* Logo */}
         <button
           onClick={handleLogoTripleTap}
-          className="group relative flex items-center gap-2.5"
+          className="group relative flex items-center gap-2.5 shrink-0"
           aria-label="MS Estudio de Tatuajes"
         >
           <svg
-            width="34"
-            height="34"
+            width="32"
+            height="32"
             viewBox="0 0 40 40"
             fill="none"
             className="transition-transform duration-500 group-hover:rotate-[8deg]"
@@ -105,29 +133,60 @@ export default function Navbar() {
             />
           </svg>
           <div className="hidden sm:flex flex-col leading-none">
-            <span className="font-display text-lg tracking-[0.12em] text-white">MATNESS</span>
-            <span className="font-tech text-[8px] tracking-[0.35em] text-cyan-400/70 uppercase">
+            <span className="font-display text-base tracking-[0.12em] text-white">MATNESS</span>
+            <span className="font-tech text-[7px] tracking-[0.35em] text-cyan-400/70 uppercase">
               Tattoo Studio
             </span>
           </div>
         </button>
 
-        <nav className="hidden md:flex items-center gap-1">
-          {links.map((link, i) => (
-            <motion.button
-              key={link.href}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.05 }}
-              onClick={() => handleNav(link.href)}
-              className="font-tech relative px-5 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-300 tracking-[0.2em] uppercase group"
+        {/* Desktop nav — dropdowns compactos */}
+        <nav className="hidden md:flex items-center gap-1 ml-auto mr-4" ref={dropdownRef}>
+          {navGroups.map((group) => (
+            <div
+              key={group.label}
+              className="relative"
+              onMouseEnter={() => setActiveDropdown(group.label)}
+              onMouseLeave={() => setActiveDropdown(null)}
             >
-              {link.label}
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[1px] bg-cyan-400 transition-all duration-300 group-hover:w-1/2" />
-            </motion.button>
+              <button
+                className={`font-tech flex items-center gap-1 px-3 py-2 text-xs text-gray-400 hover:text-white transition-colors duration-300 tracking-[0.15em] uppercase ${
+                  activeDropdown === group.label ? "text-white" : ""
+                }`}
+              >
+                {group.label}
+                <CaretDown
+                  size={10}
+                  weight="bold"
+                  className={`transition-transform duration-200 ${activeDropdown === group.label ? "rotate-180" : ""}`}
+                />
+              </button>
+              <AnimatePresence>
+                {activeDropdown === group.label && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-1 glass-premium rounded-xl py-2 min-w-[180px] border border-white/10"
+                  >
+                    {group.items.map((link) => (
+                      <button
+                        key={link.href}
+                        onClick={() => handleNav(link.href)}
+                        className="font-tech w-full text-left px-4 py-2.5 text-xs text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 transition-all duration-200 tracking-[0.15em] uppercase"
+                      >
+                        {link.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ))}
         </nav>
 
+        {/* CTA contacto */}
         <motion.a
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -135,12 +194,13 @@ export default function Navbar() {
           href="https://wa.me/56964470668"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-tech hidden md:inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm tracking-[0.2em] hover:bg-cyan-400/20 hover:border-cyan-400/50 hover:shadow-[0_0_30px_rgba(0,229,255,0.15)] transition-all duration-300 group"
+          className="font-tech hidden md:inline-flex items-center gap-2 px-5 py-2 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs tracking-[0.15em] hover:bg-cyan-400/20 hover:border-cyan-400/50 hover:shadow-[0_0_30px_rgba(0,229,255,0.15)] transition-all duration-300 shrink-0"
         >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
           CONTACTO
         </motion.a>
 
+        {/* Mobile hamburger */}
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden text-cyan-400 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -150,6 +210,7 @@ export default function Navbar() {
         </button>
       </div>
 
+      {/* Mobile menu */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -159,22 +220,29 @@ export default function Navbar() {
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
             className="md:hidden glass-premium border-t border-white/5 overflow-hidden"
           >
-            <nav className="flex flex-col px-4 md:px-6 py-4 md:py-6 gap-2">
-              {links.map((link) => (
-                <button
-                  key={link.href}
-                  onClick={() => handleNav(link.href)}
-                  className="font-tech group relative text-left py-3 px-4 rounded-lg text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 hover:shadow-[inset_0_0_24px_rgba(0,229,255,0.08)] active:bg-cyan-400/25 active:text-white active:scale-[0.98] transition-all duration-300 tracking-[0.2em] uppercase text-sm overflow-hidden"
-                >
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-[3px] rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.8)] transition-all duration-300 group-hover:h-3/5" />
-                  {link.label}
-                </button>
+            <nav className="flex flex-col px-4 py-4 gap-1">
+              {navGroups.map((group) => (
+                <div key={group.label}>
+                  <p className="font-tech text-[10px] text-cyan-400/60 tracking-[0.3em] uppercase px-4 pt-3 pb-1">
+                    {group.label}
+                  </p>
+                  {group.items.map((link) => (
+                    <button
+                      key={link.href}
+                      onClick={() => handleNav(link.href)}
+                      className="font-tech group relative text-left py-2.5 px-4 rounded-lg text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 active:bg-cyan-400/25 active:text-white active:scale-[0.98] transition-all duration-300 tracking-[0.15em] uppercase text-sm overflow-hidden"
+                    >
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-[3px] rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.8)] transition-all duration-300 group-hover:h-3/5" />
+                      {link.label}
+                    </button>
+                  ))}
+                </div>
               ))}
               <a
                 href="https://wa.me/56964470668"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-tech mt-2 text-center py-3 px-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 tracking-[0.2em] text-sm hover:bg-cyan-400/20 transition-all"
+                className="font-tech mt-2 text-center py-3 px-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 tracking-[0.15em] text-sm hover:bg-cyan-400/20 transition-all"
               >
                 CONTACTO
               </a>

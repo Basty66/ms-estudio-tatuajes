@@ -36,6 +36,7 @@ import {
   House,
   DownloadSimple,
   InstagramLogo,
+  ShieldCheck,
 } from "@phosphor-icons/react"
 
 interface Metrics {
@@ -1976,6 +1977,10 @@ function ConsentimientosTab({ items, onRefresh, headers }: {
       firmaUrl: c.firma_url,
       firmadoEn: new Date(c.firmado_en || c.creado_en).toLocaleString("es-CL"),
       origen: "admin",
+      menorEdad: c.menor_edad,
+      nombrePadre: c.nombre_padre,
+      rutPadre: c.rut_padre,
+      carnetPadreUrl: c.carnet_padre_url,
     })
   }
 
@@ -2033,6 +2038,11 @@ function ConsentimientosTab({ items, onRefresh, headers }: {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-white font-semibold">{c.nombre}</span>
                   <span className="text-gray-600 text-xs">{c.rut}</span>
+                  {c.menor_edad && (
+                    <span className="text-[10px] font-tech tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded px-2 py-0.5">
+                      MENOR · Padre: {c.nombre_padre}
+                    </span>
+                  )}
                   {tieneAlertas(c) && (
                     <span className="text-[10px] font-tech tracking-wider text-red-400 bg-red-400/10 border border-red-400/20 rounded px-2 py-0.5">
                       ⚠ {alertasDe(c).join(" · ")}
@@ -2116,6 +2126,38 @@ function ConsentimientosTab({ items, onRefresh, headers }: {
                     <Info label="Zona" value={detalle.zona_tatuaje || "—"} />
                     <Info label="Firmado" value={fmtFecha(detalle.firmado_en)} />
                   </div>
+
+                  {detalle.menor_edad && (
+                    <div className="glass rounded-xl p-4 border border-amber-400/20">
+                      <p className="font-tech text-xs text-amber-400 tracking-wider uppercase mb-3 flex items-center gap-2">
+                        <ShieldCheck size={14} weight="fill" />
+                        Autorización Parental
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <Info label="Padre/Madre" value={detalle.nombre_padre || "—"} />
+                        <Info label="RUT Padre" value={detalle.rut_padre || "—"} />
+                      </div>
+                      {detalle.carnet_padre_url && (
+                        <div className="mt-3">
+                          <p className="font-tech text-[10px] text-gray-500 tracking-wider uppercase mb-2">
+                            Carnet del padre
+                          </p>
+                          <a
+                            href={detalle.carnet_padre_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block"
+                          >
+                            <img
+                              src={detalle.carnet_padre_url}
+                              alt="Carnet del padre"
+                              className="max-h-32 rounded-lg border border-white/10 hover:border-cyan-400/50 transition-colors cursor-pointer"
+                            />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {detalle.descripcion_tatuaje && (
                     <Info label="Descripción del tatuaje" value={detalle.descripcion_tatuaje} />

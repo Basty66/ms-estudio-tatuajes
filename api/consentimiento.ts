@@ -27,6 +27,10 @@ export async function POST(request: Request) {
       zona_tatuaje,
       descripcion_tatuaje,
       mayor_edad,
+      menor_edad,
+      nombre_padre,
+      rut_padre,
+      carnet_padre_url,
       bajo_efectos,
       embarazo_lactancia,
       problemas_coagulacion,
@@ -66,13 +70,33 @@ export async function POST(request: Request) {
       return Response.json({ success: false, error: "Firma inválida" }, { status: 400 })
     }
 
-    // La persona debe ser mayor de edad y aceptar todo
-    if (!mayor_edad) {
+    // Validar edad - debe ser mayor O menor con parental
+    if (!mayor_edad && !menor_edad) {
       return Response.json(
-        { success: false, error: "Debes ser mayor de edad para tatuarte" },
+        { success: false, error: "Debes confirmar si eres mayor o menor de edad" },
         { status: 400 },
       )
     }
+
+    // Si es menor, validar datos del padre
+    if (menor_edad) {
+      if (!nombre_padre || !rut_padre) {
+        return Response.json(
+          { success: false, error: "Los datos del padre/madre responsable son obligatorios para menores" },
+          { status: 400 },
+        )
+      }
+      if (typeof nombre_padre !== "string" || nombre_padre.length > MAX_TEXTO) {
+        return Response.json({ success: false, error: "Nombre del padre inválido" }, { status: 400 })
+      }
+      if (typeof rut_padre !== "string" || rut_padre.length > 20) {
+        return Response.json({ success: false, error: "RUT del padre inválido" }, { status: 400 })
+      }
+      if (typeof carnet_padre_url !== "string" || carnet_padre_url.length > 1_000_000) {
+        return Response.json({ success: false, error: "Imagen del carnet inválida" }, { status: 400 })
+      }
+    }
+
     if (!acepta_riesgos || !acepta_cuidados || !acepta_veracidad || !acepta_datos) {
       return Response.json(
         { success: false, error: "Debes aceptar todas las declaraciones" },
@@ -80,7 +104,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validar fecha de nacimiento y calcular edad real (>= 18)
+    // Validar fecha de nacimiento y calcular edad
     const nac = new Date(fecha_nacimiento + "T12:00:00")
     if (isNaN(nac.getTime())) {
       return Response.json({ success: false, error: "Fecha de nacimiento inválida" }, { status: 400 })
@@ -89,9 +113,19 @@ export async function POST(request: Request) {
     let edad = hoy.getFullYear() - nac.getFullYear()
     const m = hoy.getMonth() - nac.getMonth()
     if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--
-    if (edad < 18) {
+
+    // Si dice mayor pero es menor, rechazar
+    if (mayor_edad && edad < 18) {
       return Response.json(
-        { success: false, error: "Debes ser mayor de 18 años" },
+        { success: false, error: "Indicaste que eres mayor de edad pero tienes menos de 18 años" },
+        { status: 400 },
+      )
+    }
+
+    // Si dice menor pero es mayor, también es válido (puede tener 17 años)
+    if (menor_edad && edad >= 18) {
+      return Response.json(
+        { success: false, error: "Indicaste que eres menor de edad pero tienes 18 o más años" },
         { status: 400 },
       )
     }
@@ -105,7 +139,8 @@ export async function POST(request: Request) {
       INSERT INTO consentimientos (
         nombre, rut, fecha_nacimiento, telefono, email, direccion,
         zona_tatuaje, descripcion_tatuaje,
-        mayor_edad, bajo_efectos, embarazo_lactancia, problemas_coagulacion,
+        mayor_edad, menor_edad, nombre_padre, rut_padre, carnet_padre_url,
+        bajo_efectos, embarazo_lactancia, problemas_coagulacion,
         diabetes, alergias, alergias_detalle, enfermedad_cardiaca, epilepsia,
         vih_hepatitis, medicamentos, condiciones_otras,
         acepta_riesgos, acepta_cuidados, acepta_veracidad, acepta_datos,
@@ -114,7 +149,9 @@ export async function POST(request: Request) {
         ${clip(nombre, MAX_TEXTO)}, ${clip(rut, 20)}, ${fecha_nacimiento}, ${telefono},
         ${clip(email, MAX_TEXTO)}, ${clip(direccion, MAX_TEXTO_LARGO)},
         ${clip(zona_tatuaje, MAX_TEXTO)}, ${clip(descripcion_tatuaje, MAX_TEXTO_LARGO)},
-        ${!!mayor_edad}, ${!!bajo_efectos}, ${!!embarazo_lactancia}, ${!!problemas_coagulacion},
+        ${!!mayor_edad}, ${!!menor_edad},
+        ${clip(nombre_padre || "", MAX_TEXTO)}, ${clip(rut_padre || "", 20)}, ${carnet_padre_url || ""},
+        ${!!bajo_efectos}, ${!!embarazo_lactancia}, ${!!problemas_coagulacion},
         ${!!diabetes}, ${!!alergias}, ${clip(alergias_detalle, MAX_TEXTO_LARGO)},
         ${!!enfermedad_cardiaca}, ${!!epilepsia}, ${!!vih_hepatitis},
         ${clip(medicamentos, MAX_TEXTO_LARGO)}, ${clip(condiciones_otras, MAX_TEXTO_LARGO)},
@@ -135,13 +172,16 @@ export async function POST(request: Request) {
     if (vih_hepatitis) alertas.push("VIH/Hepatitis")
     if (embarazo_lactancia) alertas.push("Embarazo/Lactancia")
 
+    const esMenor = menor_edad && nombre_padre
+
     await notifyArtist(
       `<b>📋 CONSENTIMIENTO FIRMADO</b>\n` +
       `<b>Cliente:</b> ${nombre}\n` +
       `<b>RUT:</b> ${rut}\n` +
       `<b>Teléfono:</b> <a href="https://wa.me/${telefono.replace(/\+/g, "")}">${telefono}</a>\n` +
       (zona_tatuaje ? `<b>Zona:</b> ${zona_tatuaje}\n` : "") +
-      (alertas.length > 0 ? `\n⚠️ <b>ATENCIÓN MÉDICA:</b> ${alertas.join(", ")}` : ""),
+      (esMenor ? `\n👶 <b>MENOR DE EDAD</b>\n<b>Padre/Madre:</b> ${nombre_padre}\n<b>RUT:</b> ${rut_padre}\n` : "") +
+      (alertas.length > 0 ? `⚠️ <b>ATENCIÓN MÉDICA:</b> ${alertas.join(", ")}` : ""),
     )
 
     return Response.json({ success: true, id: result[0]?.id })
