@@ -29,8 +29,8 @@ export async function POST(request: Request) {
     if (!url) {
       return Response.json({ success: false, error: "URL requerida" }, { status: 400 })
     }
-    if (!["instagram", "tiktok", "youtube"].includes(plataforma)) {
-      return Response.json({ success: false, error: "plataforma debe ser instagram, tiktok o youtube" }, { status: 400 })
+    if (!["instagram", "tiktok", "youtube", "video"].includes(plataforma)) {
+      return Response.json({ success: false, error: "plataforma inválida" }, { status: 400 })
     }
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
@@ -62,6 +62,27 @@ export async function DELETE(request: Request) {
     }
 
     const sql = neon(process.env.NEON_DATABASE_URL!)
+    const result = await sql`SELECT * FROM reels WHERE id = ${parseInt(id)}`
+    const reel = result[0]
+
+    if (reel?.video_url && reel.video_url.includes(".blob.vercel-storage.com")) {
+      const oidcToken = process.env.VERCEL_OIDC_TOKEN
+      const storeId = process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN?.split("_")[3]
+      const bearer = oidcToken || process.env.BLOB_READ_WRITE_TOKEN
+      if (bearer && storeId) {
+        await fetch("https://vercel.com/api/blob/delete", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${bearer}`,
+            "x-vercel-blob-store-id": storeId,
+            "x-api-version": "12",
+          },
+          body: JSON.stringify({ urls: [reel.video_url] }),
+        }).catch(() => {})
+      }
+    }
+
     await sql`DELETE FROM reels WHERE id = ${parseInt(id)}`
     return Response.json({ success: true })
   } catch (error) {

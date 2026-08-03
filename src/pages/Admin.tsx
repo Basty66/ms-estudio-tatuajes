@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { put } from "@vercel/blob/client"
+import { upload } from "@vercel/blob/client"
 import { descargarPdfConsentimiento } from "../lib/pdfConsentimiento"
 
 import {
@@ -16,6 +16,7 @@ import {
   Trash,
   X,
   UploadSimple,
+  VideoCamera,
   Upload,
   Plus,
   CalendarCheck,
@@ -2196,12 +2197,15 @@ function ReelsTab({ items, onRefresh, headers }: {
   const [titulo, setTitulo] = useState("")
   const [videoUrl, setVideoUrl] = useState("")
   const [saving, setSaving] = useState(false)
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [subiendo, setSubiendo] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const MAX_VIDEO_MB = 200
 
   const handleVideoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
+    e.target.value = ""
     if (!f) return
     if (!f.type.startsWith("video/")) { setMsg({ ok: false, text: "Solo se permiten archivos de video" }); return }
     if (f.size > MAX_VIDEO_MB * 1024 * 1024) { setMsg({ ok: false, text: `El video supera los ${MAX_VIDEO_MB} MB` }); return }
@@ -2214,7 +2218,8 @@ function ReelsTab({ items, onRefresh, headers }: {
     setSubiendo(true)
     setMsg(null)
     try {
-      const blob = await upload(`reels/${videoFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`, videoFile, {
+      const safe = videoFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+      const blob = await upload(`reels/${Date.now()}-${safe}`, videoFile, {
         access: "public",
         handleUploadUrl: "/api/admin/blob-upload",
         headers,
@@ -2231,17 +2236,18 @@ function ReelsTab({ items, onRefresh, headers }: {
   }
 
   const addReel = async () => {
-    if (!url.trim()) return
+    if (!url.trim() && !videoFile && !videoUrl.trim()) return
     setSaving(true)
     setMsg(null)
     try {
-      const plataforma = detectPlatform(url)
+      const plataforma = detectPlatform(url || videoUrl || "")
       const videoSubido = videoFile ? await subirVideo() : videoUrl.trim() || null
       if (videoFile && !videoSubido) { setSaving(false); return }
+      const reelUrl = url.trim() || videoSubido || ""
       const res = await fetch("/api/admin/reels", {
         method: "POST",
         headers,
-        body: JSON.stringify({ url: url.trim(), titulo: titulo.trim(), plataforma, video_url: videoSubido || "" }),
+        body: JSON.stringify({ url: reelUrl, titulo: titulo.trim(), plataforma, video_url: videoSubido || "" }),
       })
       const data = await res.json()
       if (data.success) {
@@ -2291,16 +2297,33 @@ function ReelsTab({ items, onRefresh, headers }: {
             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40"
           />
         </div>
-        <input
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder="URL del archivo de video (opcional, ej: /videos/reels/1.mp4)"
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40 mb-3"
-        />
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <input
+            type="file"
+            accept="video/*"
+            className="hidden"
+            id="reel-video-input"
+            onChange={handleVideoFile}
+          />
+          <label
+            htmlFor="reel-video-input"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 text-xs font-tech tracking-wider hover:bg-pink-500/20 transition-all cursor-pointer disabled:opacity-40"
+          >
+            {subiendo ? <Spinner size={14} className="animate-spin" /> : videoFile ? <VideoCamera size={14} /> : <UploadSimple size={14} weight="bold" />}
+            {subiendo ? "SUBINDO VIDEO…" : videoFile ? `VIDEO: ${videoFile.name.slice(0, 28)}` : "SUBIR VIDEO (PC O MÓVIL)"}
+          </label>
+          <input
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="o URL del archivo de video (opcional)"
+            className="flex-1 min-w-[200px] bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400/40"
+          />
+          <span className="text-gray-600 text-[11px]">MP4 · hasta ~200 MB</span>
+        </div>
         <div className="flex items-center gap-3">
           <button
             onClick={addReel}
-            disabled={saving || !url.trim()}
+            disabled={saving || subiendo || (!url.trim() && !videoFile && !videoUrl.trim())}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 text-xs font-tech tracking-wider hover:bg-cyan-400/20 transition-all disabled:opacity-40"
           >
             {saving ? <Spinner size={14} className="animate-spin" /> : <Plus size={14} />}
@@ -2311,7 +2334,7 @@ function ReelsTab({ items, onRefresh, headers }: {
           )}
         </div>
         <p className="text-gray-600 text-[11px] mt-3">
-          La plataforma se detecta automáticamente. Si agregas un archivo mp4 local, el reel se reproduce al pasar el mouse; si no, muestra un enlace a la plataforma.
+          Sube un video desde tu PC o celular, o pega la URL de un reel. Si el video lleva a un reel de Instagram, su botón "Ver en IG" lleva al Instagram del estudio.
         </p>
       </div>
 
