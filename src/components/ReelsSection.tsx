@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { InstagramLogo, TiktokLogo, Spinner, Play, SpeakerHigh, SpeakerX, ArrowSquareOut } from "@phosphor-icons/react"
+import { InstagramLogo, TiktokLogo, Spinner, Play, SpeakerHigh, SpeakerX, ArrowSquareOut, CaretLeft, CaretRight } from "@phosphor-icons/react"
 
 interface Reel {
   id: number
@@ -70,7 +70,7 @@ function VideoCard({ reel }: { reel: Reel }) {
   }, [])
 
   return (
-    <div className="snap-start shrink-0 w-[300px]">
+    <div className="snap-start shrink-0 w-[300px] data-reel-card">
       <div className="relative rounded-2xl overflow-hidden border border-white/5 group bg-black aspect-[9/16]">
 
         <video
@@ -141,7 +141,7 @@ function LinkCard({ reel }: { reel: Reel }) {
   const isTikTok = reel.plataforma === "tiktok"
 
   return (
-    <div className="snap-start shrink-0 w-[300px]">
+    <div className="snap-start shrink-0 w-[300px] data-reel-card">
       <a
 
         href={reel.url}
@@ -197,6 +197,9 @@ function LinkCard({ reel }: { reel: Reel }) {
 export default function ReelsSection() {
   const [reels, setReels] = useState<Reel[]>([])
   const [loading, setLoading] = useState(true)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canLeft, setCanLeft] = useState(false)
+  const [canRight, setCanRight] = useState(false)
 
   useEffect(() => {
     fetch("/api/reels")
@@ -205,6 +208,32 @@ export default function ReelsSection() {
       .catch(e => console.error(e))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const update = () => {
+      setCanLeft(el.scrollLeft > 4)
+      setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4)
+    }
+    update()
+    el.addEventListener("scroll", update, { passive: true })
+    window.addEventListener("resize", update)
+    const t = setTimeout(update, 400)
+    return () => {
+      el.removeEventListener("scroll", update)
+      window.removeEventListener("resize", update)
+      clearTimeout(t)
+    }
+  }, [reels.length])
+
+  const scrollByCard = (dir: 1 | -1) => {
+    const el = scrollRef.current
+    if (!el) return
+    const card = el.querySelector("[data-reel-card]") as HTMLElement | null
+    const step = card ? card.offsetWidth + 12 : 300
+    el.scrollBy({ left: dir * step, behavior: "smooth" })
+  }
 
   if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={28} className="text-cyan-400 animate-spin" /></div>
   if (reels.length === 0) return null
@@ -220,15 +249,41 @@ export default function ReelsSection() {
         <p className="text-gray-500 text-xs max-w-md mx-auto">Pasa el mouse sobre los videos para reproducirlos.</p>
       </motion.div>
 
-      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 px-1"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {[...videoReels, ...linkReels].map(reel =>
-          reel.video_url && reel.video_url.length > 0 ? (
-            <VideoCard key={reel.id} reel={reel} />
-          ) : (
-            <LinkCard key={reel.id} reel={reel} />
-          )
-        )}
+      <div className="relative">
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 px-1"
+          ref={scrollRef}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {[...videoReels, ...linkReels].map(reel =>
+            reel.video_url && reel.video_url.length > 0 ? (
+              <VideoCard key={reel.id} reel={reel} />
+            ) : (
+              <LinkCard key={reel.id} reel={reel} />
+            )
+          )}
+        </div>
+
+        {/* Flechas de navegación (desktop) */}
+        <button
+          onClick={() => scrollByCard(-1)}
+          aria-label="Ver reels anteriores"
+          disabled={!canLeft}
+          className={`hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-10 h-10 rounded-full glass-premium border border-white/10 items-center justify-center text-white/80 hover:text-cyan-400 hover:border-cyan-400/40 transition-all ${canLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
+          <CaretLeft size={18} weight="bold" />
+        </button>
+        <button
+          onClick={() => scrollByCard(1)}
+          aria-label="Ver más reels"
+          disabled={!canRight}
+          className={`hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-10 h-10 rounded-full glass-premium border border-white/10 items-center justify-center text-white/80 hover:text-cyan-400 hover:border-cyan-400/40 transition-all ${canRight ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
+          <CaretRight size={18} weight="bold" />
+        </button>
+      </div>
+
+      {/* Contador de posición */}
+      <div className="hidden md:flex items-center justify-center gap-2 mt-3 text-gray-600 text-[10px] font-tech tracking-wider">
+        <span>REELS</span>
       </div>
 
       <p className="text-center text-gray-700 text-[10px] font-tech tracking-wider mt-3 md:hidden">Desliza para ver más →</p>
