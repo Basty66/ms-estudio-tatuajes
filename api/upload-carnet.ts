@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob"
 import { checkRateLimit, getClientIp, tooManyRequests } from "./lib/ratelimit"
 
-export const config = { runtime: "edge" }
+export const config = { runtime: "nodejs" }
 
 const MAX_SIZE = 200 * 1024 // 200 KB
 
