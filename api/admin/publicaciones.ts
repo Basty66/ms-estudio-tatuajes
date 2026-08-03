@@ -6,7 +6,13 @@ export const config = { runtime: "edge" }
 export async function GET(request: Request) {
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!)
-    const posts = await sql`SELECT * FROM publicaciones ORDER BY creado_en DESC`
+    const posts = await sql`
+      SELECT p.*,
+        (SELECT COUNT(*)::int FROM publicacion_likes WHERE publicacion_id = p.id) as likes,
+        (SELECT COUNT(*)::int FROM publicacion_comentarios WHERE publicacion_id = p.id AND eliminado = false) as comentarios_count
+      FROM publicaciones p
+      ORDER BY p.creado_en DESC
+    `
     return Response.json({ success: true, posts })
   } catch (error) {
     console.error(error)
