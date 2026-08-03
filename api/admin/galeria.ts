@@ -11,9 +11,17 @@ export async function GET(request: Request) {
 
     let images
     if (estilo && estilo !== "todos") {
-      images = sql`SELECT * FROM galeria WHERE estilo = ${estilo} ORDER BY orden ASC, creado_en DESC`
+      images = sql`
+        SELECT g.*,
+          (SELECT COUNT(*)::int FROM galeria_likes WHERE galeria_id = g.id) as likes,
+          (SELECT COUNT(*)::int FROM galeria_comentarios WHERE galeria_id = g.id AND eliminado = false) as comentarios_count
+        FROM galeria g WHERE g.estilo = ${estilo} ORDER BY g.orden ASC, g.creado_en DESC`
     } else {
-      images = sql`SELECT * FROM galeria ORDER BY orden ASC, creado_en DESC`
+      images = sql`
+        SELECT g.*,
+          (SELECT COUNT(*)::int FROM galeria_likes WHERE galeria_id = g.id) as likes,
+          (SELECT COUNT(*)::int FROM galeria_comentarios WHERE galeria_id = g.id AND eliminado = false) as comentarios_count
+        FROM galeria g ORDER BY g.orden ASC, g.creado_en DESC`
     }
 
     return Response.json({ success: true, images: await images })
