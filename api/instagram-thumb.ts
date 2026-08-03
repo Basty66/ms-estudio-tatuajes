@@ -1,4 +1,4 @@
-export const config = { runtime: "edge" }
+export const config = { runtime: "nodejs" }
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
