@@ -77,7 +77,7 @@ export default function Ubicacion() {
           >
             <div className="w-full h-full min-h-[200px] rounded-2xl overflow-hidden">
               <iframe
-                src="https://maps.google.com/maps?q=Av.+Conde+de+Manso+529,+Melipilla,+Chile&t=&z=17&ie=UTF8&iwloc=&output=embed"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3319.671837850001!2d-71.2191187651123!3d-33.6915605!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662550034d24fdb%3A0x17acc011bcc2a11e!2sMATNESS_TATTOOS!5e0!3m2!1ses!2sus!4v1785733217062!5m2!1ses!2sus"
                 width="100%"
                 height="100%"
                 allowFullScreen
