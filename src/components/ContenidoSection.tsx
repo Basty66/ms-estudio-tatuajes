@@ -56,8 +56,8 @@ const tipoConfig: Record<string, { label: string; color: string }> = {
 }
 
 const tabs = [
-  { id: "blog", label: "Blog", icon: NotePencil },
   { id: "reels", label: "Reels", icon: Play },
+  { id: "blog", label: "Blog", icon: NotePencil },
   { id: "instagram", label: "Instagram", icon: InstagramLogo },
 ]
 
@@ -481,7 +481,7 @@ function InstagramTab() {
 
 /* ─── Main Component ─── */
 export default function ContenidoSection() {
-  const [activeTab, setActiveTab] = useState("blog")
+  const [activeTab, setActiveTab] = useState("reels")
 
   return (
     <section id="contenido" className="relative py-20 md:py-28 overflow-hidden">
