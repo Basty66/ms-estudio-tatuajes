@@ -11,7 +11,9 @@ import {
   Spinner,
   CheckCircle,
   Clock,
+  ShieldCheck,
 } from "@phosphor-icons/react"
+import ConsentimientoModal from "./ConsentimientoModal"
 
 const daysOfWeek = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
 
@@ -53,6 +55,7 @@ export default function Agenda() {
   const [daysData, setDaysData] = useState<Map<string, DayInfo>>(new Map())
   const [loadingDisp, setLoadingDisp] = useState(true)
   const [confirmed, setConfirmed] = useState<{ fecha: string; nombre: string; whatsapp: string; descripcion: string } | null>(null)
+  const [showConsentimiento, setShowConsentimiento] = useState(false)
 
   useEffect(() => {
     setLoadingDisp(true)
@@ -364,6 +367,13 @@ export default function Agenda() {
                   El admin revisará tu solicitud y te confirmará la hora. Si necesitas hablar antes, contáctanos por WhatsApp.
                 </p>
                 <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setShowConsentimiento(true)}
+                    className="font-tech w-full rounded-xl px-6 py-3 flex items-center justify-center gap-2 text-sm tracking-[0.2em] font-bold bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/20 hover:border-cyan-400/50 transition-all"
+                  >
+                    <ShieldCheck size={18} weight="fill" />
+                    FIRMAR CONSENTIMIENTO
+                  </button>
                   <a
                     href={`https://wa.me/56964470668?text=${encodeURIComponent(`Hola MS Estudio, soy ${confirmed.nombre}. Agendé una cita para el ${confirmed.fecha}.${confirmed.descripcion ? `\n\nDetalles: ${confirmed.descripcion}` : ""}`)}`}
                     target="_blank"
@@ -408,6 +418,13 @@ export default function Agenda() {
           )}
         </motion.div>
       </div>
+
+      <ConsentimientoModal
+        isOpen={showConsentimiento}
+        onClose={() => setShowConsentimiento(false)}
+        nombre={confirmed?.nombre}
+        whatsapp={confirmed?.whatsapp}
+      />
     </section>
   )
 }

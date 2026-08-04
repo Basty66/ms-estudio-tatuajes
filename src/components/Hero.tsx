@@ -108,7 +108,7 @@ export default function Hero() {
             className="text-gray-400 text-sm md:text-base max-w-md mb-8 leading-relaxed"
           >
             Estudio profesional de tatuajes.{" "}
-            <span className="text-gray-200">+500 piezas</span> creadas en 11 años de
+            <span className="text-gray-200">+500 piezas</span> creadas en más de 5 años de
             trayectoria, con un estándar de higiene y detalle que se nota en la piel.
           </motion.p>
 

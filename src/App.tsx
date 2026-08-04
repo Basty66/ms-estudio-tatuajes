@@ -10,19 +10,18 @@ import LaserBorrado from "./components/LaserBorrado"
 import Gallery from "./components/Gallery"
 import CuidadosPost from "./components/CuidadosPost"
 import Cotizador from "./components/Cotizador"
-import Consentimiento from "./components/Consentimiento"
 import Agenda from "./components/Agenda"
 import FAQ from "./components/FAQ"
-import BlogSection from "./components/BlogSection"
+import ContenidoSection from "./components/ContenidoSection"
 import Ubicacion from "./components/Ubicacion"
 import Footer from "./components/Footer"
 import WhatsAppFloat from "./components/WhatsAppFloat"
+import FloatingAgendaButton from "./components/FloatingAgendaButton"
 import Reviews from "./components/Reviews"
-import ReelsSection from "./components/ReelsSection"
 import Admin from "./pages/Admin"
 
-const sectionIds = ["inicio", "sobre", "laser", "galeria", "cuidados", "cotizador", "consentimiento", "agenda", "faq", "blog", "reviews", "reels", "ubicacion"]
-const components = [Hero, SobreElTatuador, LaserBorrado, Gallery, CuidadosPost, Cotizador, Consentimiento, Agenda, FAQ, BlogSection, Reviews, ReelsSection, Ubicacion]
+const sectionIds = ["inicio", "sobre", "laser", "galeria", "cuidados", "cotizador", "agenda", "faq", "contenido", "reviews", "ubicacion"]
+const components = [Hero, SobreElTatuador, LaserBorrado, Gallery, CuidadosPost, Cotizador, Agenda, FAQ, ContenidoSection, Reviews, Ubicacion]
 
 function HomePage() {
   return (
@@ -106,6 +105,7 @@ export default function App() {
 
       {!isAdmin && <Footer />}
       {!isAdmin && <WhatsAppFloat />}
+      {!isAdmin && <FloatingAgendaButton />}
     </div>
   )
 }

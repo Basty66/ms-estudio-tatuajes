@@ -1,58 +1,24 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { List, X, CaretDown } from "@phosphor-icons/react"
+import { List, X } from "@phosphor-icons/react"
 
-const navGroups = [
-  {
-    label: "Servicios",
-    items: [
-      { href: "#galeria", label: "Galería" },
-      { href: "#cotizador", label: "Cotizador" },
-      { href: "#agenda", label: "Agenda" },
-      { href: "#laser", label: "Láser" },
-    ],
-  },
-  {
-    label: "Info",
-    items: [
-      { href: "#sobre", label: "Sobre mí" },
-      { href: "#cuidados", label: "Cuidados" },
-      { href: "#consentimiento", label: "Consentimiento" },
-      { href: "#faq", label: "FAQ" },
-    ],
-  },
-  {
-    label: "Más",
-    items: [
-      { href: "#blog", label: "Blog" },
-      { href: "#reels", label: "Reels" },
-      { href: "#ubicacion", label: "Ubicación" },
-    ],
-  },
+const navLinks = [
+  { href: "#inicio", label: "Inicio" },
+  { href: "#galeria", label: "Galería" },
+  { href: "#cotizador", label: "Cotizar" },
+  { href: "#agenda", label: "Agendar" },
 ]
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const navigate = useNavigate()
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setActiveDropdown(null)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
   const tapCount = useRef(0)
@@ -72,7 +38,6 @@ export default function Navbar() {
 
   const handleNav = (href: string) => {
     setOpen(false)
-    setActiveDropdown(null)
     const id = href.replace("#", "")
     const el = document.getElementById(id)
     if (el) {
@@ -140,49 +105,16 @@ export default function Navbar() {
           </div>
         </button>
 
-        {/* Desktop nav — dropdowns compactos */}
-        <nav className="hidden md:flex items-center gap-1 ml-auto mr-4" ref={dropdownRef}>
-          {navGroups.map((group) => (
-            <div
-              key={group.label}
-              className="relative"
-              onMouseEnter={() => setActiveDropdown(group.label)}
-              onMouseLeave={() => setActiveDropdown(null)}
+        {/* Desktop nav — links simples */}
+        <nav className="hidden md:flex items-center gap-1 ml-auto mr-4">
+          {navLinks.map((link) => (
+            <button
+              key={link.href}
+              onClick={() => handleNav(link.href)}
+              className="font-tech px-3 py-2 text-xs text-gray-400 hover:text-white transition-colors duration-300 tracking-[0.15em] uppercase"
             >
-              <button
-                className={`font-tech flex items-center gap-1 px-3 py-2 text-xs text-gray-400 hover:text-white transition-colors duration-300 tracking-[0.15em] uppercase ${
-                  activeDropdown === group.label ? "text-white" : ""
-                }`}
-              >
-                {group.label}
-                <CaretDown
-                  size={10}
-                  weight="bold"
-                  className={`transition-transform duration-200 ${activeDropdown === group.label ? "rotate-180" : ""}`}
-                />
-              </button>
-              <AnimatePresence>
-                {activeDropdown === group.label && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-1 glass-premium rounded-xl py-2 min-w-[180px] border border-white/10"
-                  >
-                    {group.items.map((link) => (
-                      <button
-                        key={link.href}
-                        onClick={() => handleNav(link.href)}
-                        className="font-tech w-full text-left px-4 py-2.5 text-xs text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 transition-all duration-200 tracking-[0.15em] uppercase"
-                      >
-                        {link.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+              {link.label}
+            </button>
           ))}
         </nav>
 
@@ -221,22 +153,15 @@ export default function Navbar() {
             className="md:hidden glass-premium border-t border-white/5 overflow-hidden"
           >
             <nav className="flex flex-col px-4 py-4 gap-1">
-              {navGroups.map((group) => (
-                <div key={group.label}>
-                  <p className="font-tech text-[10px] text-cyan-400/60 tracking-[0.3em] uppercase px-4 pt-3 pb-1">
-                    {group.label}
-                  </p>
-                  {group.items.map((link) => (
-                    <button
-                      key={link.href}
-                      onClick={() => handleNav(link.href)}
-                      className="font-tech group relative text-left py-2.5 px-4 rounded-lg text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 active:bg-cyan-400/25 active:text-white active:scale-[0.98] transition-all duration-300 tracking-[0.15em] uppercase text-sm overflow-hidden"
-                    >
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-[3px] rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.8)] transition-all duration-300 group-hover:h-3/5" />
-                      {link.label}
-                    </button>
-                  ))}
-                </div>
+              {navLinks.map((link) => (
+                <button
+                  key={link.href}
+                  onClick={() => handleNav(link.href)}
+                  className="font-tech group relative text-left py-2.5 px-4 rounded-lg text-gray-400 hover:text-cyan-300 hover:bg-cyan-400/10 active:bg-cyan-400/25 active:text-white active:scale-[0.98] transition-all duration-300 tracking-[0.15em] uppercase text-sm overflow-hidden"
+                >
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-[3px] rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.8)] transition-all duration-300 group-hover:h-3/5" />
+                  {link.label}
+                </button>
               ))}
               <a
                 href="https://wa.me/56964470668"

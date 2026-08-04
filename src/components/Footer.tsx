@@ -6,6 +6,9 @@ const links = [
   { label: "Galería", id: "galeria" },
   { label: "Cotizador", id: "cotizador" },
   { label: "Agenda", id: "agenda" },
+  { label: "Blog", id: "contenido" },
+  { label: "Cuidados", id: "cuidados" },
+  { label: "FAQ", id: "faq" },
   { label: "Ubicación", id: "ubicacion" },
 ]
 
