@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Image,
@@ -47,9 +47,13 @@ export default function Gallery() {
   const [comTexto, setComTexto] = useState("")
   const [enviando, setEnviando] = useState(false)
   const [comExito, setComExito] = useState(false)
+  const [heroIdx, setHeroIdx] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const filtradas = filtro === "todos" ? images : images.filter((i) => i.estilo === filtro)
   const lightboxImg = lightboxIdx !== null ? filtradas[lightboxIdx] : null
+  const heroImages = [...images].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 8)
 
   useEffect(() => {
     fetch("/api/admin/galeria")
@@ -64,6 +68,23 @@ export default function Gallery() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  // Hero carousel auto-advance
+  useEffect(() => {
+    if (heroImages.length <= 1 || paused) return
+    const timer = setInterval(() => {
+      setHeroIdx((prev) => (prev + 1) % heroImages.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [heroImages.length, paused])
+
+  // Sync heroIdx scroll
+  useEffect(() => {
+    if (scrollRef.current) {
+      const child = scrollRef.current.children[heroIdx] as HTMLElement
+      if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+    }
+  }, [heroIdx])
 
   const fetchLikes = useCallback(async (id: number) => {
     try {
@@ -202,6 +223,94 @@ export default function Gallery() {
             </h2>
             <div className="w-12 h-[1px] bg-cyan-400/30 mx-auto mt-6" />
           </motion.div>
+
+          {/* Hero Carousel */}
+          {heroImages.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2, ease: easeOut }}
+              className="mb-12 relative group/carousel"
+              onMouseEnter={() => setPaused(true)}
+              onMouseLeave={() => setPaused(false)}
+            >
+              <div
+                ref={scrollRef}
+                className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {heroImages.map((img, i) => (
+                  <div
+                    key={img.id}
+                    className="snap-center shrink-0 w-[85vw] sm:w-[70vw] md:w-[60vw] lg:w-[50vw] xl:w-[45vw] cursor-pointer"
+                    onClick={() => {
+                      const realIdx = filtradas.findIndex((f) => f.id === img.id)
+                      if (realIdx !== -1) abrirLightbox(realIdx)
+                    }}
+                  >
+                    <div className="relative rounded-2xl overflow-hidden aspect-[16/10] glass-card-dark">
+                      <img
+                        src={img.imagen_url}
+                        alt={img.titulo || img.estilo}
+                        className="w-full h-full object-cover"
+                        loading={i === 0 ? "eager" : "lazy"}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-tech text-[10px] tracking-wider px-2 py-0.5 rounded-md bg-cyan-400/20 text-cyan-400 border border-cyan-400/30 capitalize">
+                            {img.estilo}
+                          </span>
+                          {img.likes > 0 && (
+                            <span className="flex items-center gap-1 text-red-400 text-[10px] font-tech">
+                              <Heart size={10} weight="fill" /> {img.likes}
+                            </span>
+                          )}
+                        </div>
+                        {img.titulo && (
+                          <h3 className="text-white font-semibold text-base md:text-lg">{img.titulo}</h3>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dots */}
+              {heroImages.length > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  {heroImages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setHeroIdx(i)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        i === heroIdx ? "w-6 bg-cyan-400" : "w-1.5 bg-gray-700 hover:bg-gray-500"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Arrows (desktop) */}
+              {heroImages.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setHeroIdx((prev) => (prev - 1 + heroImages.length) % heroImages.length)}
+                    className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full glass border border-white/10 items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover/carousel:opacity-100"
+                  >
+                    <CaretLeft size={16} weight="bold" />
+                  </button>
+                  <button
+                    onClick={() => setHeroIdx((prev) => (prev + 1) % heroImages.length)}
+                    className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full glass border border-white/10 items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover/carousel:opacity-100"
+                  >
+                    <CaretRight size={16} weight="bold" />
+                  </button>
+                </>
+              )}
+            </motion.div>
+          )}
 
           {/* Filtros */}
           <div className="flex justify-center gap-2 mb-10 flex-wrap">
