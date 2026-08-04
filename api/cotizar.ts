@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless"
-import { notifyArtist } from "./lib/telegram"
+import { notifyArtist, escapeHtml } from "./lib/telegram"
 import { checkRateLimit, getClientIp, tooManyRequests } from "./lib/ratelimit"
 
 export const config = { runtime: "edge" }
@@ -55,11 +55,11 @@ export async function POST(request: Request) {
 
     await notifyArtist(
       `<b>💰 NUEVA COTIZACIÓN</b>\n` +
-      `<b>Cliente:</b> ${nombre}\n` +
+      `<b>Cliente:</b> ${escapeHtml(nombre)}\n` +
       `<b>WhatsApp:</b> <a href="https://wa.me/${whatsapp.replace(/\+/g, '')}">${whatsapp}</a>\n` +
-      `<b>Estilo:</b> ${estilo}\n` +
-      `<b>Zona:</b> ${zona}\n` +
-      `<b>Tamaño:</b> ${tamano}`
+      `<b>Estilo:</b> ${escapeHtml(estilo)}\n` +
+      `<b>Zona:</b> ${escapeHtml(zona)}\n` +
+      `<b>Tamaño:</b> ${escapeHtml(tamano)}`
     )
 
     return Response.json({ success: true })

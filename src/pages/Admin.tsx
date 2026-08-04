@@ -1748,24 +1748,28 @@ function CitasManagerTab({ citas, onRefresh, headers }: {
       )}
     </motion.div>
 
-    {precioModal && (
-      <PrecioModal
-        cita={citas.find(c => c.id === precioModal.id)!}
-        precioInput={precioInput}
-        setPrecioInput={setPrecioInput}
-        confirmando={confirmando}
-        modo={precioModal.estado === "completada" ? "completar" : "confirmar"}
-        onClose={() => { setPrecioModal(null); setPrecioInput("") }}
-        onConfirm={(valor) => {
-          setConfirmando(true)
-          confirmarEstado(precioModal!.id, precioModal!.estado, valor).then(() => {
-            setPrecioModal(null)
-            setPrecioInput("")
-            setConfirmando(false)
-          })
-        }}
-      />
-    )}
+    {precioModal && (() => {
+      const cita = citas.find(c => c.id === precioModal.id)
+      if (!cita) return null
+      return (
+        <PrecioModal
+          cita={cita}
+          precioInput={precioInput}
+          setPrecioInput={setPrecioInput}
+          confirmando={confirmando}
+          modo={precioModal.estado === "completada" ? "completar" : "confirmar"}
+          onClose={() => { setPrecioModal(null); setPrecioInput("") }}
+          onConfirm={(valor) => {
+            setConfirmando(true)
+            confirmarEstado(precioModal.id, precioModal.estado, valor).then(() => {
+              setPrecioModal(null)
+              setPrecioInput("")
+              setConfirmando(false)
+            })
+          }}
+        />
+      )
+    })()}
     </>
   )
 }

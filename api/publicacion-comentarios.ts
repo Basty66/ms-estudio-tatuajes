@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const publicacionId = parseInt(url.searchParams.get("publicacion_id") || "")
-    if (isNaN(publicacionId)) {
+    if (isNaN(publicacionId) || publicacionId <= 0) {
       return Response.json({ success: false, error: "publicacion_id requerido" }, { status: 400 })
     }
 

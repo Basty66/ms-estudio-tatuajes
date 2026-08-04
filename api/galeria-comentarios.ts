@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const galeriaId = parseInt(url.searchParams.get("galeria_id") || "")
-    if (isNaN(galeriaId)) {
+    if (isNaN(galeriaId) || galeriaId <= 0) {
       return Response.json({ success: false, error: "galeria_id requerido" }, { status: 400 })
     }
 

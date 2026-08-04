@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const galeriaId = parseInt(url.searchParams.get("galeria_id") || "")
-    if (isNaN(galeriaId)) {
+    if (isNaN(galeriaId) || galeriaId <= 0) {
       return Response.json({ success: false, error: "galeria_id requerido" }, { status: 400 })
     }
 
@@ -54,13 +54,12 @@ export async function POST(request: Request) {
 
     if (existing.length > 0) {
       await sql`DELETE FROM galeria_likes WHERE id = ${existing[0].id}`
-      const count = await sql`SELECT COUNT(*)::int as count FROM galeria_likes WHERE galeria_id = ${galeria_id}`
-      return Response.json({ success: true, liked: false, count: count[0]?.count || 0 })
     } else {
-      await sql`INSERT INTO galeria_likes (galeria_id, ip) VALUES (${galeria_id}, ${ip})`
-      const count = await sql`SELECT COUNT(*)::int as count FROM galeria_likes WHERE galeria_id = ${galeria_id}`
-      return Response.json({ success: true, liked: true, count: count[0]?.count || 0 })
+      await sql`INSERT INTO galeria_likes (galeria_id, ip) VALUES (${galeria_id}, ${ip}) ON CONFLICT (galeria_id, ip) DO NOTHING`
     }
+    const count = await sql`SELECT COUNT(*)::int as count FROM galeria_likes WHERE galeria_id = ${galeria_id}`
+    const liked = existing.length === 0
+    return Response.json({ success: true, liked, count: count[0]?.count || 0 })
   } catch (error) {
     console.error("galeria-likes POST error:", String(error))
     return Response.json({ success: false, error: "Error al procesar like" }, { status: 500 })

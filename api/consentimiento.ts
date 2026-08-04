@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless"
-import { notifyArtist } from "./lib/telegram"
+import { notifyArtist, escapeHtml } from "./lib/telegram"
 import { checkRateLimit, getClientIp, tooManyRequests } from "./lib/ratelimit"
 
 export const config = { runtime: "edge" }
@@ -176,12 +176,12 @@ export async function POST(request: Request) {
 
     await notifyArtist(
       `<b>📋 CONSENTIMIENTO FIRMADO</b>\n` +
-      `<b>Cliente:</b> ${nombre}\n` +
-      `<b>RUT:</b> ${rut}\n` +
+      `<b>Cliente:</b> ${escapeHtml(nombre)}\n` +
+      `<b>RUT:</b> ${escapeHtml(rut)}\n` +
       `<b>Teléfono:</b> <a href="https://wa.me/${telefono.replace(/\+/g, "")}">${telefono}</a>\n` +
-      (zona_tatuaje ? `<b>Zona:</b> ${zona_tatuaje}\n` : "") +
-      (esMenor ? `\n👶 <b>MENOR DE EDAD</b>\n<b>Padre/Madre:</b> ${nombre_padre}\n<b>RUT:</b> ${rut_padre}\n` : "") +
-      (alertas.length > 0 ? `⚠️ <b>ATENCIÓN MÉDICA:</b> ${alertas.join(", ")}` : ""),
+      (zona_tatuaje ? `<b>Zona:</b> ${escapeHtml(zona_tatuaje)}\n` : "") +
+      (esMenor ? `\n👶 <b>MENOR DE EDAD</b>\n<b>Padre/Madre:</b> ${escapeHtml(nombre_padre)}\n<b>RUT:</b> ${escapeHtml(rut_padre)}\n` : "") +
+      (alertas.length > 0 ? `⚠️ <b>ATENCIÓN MÉDICA:</b> ${escapeHtml(alertas.join(", "))}` : ""),
     )
 
     return Response.json({ success: true, id: result[0]?.id })

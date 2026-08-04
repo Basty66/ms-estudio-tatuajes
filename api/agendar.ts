@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless"
-import { notifyArtist } from "./lib/telegram"
+import { notifyArtist, escapeHtml } from "./lib/telegram"
 import { parseDateStr, todayStr } from "./lib/fecha"
 import { checkRateLimit, getClientIp, tooManyRequests } from "./lib/ratelimit"
 
@@ -82,10 +82,10 @@ export async function POST(request: Request) {
 
     await notifyArtist(
       `<b>🔔 NUEVA CITA</b>\n` +
-      `<b>Cliente:</b> ${nombre}\n` +
+      `<b>Cliente:</b> ${escapeHtml(nombre)}\n` +
       `<b>Fecha:</b> ${dateStr}\n` +
       `<b>WhatsApp:</b> <a href="https://wa.me/${whatsapp.replace(/\+/g, '')}">${whatsapp}</a>\n` +
-      (descripcion ? `<b>Descripción:</b> ${descripcion}` : "")
+      (descripcion ? `<b>Descripción:</b> ${escapeHtml(descripcion)}` : "")
     )
 
     return Response.json({ success: true })

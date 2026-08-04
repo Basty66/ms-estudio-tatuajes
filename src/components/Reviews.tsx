@@ -46,7 +46,7 @@ export default function Reviews() {
     // Testimonios aprobados
     fetch("/api/testimonios")
       .then((r) => r.json())
-      .then((data) => { if (data.success) setTestimonios(data.testimonios) })
+      .then((data) => { if (data.success) setTestimonios(data.testimonios || []) })
       .catch(() => {})
   }
 
