@@ -1,141 +1,103 @@
-# AGENTS.md — MS Estudio de Tatuajes / Matness Tattoos
+# AGENTS.md — Matness Studio (MS Estudio de Tatuajes)
 
-Contexto para asistentes de código (Claude, OpenCode, etc.) que trabajen en este repo.
+Contexto para asistentes de código que trabajen en este repo.
 
-> ⚠️ **Nunca escribas valores de secretos en este archivo ni en el código.** Este archivo
-> se commitea al repositorio (público). Aquí solo van los *nombres* de las variables de
-> entorno y qué hacen; los valores viven exclusivamente en Vercel.
+> ⚠️ **Nunca escribas valores de secretos en este archivo ni en el código.** El repositorio es
+> público. Aquí van solo los *nombres* de las variables; los valores viven en `.env.local`
+> (ignorado por git) y en Vercel.
 
 ## Qué es
 
-Sitio web de MS Estudio de Tatuajes / Matness Tattoos (Melipilla, Chile):
-landing pública + panel admin + backend en Vercel + base de datos PostgreSQL (Neon)
-+ notificaciones por Telegram.
+Sitio del estudio (Av. Manso 529, Melipilla) + panel privado del tatuador.
 
-- URL oficial: `https://tatuajes-azure.vercel.app`
-- (El dominio `tatuajes.vercel.app` pertenece a otro proyecto viejo, "MFL Tattoo".)
+- Producción: `https://tatuajes-azure.vercel.app` (Vercel, región `gru1`).
+- La v2 vive en la rama `v2`. **`master` todavía tiene el sitio viejo (Vite + Telegram) y el proyecto
+  auto-despliega desde ahí: un push a `master` vuelve a poner el sitio viejo.**
 
 ## Stack
 
-- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS v4 + Framer Motion + Phosphor Icons
-- **Backend:** Vercel Edge Functions (`api/`) con `@neondatabase/serverless`
-- **Base de datos:** PostgreSQL en Neon (`NEON_DATABASE_URL`)
-- **Auth admin:** JWT firmado con `jose` (HS256, 8 h de expiración)
-- **Notificaciones:** Telegram Bot API
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript + Tailwind CSS v4 + Motion.
+- Postgres en Neon (`sa-east-1`) con `@neondatabase/serverless`.
+  Sin ORM: SQL con plantillas etiquetadas y migraciones numeradas en `db/`.
+- Vercel Blob: un almacén **público** (galería) y uno **privado** (comprobantes de pago).
+- Avisos push con `web-push` (VAPID). Reemplazan al bot de Telegram del sitio viejo.
+- Face ID / huella con WebAuthn (`@simplewebauthn` v14).
 
-## Estructura clave
+El panel copia el patrón de `~/Proyectos/piscina-oasis` (ver su `PLAN.md`): sesión propia de 90 días,
+PIN de 4 dígitos, candado por inactividad, biometría por aparato, PWA solo en la ruta del panel.
+
+## Estructura
 
 ```
-api/
-├── lib/
-│   ├── auth.ts        # JWT: createToken() y verifyRequest() + safeEqual (anti timing-attack)
-│   ├── fecha.ts       # parseDateStr()/todayStr() — parseo de fechas sin bug de UTC
-│   ├── ratelimit.ts   # Rate limit en memoria (5 req/min por IP) para agendar y cotizar
-│   └── telegram.ts    # notifyArtist() → envía mensaje al bot de Telegram
-├── admin/             # 8 endpoints protegidos con verifyRequest() (Bearer JWT)
-│   ├── auth.ts        # POST login (comparación tiempo constante) + GET métricas
-│   ├── citas.ts       # CRUD citas + auto-crea registro en finanzas al confirmar
-│   ├── cotizaciones.ts
-│   ├── disponibilidad.ts  # Template semanal + excepciones por fecha
-│   ├── finanzas.ts    # Ingresos/gastos con resumen por categoría
-│   ├── galeria.ts     # GET público (landing), POST/DELETE/PATCH protegidos
-│   ├── publicaciones.ts
-│   └── reels.ts
-├── agendar.ts         # Público: agenda cita — inserción atómica anti race-condition
-├── cotizar.ts         # Público: guarda cotización + valida base64 (máx 200 KB)
-├── disponibilidad.ts  # Público: devuelve calendario
-└── resenas.ts
-src/
-├── pages/Admin.tsx    # Panel admin completo (dashboard, citas, finanzas, galería...)
-├── components/        # Hero, Gallery, Cotizador, Agenda, FAQ, Reviews, etc.
-└── lib/precios.ts
+src/app/(sitio)/        Portada pública (orden de secciones en src/lib/estudio.ts → SECCIONES)
+src/app/not-found.tsx   404 del láser. También es lo que ve quien prueba /admin.
+src/app/tinta/          Panel (ruta "secreta"; constante PANEL en src/lib/admin/ruta.ts)
+  entrar/               Nombre → clave del panel → PIN; o desbloqueo con PIN / Face ID
+  (panel)/              Hoy, agenda, nueva, cita/[id], clientes, cliente/[id], finanzas,
+                        cotizaciones, galeria, cuenta, mas
+  _acciones/            Server Actions (entrar, avisos, panel). CADA una comprueba la sesión.
+  cambios/              "¿Cambió algo?" + versión publicada (el panel se refresca solo)
+  comprobante/[...]     Entrega comprobantes del almacén privado, solo con sesión
+src/app/api/cotizacion  POST público del cotizador → guarda y avisa por push (10/h por origen)
+src/app/api/mantencion/avisos  Cron diario (vercel.json): sesiones de hoy y mañana
+src/proxy.ts            Barrera barata del panel (en Next 16 se llama proxy, no middleware)
+src/db/                 conexion.ts y lecturas del panel (panel.ts)
+src/lib/admin/          sesion, pin, biometria, apertura (candado), avisos, almacen, fecha (hora de Chile)
+src/lib/cuerpo.ts       Siluetas del mapa del cotizador (generado; trazos MIT de react-native-body-highlighter)
+public/tinta/           manifest.webmanifest, sw.js e íconos de la PWA del panel
+db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
 ```
 
-## Flujos importantes
+## Reglas del repo
 
-1. **Cliente agenda/cotiza** → `agendar.ts` / `cotizar.ts` (rate limit 5/min/IP) → inserta en
-   Neon → `notifyArtist()` avisa por Telegram.
-2. **Login admin:** `/admin` → POST contraseña a `api/admin/auth` → recibe JWT → lo guarda en
-   `sessionStorage` como `admin_token` → todas las llamadas admin llevan
-   `Authorization: Bearer <token>`. Si el token expira o es inválido → 401 → `handleLogout()`.
-3. **Confirmar cita:** modal de precio → PATCH cita (estado=confirmada) → inserta ingreso
-   automático en finanzas → abre WhatsApp con mensaje pre-llenado (50 % abono, dirección, etc.).
+- La doble reserva la impide Postgres (`citas_sin_choque`, EXCLUDE sobre el rango). El error `23P01`
+  se traduce a "choca con la cita de X".
+- El saldo no se guarda: sale de la vista `citas_con_saldo` (suma de `pagos`).
+- Las horas de las citas son hora local de Chile sin zona y viajan como texto (`YYYY-MM-DDTHH:MI`).
+- Nada que exporte un archivo `"use server"` puede mandar avisos o escribir sin sesión.
+- Constantes o listas que use una página del servidor no pueden vivir en un archivo `"use client"`
+  (llegarían como referencia de cliente, no como valor).
+- Comprobantes: primero se borra el archivo, después la fila.
 
-## Variables de entorno (Vercel · Production)
+## Base de datos
 
-Definir en Vercel → Settings → Environment Variables. **No poner los valores aquí.**
+- Desarrollo usa la rama `dev` de Neon (`NEON_DATABASE_URL` en `.env.local`). La URL de producción
+  está guardada aparte como `NEON_DATABASE_URL_PRODUCCION` y no se usa en local.
+- Migrar: `node --env-file=.env.local scripts/migrar.mjs` (lleva la cuenta en `migraciones`).
+  Primero en `dev`; en producción solo después de revisar.
 
-| Variable | Descripción |
+## Variables de entorno
+
+| Variable | Para qué |
 | --- | --- |
-| `NEON_DATABASE_URL` | Cadena de conexión a PostgreSQL (Neon) |
-| `ADMIN_PASSWORD` | Contraseña del panel admin (larga y aleatoria) |
-| `JWT_SECRET` | Secret para firmar los JWT. Fallback a `ADMIN_PASSWORD` si falta, pero debe estar definido. Generar con `openssl rand -base64 48` |
-| `TELEGRAM_BOT_TOKEN` | Token del bot de Telegram |
-| `TELEGRAM_CHAT_ID` | Chat ID que recibe las notificaciones |
-| `GOOGLE_PLACES_API_KEY` | API Key de Google Cloud (Places API). Gratis: $200/mes de crédito. Ver setup abajo. |
-| `GOOGLE_PLACE_ID` | Place ID de "MS Estudio de Tatuajes" en Google Maps |
+| `NEON_DATABASE_URL` | Postgres (endpoint `-pooler`) |
+| `ADMIN_CLAVE` | Clave del panel, se pide una vez por aparato. Sin ella no se entra |
+| `NEXT_PUBLIC_VAPID_PUBLICA` / `VAPID_PRIVADA` / `VAPID_CONTACTO` | Avisos push |
+| `CRON_SECRET` | Protege `/api/mantencion/avisos` (Vercel lo manda como Bearer) |
+| `BLOB_READ_WRITE_TOKEN` | Almacén público de la galería |
+| `BLOB_PRIVADO_READ_WRITE_TOKEN` | Almacén privado de comprobantes |
 
-## Deploy
+## Verificación
 
-- Repo: `Basty66/ms-estudio-tatuajes`, branch `master`, auto-deploy de Vercel desde GitHub.
-- `vercel.json` tiene rewrites: `/api/*` → sus funciones, el resto → `/`.
-- Build: `npm run build` (tsc + vite).
-- Typechecks separados:
-  - `npx tsc -p tsconfig.app.json --noEmit` (frontend)
-  - `npx tsc -p api/tsconfig.json --noEmit` (backend)
+`npx tsc --noEmit`, `npx eslint src` y `npm run build` antes de desplegar. Face ID y los avisos
+necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por la IP local.
 
-Verificar siempre que los typechecks y el build pasen antes de hacer push.
+## Pendientes
 
-## Tareas pendientes
+- [x] `db/001` aplicado en la rama `production` de Neon (2026-11-10). Usuario inicial: Cristian.
+- [x] Variables del panel cargadas en Vercel para **Preview** (con la base `dev`).
+- [ ] Variables del panel en Vercel para **Production** (con la base `production`) antes de publicar la v2 con panel.
+- [ ] Crear y conectar los dos almacenes de Blob (público y privado).
+- [ ] Consentimientos firmados (sitio viejo): datos de salud y RUT, Ley 21.719. Falta definir el flujo.
+- [ ] Rotar `ADMIN_PASSWORD` y `VERCEL_OIDC_TOKEN` del sitio viejo (se expusieron).
+- [ ] Probar Face ID y avisos en un iPhone y un Android reales, con la app instalada.
 
-- [ ] **Rotar `ADMIN_PASSWORD`** en Vercel (se expuso en un chat) y confirmar que sigue siendo
-      larga y aleatoria.
-- [ ] **Rotar `VERCEL_OIDC_TOKEN`** en el dashboard de Vercel (Settings → Git → OIDC Token).
-      El antiguo `.env.test` con este token ya se eliminó del repo, pero conviene reescribir el
-      historial de git (`git filter-repo`) porque quedó en commits previos.
-- [ ] **Cambiar el bot de Telegram al del cliente** cuando entregue su `TELEGRAM_BOT_TOKEN` y
-      `TELEGRAM_CHAT_ID` (actualmente usa los del desarrollador).
+<!-- BEGIN:nextjs-agent-rules -->
 
-## Mejoras opcionales (no urgentes)
+# This is NOT the Next.js you know
 
-- Migrar el JWT de `sessionStorage` a una cookie `httpOnly` (más resistente a XSS).
-- Code-splitting del bundle (el build avisa que supera 500 KB).
-- Rate limiting con almacenamiento persistente (Upstash Redis / Vercel KV) en vez de en memoria,
-  si el tráfico crece.
-- Subir imágenes de cotización a un blob store (Vercel Blob / S3 / Cloudinary) y guardar solo la
-  URL, en vez de base64 en la base de datos.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-## Setup Google Reviews (gratis)
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
-### Paso 1: Crear proyecto en Google Cloud
-1. Ir a https://console.cloud.google.com
-2. Crear nuevo proyecto: "MS Estudio - Reviews"
-3. Seleccionar el proyecto
-
-### Paso 2: Habilitar APIs
-1. APIs & Services → Library
-2. Buscar y habilitar: **Places API**
-3. Buscar y habilitar: **Maps JavaScript API** (opcional, para futuro)
-
-### Paso 3: Crear API Key
-1. APIs & Services → Credentials
-2. Create Credentials → API Key
-3. Copiar la key generada
-4. (Recomendado) Restringir la key a solo Places API
-
-### Paso 4: Obtener Place ID
-1. Ir a https://developers.google.com/maps/documentation/places/web-service/place-id
-2. Buscar "MS Estudio de Tatuajes Melipilla"
-3. Copiar el Place ID (empieza con `ChIJ...`)
-
-### Paso 5: Configurar en Vercel
-1. Vercel → Settings → Environment Variables
-2. Agregar:
-   - `GOOGLE_PLACES_API_KEY` = tu API key
-   - `GOOGLE_PLACE_ID` = tu Place ID
-3. Redesplegar
-
-### Notas
-- Google da $200/mes gratis. Un estudio con 100 reseñas no gasta nada.
-- Las reseñas se cachean 30 min para no exceder cuota.
-- Si no se configuran las env vars, la sección de Google Reviews no aparece (no rompe nada).
+<!-- END:nextjs-agent-rules -->
