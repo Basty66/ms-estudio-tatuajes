@@ -1,0 +1,23 @@
+{
+  "name": "Matness · Panel del estudio",
+  "short_name": "Matness",
+  "description": "Agenda, pagos, clientes y galería del estudio.",
+  "id": "/tinta",
+  "start_url": "/tinta",
+  "scope": "/tinta",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07080d",
+  "theme_color": "#07080d",
+  "lang": "es-CL",
+  "icons": [
+    { "src": "/tinta/panel-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/tinta/panel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/tinta/panel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Hoy", "url": "/tinta" },
+    { "name": "Nueva cita", "url": "/tinta/nueva" },
+    { "name": "Agenda", "url": "/tinta/agenda" }
+  ]
+}
