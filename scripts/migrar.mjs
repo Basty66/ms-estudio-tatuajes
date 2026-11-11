@@ -1,7 +1,8 @@
 /**
  * Aplica las migraciones pendientes de db/ contra NEON_DATABASE_URL.
  *
- *   node --env-file=.env.local scripts/migrar.mjs
+ *   node --env-file=.env.local scripts/migrar.mjs                rama dev
+ *   node --env-file=.env.local scripts/migrar.mjs --produccion   rama production
  *
  * Lleva la cuenta en la tabla `migraciones`. Cada archivo va en su propia
  * transacción: si uno falla, no queda a medias y los anteriores se respetan.
@@ -12,13 +13,16 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
 
-const url = process.env.NEON_DATABASE_URL;
+// Producción se pide a propósito con --produccion: lo normal es probar en dev.
+const produccion = process.argv.includes("--produccion");
+const variable = produccion ? "NEON_DATABASE_URL_PRODUCCION" : "NEON_DATABASE_URL";
+const url = process.env[variable];
 if (!url) {
-  console.error("Falta NEON_DATABASE_URL.");
+  console.error(`Falta ${variable}.`);
   process.exit(1);
 }
 
-console.log(`Base: ${new URL(url).host}\n`);
+console.log(`Base: ${new URL(url).host}${produccion ? "  (PRODUCCIÓN)" : ""}\n`);
 
 const cliente = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await cliente.connect();

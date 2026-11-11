@@ -64,7 +64,9 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
 - Desarrollo usa la rama `dev` de Neon (`NEON_DATABASE_URL` en `.env.local`). La URL de producción
   está guardada aparte como `NEON_DATABASE_URL_PRODUCCION` y no se usa en local.
 - Migrar: `node --env-file=.env.local scripts/migrar.mjs` (lleva la cuenta en `migraciones`).
-  Primero en `dev`; en producción solo después de revisar.
+  Primero en `dev`; en producción solo después de revisar, con `--produccion`.
+- Variables en Vercel: `node scripts/variables-vercel.mjs preview|production` las carga desde
+  `.env.local` sin imprimir valores (en producción usa `NEON_DATABASE_URL_PRODUCCION`).
 
 ## Variables de entorno
 
@@ -86,7 +88,8 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
 
 - [x] `db/001` aplicado en la rama `production` de Neon (2026-11-10). Usuario inicial: Cristian.
 - [x] Variables del panel cargadas en Vercel para **Preview** (con la base `dev`).
-- [ ] Variables del panel en Vercel para **Production** (con la base `production`) antes de publicar la v2 con panel.
+- [ ] Variables del panel en Vercel para **Production** antes de publicar la v2 con panel:
+      `node scripts/variables-vercel.mjs production` (cambiar antes la clave corta del panel).
 - [ ] Crear y conectar los dos almacenes de Blob (público y privado).
 - [ ] Consentimientos firmados (sitio viejo): datos de salud y RUT, Ley 21.719. Falta definir el flujo.
 - [ ] Rotar `ADMIN_PASSWORD` y `VERCEL_OIDC_TOKEN` del sitio viejo (se expusieron).
