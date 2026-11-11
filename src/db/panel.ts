@@ -1,0 +1,239 @@
+import "server-only";
+import { sql } from "@/db/conexion";
+
+/**
+ * Lecturas del panel. Las escrituras viven en src/app/tinta/_acciones/panel.ts y
+ * cada una comprueba la sesión antes de tocar nada.
+ *
+ * Las horas salen como texto ("2026-11-10T15:00"), nunca como Date: ver
+ * src/lib/admin/fecha.ts.
+ */
+
+export type Cita = {
+  id: number;
+  cliente_id: number | null;
+  cliente: string | null;
+  telefono: string | null;
+  tipo: "tatuaje" | "laser" | "retoque" | "bloqueo";
+  estado: "confirmada" | "completada" | "cancelada" | "no_vino";
+  inicio: string;
+  fin: string;
+  zona: string | null;
+  lado: "izq" | "der" | null;
+  tamano: string | null;
+  estilo: string | null;
+  descripcion: string | null;
+  precio: number | null;
+  pagado: number;
+  saldo: number | null;
+  notas: string | null;
+  creada_por: string;
+};
+
+// Columnas fijas: se escriben una vez y se usan en cada consulta de citas.
+const COLUMNAS = sql.unsafe(`
+  c.id, c.cliente_id, cl.nombre AS cliente, cl.telefono, c.tipo, c.estado,
+  to_char(c.inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio,
+  to_char(c.fin, 'YYYY-MM-DD"T"HH24:MI') AS fin,
+  c.zona, c.lado, c.tamano, c.estilo, c.descripcion, c.precio, c.pagado, c.saldo, c.notas, c.creada_por
+`);
+
+/** Citas que tocan el rango de días [desde, hasta], canceladas incluidas si se piden. */
+export async function citasEntre(desde: string, hasta: string, conCanceladas = false): Promise<Cita[]> {
+  return (await sql`
+    SELECT ${COLUMNAS}
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    WHERE c.inicio < (${hasta}::DATE + 1) AND c.fin > ${desde}::DATE
+      AND (${conCanceladas} OR c.estado NOT IN ('cancelada'))
+    ORDER BY c.inicio
+  `) as Cita[];
+}
+
+export async function cita(id: number): Promise<Cita | null> {
+  const [fila] = (await sql`
+    SELECT ${COLUMNAS}
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    WHERE c.id = ${id}
+  `) as Cita[];
+  return fila ?? null;
+}
+
+export async function citasDeCliente(clienteId: number): Promise<Cita[]> {
+  return (await sql`
+    SELECT ${COLUMNAS}
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    WHERE c.cliente_id = ${clienteId}
+    ORDER BY c.inicio DESC
+  `) as Cita[];
+}
+
+/**
+ * Lo que hay que cobrar: citas de hoy o anteriores que todavía deben plata.
+ * Las futuras no cuentan: ese saldo se cobra el día de la sesión.
+ */
+export async function saldosPendientes(): Promise<Cita[]> {
+  return (await sql`
+    SELECT ${COLUMNAS}
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    WHERE c.estado IN ('confirmada', 'completada') AND c.saldo > 0 AND c.tipo <> 'bloqueo'
+      AND c.inicio < (NOW() AT TIME ZONE 'America/Santiago')::DATE + 1
+    ORDER BY c.inicio
+  `) as Cita[];
+}
+
+/** Saldos de citas futuras: plata que va a entrar si todo sale como está agendado. */
+export async function saldosPorVenir(): Promise<number> {
+  const [f] = (await sql`
+    SELECT COALESCE(SUM(saldo), 0)::INT AS total FROM citas_con_saldo
+    WHERE estado = 'confirmada' AND tipo <> 'bloqueo' AND inicio >= (NOW() AT TIME ZONE 'America/Santiago')::DATE + 1
+  `) as Array<{ total: number }>;
+  return f.total;
+}
+
+/** Citas que ya terminaron y siguen "confirmadas": falta decir si se hicieron. */
+export async function sinCerrar(): Promise<Cita[]> {
+  return (await sql`
+    SELECT ${COLUMNAS}
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    WHERE c.estado = 'confirmada' AND c.tipo <> 'bloqueo' AND c.fin < NOW() AT TIME ZONE 'America/Santiago'
+    ORDER BY c.inicio DESC
+    LIMIT 20
+  `) as Cita[];
+}
+
+export type Pago = {
+  id: number;
+  monto: number;
+  tipo: "abono" | "saldo" | "otro";
+  medio: "transferencia" | "efectivo" | "otro";
+  comprobante: string | null;
+  fecha: string;
+  anotado_por: string;
+};
+
+export async function pagosDeCita(citaId: number): Promise<Pago[]> {
+  return (await sql`
+    SELECT id, monto, tipo, medio, comprobante, fecha::TEXT AS fecha, anotado_por
+    FROM pagos WHERE cita_id = ${citaId} ORDER BY creado_en
+  `) as Pago[];
+}
+
+export type Cliente = {
+  id: number;
+  nombre: string;
+  telefono: string | null;
+  instagram: string | null;
+  notas: string | null;
+  citas: number;
+  ultima: string | null;
+  proxima: string | null;
+};
+
+export async function clientes(busqueda = ""): Promise<Cliente[]> {
+  const q = `%${busqueda.trim().toLowerCase()}%`;
+  return (await sql`
+    SELECT cl.id, cl.nombre, cl.telefono, cl.instagram, cl.notas,
+           COUNT(c.id) FILTER (WHERE c.estado <> 'cancelada')::INT AS citas,
+           to_char(MAX(c.inicio) FILTER (WHERE c.inicio < NOW() AT TIME ZONE 'America/Santiago'), 'YYYY-MM-DD') AS ultima,
+           to_char(MIN(c.inicio) FILTER (WHERE c.inicio >= NOW() AT TIME ZONE 'America/Santiago' AND c.estado = 'confirmada'), 'YYYY-MM-DD"T"HH24:MI') AS proxima
+    FROM clientes cl LEFT JOIN citas c ON c.cliente_id = cl.id
+    WHERE ${busqueda.trim() === ""} OR lower(cl.nombre) LIKE ${q} OR cl.telefono LIKE ${q} OR lower(cl.instagram) LIKE ${q}
+    GROUP BY cl.id
+    ORDER BY MAX(c.inicio) DESC NULLS LAST, cl.nombre
+    LIMIT 200
+  `) as Cliente[];
+}
+
+export async function cliente(id: number): Promise<Cliente | null> {
+  const [fila] = (await sql`
+    SELECT id, nombre, telefono, instagram, notas, 0 AS citas, NULL AS ultima, NULL AS proxima
+    FROM clientes WHERE id = ${id}
+  `) as Cliente[];
+  return fila ?? null;
+}
+
+export type Gasto = { id: number; fecha: string; categoria: string; descripcion: string | null; monto: number; anotado_por: string };
+
+export async function resumenMes(mes: string) {
+  const desde = `${mes}-01`;
+  const [ingresos, gastos, porDia] = await Promise.all([
+    sql`
+      SELECT COALESCE(SUM(monto), 0)::INT AS total, COUNT(*)::INT AS cuantos,
+             COALESCE(SUM(monto) FILTER (WHERE medio = 'transferencia'), 0)::INT AS transferencia,
+             COALESCE(SUM(monto) FILTER (WHERE medio = 'efectivo'), 0)::INT AS efectivo
+      FROM pagos WHERE fecha >= ${desde}::DATE AND fecha < (${desde}::DATE + INTERVAL '1 month')
+    `,
+    sql`
+      SELECT id, fecha::TEXT AS fecha, categoria, descripcion, monto, anotado_por
+      FROM gastos WHERE fecha >= ${desde}::DATE AND fecha < (${desde}::DATE + INTERVAL '1 month')
+      ORDER BY fecha DESC, id DESC
+    `,
+    sql`
+      SELECT d::DATE::TEXT AS dia,
+             COALESCE((SELECT SUM(monto) FROM pagos WHERE fecha = d::DATE), 0)::INT AS ingresos,
+             COALESCE((SELECT SUM(monto) FROM gastos WHERE fecha = d::DATE), 0)::INT AS gastos
+      FROM generate_series(${desde}::DATE, (${desde}::DATE + INTERVAL '1 month' - INTERVAL '1 day'), INTERVAL '1 day') d
+    `,
+  ]);
+  const i = ingresos[0] as { total: number; cuantos: number; transferencia: number; efectivo: number };
+  return {
+    ingresos: i,
+    gastos: gastos as Gasto[],
+    porDia: porDia as Array<{ dia: string; ingresos: number; gastos: number }>,
+  };
+}
+
+export async function pagosDelMes(mes: string) {
+  return (await sql`
+    SELECT p.id, p.monto, p.tipo, p.medio, p.fecha::TEXT AS fecha, p.cita_id, cl.nombre AS cliente
+    FROM pagos p JOIN citas c ON c.id = p.cita_id LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    WHERE p.fecha >= ${`${mes}-01`}::DATE AND p.fecha < (${`${mes}-01`}::DATE + INTERVAL '1 month')
+    ORDER BY p.fecha DESC, p.id DESC
+  `) as Array<{ id: number; monto: number; tipo: string; medio: string; fecha: string; cita_id: number; cliente: string | null }>;
+}
+
+export type Foto = {
+  id: number;
+  url: string;
+  alt: string;
+  estilo: string;
+  zona: string;
+  ancho: number;
+  alto: number;
+  visible: boolean;
+  orden: number;
+};
+
+export async function galeria(soloVisibles = false): Promise<Foto[]> {
+  return (await sql`
+    SELECT id, url, alt, estilo, zona, ancho, alto, visible, orden
+    FROM galeria WHERE NOT ${soloVisibles} OR visible
+    ORDER BY orden, creada_en DESC
+  `) as Foto[];
+}
+
+export type Cotizacion = {
+  id: number;
+  zona: string;
+  lado: "izq" | "der" | null;
+  tamano: string;
+  estilo: string;
+  idea: string | null;
+  minimo: number;
+  maximo: number;
+  vista: boolean;
+  creada: string;
+};
+
+export async function cotizaciones(limite = 60): Promise<Cotizacion[]> {
+  return (await sql`
+    SELECT id, zona, lado, tamano, estilo, idea, minimo, maximo, vista,
+           to_char(creada_en AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD"T"HH24:MI') AS creada
+    FROM cotizaciones ORDER BY creada_en DESC LIMIT ${limite}
+  `) as Cotizacion[];
+}
+
+export async function cotizacionesSinVer(): Promise<number> {
+  const [f] = (await sql`SELECT COUNT(*)::INT AS n FROM cotizaciones WHERE NOT vista`) as Array<{ n: number }>;
+  return f.n;
+}

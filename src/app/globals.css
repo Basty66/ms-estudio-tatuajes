@@ -1,0 +1,676 @@
+@import "tailwindcss";
+
+/*
+ * Paleta sacada del propio oficio:
+ * - tinta: negro azulado frío, el fondo sobre el que resalta el neón.
+ * - piel: el texto principal, cálido como la piel bajo la luz de la camilla.
+ * - stencil: el azul eléctrico, color insignia del estudio. Es el calco, la
+ *   aguja, la luz y el neón. El único acento de color.
+ * - cromo: el acero de la máquina, solo en el nombre y en los detalles metálicos.
+ */
+@theme {
+  --color-tinta: #07080d;
+  --color-hollin: #0d1018;
+  --color-carbon: #151a25;
+  --color-linea: #222a3b;
+  --color-piel: #efe8e2;
+  --color-ceniza: #9ba4b6;
+  --color-stencil: #2f6bff;
+  --color-stencil-claro: #8aa8ff;
+  --color-stencil-hondo: #0c1f6b;
+  --color-sangre: #e5352b;
+
+  --font-gotica: var(--font-fraktur), "UnifrakturMaguntia", serif;
+  --font-texto: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-aguja: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: dark;
+  --cromo: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #d9dce2 18%,
+    #8d919b 40%,
+    #2f3138 49%,
+    #f3f4f7 52%,
+    #a7abb4 68%,
+    #e6e8ec 86%,
+    #7fa2ff 100%
+  );
+  /* Acero cepillado: sin la franja oscura del horizonte, para que el texto
+     encima de un botón o un logo chico se lea. */
+  --acero: linear-gradient(180deg, #fbfbfc 0%, #dfe1e6 38%, #c3c7ce 52%, #e9ebee 78%, #a9c0ff 100%);
+}
+
+.texto-acero {
+  background: var(--acero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+html {
+  background: var(--color-tinta);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-tinta);
+  color: var(--color-piel);
+  font-family: var(--font-texto);
+  font-feature-settings: "ss01", "tnum" 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-stencil);
+  color: var(--color-piel);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-stencil-claro);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Lenis maneja el scroll; el navegador no debe sumar su propio suavizado. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* La fuente gótica tiene un solo peso: nada de negritas falsas. */
+.font-gotica {
+  font-synthesis: none;
+}
+
+/* Texto cromado: el degradado se recorta a la forma de las letras. */
+.texto-cromo {
+  background: var(--cromo);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Luz de lámpara: un cono cálido muy suave desde arriba, como la lámpara
+   sobre la camilla. Sin ruido ni manchas de color. */
+body {
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgb(47 107 255 / 0.10), transparent 60%),
+    var(--color-tinta);
+  background-attachment: fixed;
+}
+
+/* Banda de estilos que corre sin fin. Se duplica el contenido en el
+   componente y se desplaza exactamente la mitad. */
+.marquesina {
+  animation: marquesina 38s linear infinite;
+}
+@keyframes marquesina {
+  to { transform: translateX(-50%); }
+}
+
+/* Brillo metálico que barre un botón al pasar el cursor. */
+.boton-cromo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.boton-cromo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 0.9s var(--ease-salida);
+}
+.boton-cromo:hover::after {
+  transform: translateX(120%);
+}
+
+/* ---------- Pared de trabajos del hero ---------- */
+.muro {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  perspective: 1400px;
+}
+.muro-plano {
+  position: absolute;
+  inset: -35% -25%;
+  display: grid;
+  gap: clamp(10px, 1.4vw, 22px);
+  transform: rotateX(28deg) rotateZ(-14deg) translateY(-6%);
+  transform-style: preserve-3d;
+}
+.muro-columna {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vw, 22px);
+  animation: muro-sube linear infinite;
+  will-change: transform;
+}
+.muro-columna[data-sentido="baja"] {
+  animation-name: muro-baja;
+}
+.muro[data-pausa="si"] .muro-columna {
+  animation-play-state: paused;
+}
+.muro-pieza {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--color-hollin);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+/* Una de cada tres piezas se ve como calco azul. Va como filtro de la foto
+   (se pinta una vez) y no como capa de mezcla, que se recalcularía en cada
+   cuadro mientras la columna se mueve. */
+.muro-pieza:nth-child(3n + 2) :is(img, video) {
+  filter: grayscale(1) contrast(1.45) brightness(0.95) sepia(1) hue-rotate(180deg) saturate(3.2);
+}
+@keyframes muro-sube {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+@keyframes muro-baja {
+  from { transform: translateY(-50%); }
+  to { transform: translateY(0); }
+}
+/* La aguja: una línea de neón azul que barre la pared en diagonal. */
+.muro-aguja {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  top: 0;
+  height: 2px;
+  background: #dfe7ff;
+  box-shadow: 0 0 14px 3px rgb(47 107 255 / 0.95), 0 0 60px 14px rgb(47 107 255 / 0.45);
+  transform: rotate(-14deg) translateY(-10vh);
+  animation: muro-aguja 7s var(--ease-aguja) 1.5s infinite;
+  opacity: 0;
+}
+@keyframes muro-aguja {
+  0% { transform: rotate(-14deg) translateY(-10vh); opacity: 0; }
+  8% { opacity: 1; }
+  45% { transform: rotate(-14deg) translateY(115vh); opacity: 1; }
+  50%, 100% { transform: rotate(-14deg) translateY(115vh); opacity: 0; }
+}
+
+/* ---------- Ornamentos de flash ---------- */
+.ornamento {
+  position: absolute;
+  color: var(--color-stencil);
+  opacity: 0.55;
+  z-index: 0;
+}
+.ornamento-brillo svg {
+  filter: drop-shadow(0 0 6px rgb(47 107 255 / 0.6));
+}
+/* Flotación lenta: sube, gira apenas y vuelve. El desfase negativo hace que
+   cada ornamento arranque en un punto distinto del ciclo. */
+.ornamento-flota {
+  animation: flotar 9s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes flotar {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  50% { translate: 0 calc(var(--flotar) * -1); rotate: 2deg; }
+}
+
+/* ---------- Tubo de neón bajo los titulares ----------
+   Se enciende como un letrero: dos parpadeos y queda prendido, con un pulso
+   de luz muy lento. Solo se anima opacity y box-shadow de un elemento fino. */
+.neon {
+  height: 3px;
+  border-radius: 999px;
+  background: #cfdcff;
+  box-shadow:
+    0 0 6px 1px rgb(47 107 255 / 0.95),
+    0 0 22px 4px rgb(47 107 255 / 0.65),
+    0 0 60px 10px rgb(47 107 255 / 0.35);
+  opacity: 0;
+  transform-origin: left;
+}
+.neon[data-prendido="si"] {
+  animation:
+    neon-encender 1.1s steps(1, end) forwards,
+    neon-pulso 4s ease-in-out 1.2s infinite;
+}
+@keyframes neon-encender {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  18% { opacity: 0.15; }
+  30% { opacity: 1; }
+  38% { opacity: 0.3; }
+  52%, 100% { opacity: 1; }
+}
+@keyframes neon-pulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
+}
+
+/* ---------- Cursor de aguja (solo con mouse) ---------- */
+.cursor-punto,
+.cursor-aro {
+  display: none;
+}
+.con-cursor .cursor-punto,
+.con-cursor .cursor-aro {
+  display: grid;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+.cursor-punto {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 999px;
+  background: var(--color-piel);
+}
+.cursor-aro {
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+  border: 1px solid rgb(239 232 226 / 0.45);
+  border-radius: 999px;
+  transition: width 0.35s var(--ease-salida), height 0.35s var(--ease-salida), margin 0.35s var(--ease-salida),
+    background-color 0.35s ease, border-color 0.35s ease;
+}
+.cursor-aro span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-tinta);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.cursor-aro[data-modo="accion"] {
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-color: var(--color-stencil);
+  box-shadow: 0 0 18px rgb(47 107 255 / 0.55);
+}
+.cursor-aro[data-modo="ver"] {
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  background: var(--color-piel);
+  border-color: transparent;
+}
+.cursor-aro[data-modo="ver"] span {
+  opacity: 1;
+}
+
+/* ---------- Nombre: stencil → aguja → cromo ---------- */
+.nombre-cromo {
+  overflow: visible;
+  transition: opacity 0.4s ease;
+}
+.nombre-cromo[data-listo="no"] {
+  opacity: 0;
+}
+.nc-trazo {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+}
+.nc-tinta {
+  clip-path: inset(0 100% 0 0);
+}
+.nc-aguja {
+  opacity: 0;
+}
+.nombre-cromo[data-listo="si"] .nc-trazo {
+  animation:
+    nc-trazo 2.4s var(--ease-aguja) calc(0.15s + var(--nh-retraso, 0s)) forwards,
+    nc-desvanecer 0.8s ease calc(3.1s + var(--nh-retraso, 0s)) forwards;
+}
+.nombre-cromo[data-listo="si"] .nc-tinta {
+  animation: nc-tinta 1.4s var(--ease-aguja) calc(1.7s + var(--nh-retraso, 0s)) forwards;
+}
+.nombre-cromo[data-listo="si"] .nc-aguja {
+  animation: nc-aguja 1.4s var(--ease-aguja) calc(1.7s + var(--nh-retraso, 0s)) forwards;
+}
+.nc-brillo {
+  animation: nc-brillo 7s var(--ease-salida) calc(3.2s + var(--nh-retraso, 0s)) infinite;
+}
+.nombre-cromo[data-animar="no"] .nc-trazo,
+.nombre-cromo[data-animar="no"] .nc-aguja {
+  display: none;
+}
+.nombre-cromo[data-animar="no"] .nc-tinta {
+  clip-path: none;
+  animation: none;
+}
+
+@keyframes nc-trazo {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes nc-desvanecer {
+  to { opacity: 0.16; }
+}
+@keyframes nc-tinta {
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes nc-aguja {
+  0% { opacity: 0; transform: translateX(0); }
+  8%, 90% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(calc(var(--ancho) * 1px)); }
+}
+@keyframes nc-brillo {
+  0% { transform: translateX(0); }
+  24%, 100% { transform: translateX(calc(var(--ancho) * 1.6px)); }
+}
+
+/* ---------- Nombre del hero: calco → aguja → metal líquido ---------- */
+.nombre-hero {
+  transition: opacity 0.4s ease;
+}
+.nombre-hero[data-listo="no"] {
+  opacity: 0;
+}
+.nh-trazo {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+}
+.nh-tinta {
+  clip-path: inset(0 100% 0 0);
+}
+.nh-aguja {
+  opacity: 0;
+}
+.nh-respaldo[data-webgl="si"] {
+  opacity: 0;
+}
+/* --nh-retraso desfasa toda la secuencia (lo usa "Studio", que entra después). */
+.nombre-hero[data-listo="si"] .nh-trazo {
+  animation:
+    nc-trazo 2.4s var(--ease-aguja) calc(0.15s + var(--nh-retraso, 0s)) forwards,
+    nh-apagar 0.8s ease calc(3.1s + var(--nh-retraso, 0s)) forwards;
+}
+.nombre-hero[data-listo="si"] .nh-tinta {
+  animation: nc-tinta 1.4s var(--ease-aguja) calc(1.7s + var(--nh-retraso, 0s)) forwards;
+}
+.nombre-hero[data-listo="si"] .nh-aguja {
+  animation: nc-aguja 1.4s var(--ease-aguja) calc(1.7s + var(--nh-retraso, 0s)) forwards;
+}
+@keyframes nh-apagar {
+  to { opacity: 0; }
+}
+
+/* ---------- Foto: calco violeta → tatuaje ---------- */
+.foto-stencil .fs-calco {
+  filter: grayscale(1) contrast(1.7) brightness(1.15);
+}
+.foto-stencil .fs-tinte {
+  background: var(--color-stencil);
+  mix-blend-mode: color;
+}
+.foto-stencil .fs-real {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1.5s var(--ease-aguja);
+}
+.foto-stencil .fs-aguja {
+  top: 0;
+  opacity: 0;
+  transition: top 1.5s var(--ease-aguja), opacity 0.3s ease;
+}
+.foto-stencil[data-estado="tinta"] .fs-real {
+  clip-path: inset(0 0 0 0);
+}
+.foto-stencil[data-estado="tinta"] .fs-aguja {
+  top: 100%;
+  opacity: 1;
+}
+.foto-stencil[data-estado="tinta"][data-quieta="si"] .fs-aguja {
+  opacity: 0;
+}
+/* Ya tatuada y quieta: el calco de abajo no se ve, así que no se compone. */
+.foto-stencil[data-estado="tinta"][data-quieta="si"] :is(.fs-calco, .fs-tinte) {
+  visibility: hidden;
+}
+
+/* Haz del láser cruzando la foto del equipo cada pocos segundos. */
+.laser-barrido {
+  left: -40%;
+  /* Capa normal, sin mezcla: pasa sobre un video y no debe recalcularse por cuadro. */
+  background: linear-gradient(90deg, transparent, rgb(47 107 255 / 0.28) 42%, rgb(220 230 255 / 0.5) 50%, rgb(47 107 255 / 0.28) 58%, transparent);
+  animation: laser 5s var(--ease-aguja) infinite;
+}
+@keyframes laser {
+  0% { left: -40%; }
+  40%, 100% { left: 110%; }
+}
+
+/* Diagrama del láser: pulso, destello y la tinta que se dispersa. */
+.laser-haz {
+  transform-box: fill-box;
+  transform-origin: top;
+  animation: laser-haz 4.5s var(--ease-aguja) infinite;
+}
+.laser-destello {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: laser-destello 4.5s ease-out infinite;
+}
+.laser-tinta {
+  animation: laser-tinta 4.5s var(--ease-salida) infinite;
+}
+.laser-etiqueta {
+  animation: laser-etiqueta 4.5s ease infinite;
+}
+@keyframes laser-haz {
+  0%, 12% { transform: scaleY(0); opacity: 0; }
+  20% { transform: scaleY(1); opacity: 1; }
+  30%, 100% { transform: scaleY(1); opacity: 0; }
+}
+@keyframes laser-destello {
+  0%, 18% { transform: scale(0.2); opacity: 0; }
+  24% { transform: scale(1); opacity: 1; }
+  40%, 100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes laser-tinta {
+  0%, 20% { transform: translate(0, 0) scale(1); opacity: 1; }
+  45% { transform: translate(var(--dx), var(--dy)) scale(0.55); opacity: 0.9; }
+  80% { transform: translate(calc(var(--dx) * 1.6), calc(var(--dy) * 1.6)) scale(0.2); opacity: 0; }
+  81%, 100% { transform: translate(0, 0) scale(1); opacity: 0; }
+}
+@keyframes laser-etiqueta {
+  0%, 22% { opacity: 0; }
+  32%, 70% { opacity: 1; }
+  85%, 100% { opacity: 0; }
+}
+.laser-tinta {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ---------- 404: el láser borra el número y se vuelve a tatuar ----------
+   Ciclo de 9 s que arranca cuando el número ya está entintado (4 s): se
+   muestra, pasa el láser, queda la piel limpia y se vuelve a tatuar.
+   La tinta se recorta detrás del haz; las chispas viajan con el haz. */
+.borrado-tinta {
+  animation: borrado-tinta 9s var(--ease-aguja) 4s infinite;
+}
+.borrado-laser {
+  position: absolute;
+  top: -6%;
+  bottom: -6%;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: #e6edff;
+  box-shadow: 0 0 12px 3px rgb(47 107 255 / 0.95), 0 0 50px 12px rgb(47 107 255 / 0.5);
+  opacity: 0;
+  animation: borrado-laser 9s var(--ease-aguja) 4s infinite;
+}
+.borrado-chispas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #8aa8ff;
+  box-shadow:
+    -14px -60px 0 0 #8aa8ff, -26px -24px 0 -1px #2f6bff, -10px 18px 0 0 #cfdcff,
+    -30px 52px 0 -1px #2f6bff, -18px 86px 0 0 #8aa8ff, -8px -96px 0 -1px #cfdcff,
+    -40px -8px 0 -1px #8aa8ff, -22px 120px 0 -1px #2f6bff;
+  animation: borrado-chispas 0.5s linear infinite;
+}
+@keyframes borrado-tinta {
+  0%, 30% { clip-path: inset(0 0 0 0); }
+  52% { clip-path: inset(0 0 0 100%); }
+  62% { clip-path: inset(0 100% 0 0); }
+  82%, 100% { clip-path: inset(0 0 0 0); }
+}
+@keyframes borrado-laser {
+  0%, 28% { left: 0; opacity: 0; }
+  31% { opacity: 1; }
+  52% { left: 100%; opacity: 1; }
+  55%, 100% { left: 100%; opacity: 0; }
+}
+@keyframes borrado-chispas {
+  from { transform: translate(0, 0); opacity: 1; }
+  to { transform: translate(-22px, 6px); opacity: 0; }
+}
+
+/* ---------- Mapa del cuerpo del cotizador ----------
+   Lámina técnica: puntos de grilla tenues detrás de la silueta. Las zonas
+   cambian de relleno al pasar y la elegida queda en azul con halo. */
+.mapa-cuerpo {
+  background:
+    radial-gradient(50% 45% at 50% 45%, rgb(47 107 255 / 0.16), transparent 70%),
+    radial-gradient(circle, rgb(239 232 226 / 0.07) 1px, transparent 1.5px) 0 0 / 14px 14px;
+  border-radius: 24px;
+}
+.mapa-zona {
+  cursor: pointer;
+  fill: #171c28;
+  stroke: #2a3348;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+.mapa-zona path {
+  vector-effect: non-scaling-stroke;
+}
+@media (hover: hover) {
+  .mapa-zona:hover {
+    fill: rgb(47 107 255 / 0.38);
+    stroke: var(--color-stencil-claro);
+  }
+}
+.mapa-zona[data-activa="si"] {
+  fill: var(--color-stencil);
+  stroke: #cfdcff;
+}
+.mapa-pulso {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mapa-pulso 1.8s var(--ease-salida) infinite;
+}
+@keyframes mapa-pulso {
+  from { transform: scale(0.5); opacity: 1; }
+  to { transform: scale(2.2); opacity: 0; }
+}
+
+/* ---------- Panel (/tinta) ---------- */
+.panel-surge {
+  animation: panel-surge 0.5s var(--ease-salida) both;
+}
+@keyframes panel-surge {
+  from { opacity: 0; transform: translateY(12px); }
+}
+/* El PIN equivocado: los puntos tiemblan como un "no" con la cabeza. */
+.panel-sacude {
+  animation: panel-sacude 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes panel-sacude {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+/* Onda del botón de WhatsApp: crece y se apaga, cada 2,8 s. */
+.whatsapp-pulso {
+  animation: whatsapp-pulso 2.8s ease-out 2s infinite;
+}
+@keyframes whatsapp-pulso {
+  0% { transform: scale(1); opacity: 0.55; }
+  70%, 100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* El mapa de Google en claro rompe la página: se invierte a oscuro. */
+.mapa-oscuro {
+  filter: invert(0.92) hue-rotate(200deg) saturate(0.6) contrast(0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .laser-barrido {
+    display: none;
+  }
+  .whatsapp-pulso,
+  .mapa-pulso,
+  .panel-surge,
+  .panel-sacude,
+  .borrado-tinta,
+  .borrado-laser,
+  .borrado-chispas,
+  .laser-haz,
+  .laser-destello,
+  .laser-tinta,
+  .laser-etiqueta {
+    animation: none;
+  }
+  .marquesina,
+  .nc-brillo {
+    animation: none;
+  }
+  .neon {
+    opacity: 1;
+    animation: none !important;
+  }
+  .ornamento-flota {
+    animation: none;
+  }
+  .nc-trazo,
+  .nc-aguja,
+  .nh-trazo,
+  .nh-aguja {
+    display: none;
+  }
+  .nombre-hero .nh-tinta {
+    clip-path: none;
+    animation: none !important;
+  }
+  .nombre-cromo .nc-tinta {
+    clip-path: none;
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
