@@ -93,15 +93,17 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
 
 ## Pendientes
 
+**Próxima sesión: ver [`PLAN.md`](PLAN.md)** (consentimiento informado digital y lo que necesita el tatuador).
+
 - [x] `db/001` aplicado en la rama `production` de Neon (2026-11-10). Usuario inicial: Cristian.
-- [ ] `db/002_contenido.sql` (contenido editable de la web): aplicado en `dev`, falta en `production`
-      (`node --env-file=.env.local scripts/migrar.mjs --produccion`). Sin él la web sale con lo de fábrica.
+- [x] `db/002_contenido.sql` (contenido editable de la web) aplicado en `dev` y en `production` (2026-11-14).
 - [x] Variables del panel cargadas en Vercel para **Preview** (con la base `dev`).
-- [ ] Variables del panel en Vercel para **Production** antes de publicar la v2 con panel:
-      `node scripts/variables-vercel.mjs production` (cambiar antes la clave corta del panel).
-- [ ] Crear y conectar los dos almacenes de Blob (público y privado).
-- [ ] Consentimientos firmados (sitio viejo): datos de salud y RUT, Ley 21.719. Falta definir el flujo.
-- [ ] Rotar `ADMIN_PASSWORD` y `VERCEL_OIDC_TOKEN` del sitio viejo (se expusieron).
+- [x] Variables del panel en Vercel para **Production** (2026-11-14) y v2 con panel publicada en producción.
+- [ ] Clave definitiva del panel en producción: cambiar `ADMIN_CLAVE` en `.env.local`, volver a correr
+      `node scripts/variables-vercel.mjs production` y redesplegar.
+- [ ] Almacén privado de comprobantes (`BLOB_PRIVADO_READ_WRITE_TOKEN`).
+- [ ] Consentimiento informado digital y limpieza de lo que dejó el sitio viejo (ver `PLAN.md`).
+- [ ] Quitar de Vercel las variables del sitio viejo y rotar sus credenciales.
 - [ ] Probar Face ID y avisos en un iPhone y un Android reales, con la app instalada.
 
 <!-- BEGIN:nextjs-agent-rules -->
