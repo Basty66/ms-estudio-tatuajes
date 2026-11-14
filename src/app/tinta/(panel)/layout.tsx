@@ -24,7 +24,7 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
       <script dangerouslySetInnerHTML={{ __html: OCULTAR_SI_SE_CERRO }} />
       <div aria-hidden className="pointer-events-none fixed -top-48 left-1/2 -z-10 h-[50vh] w-[90vw] -translate-x-1/2 rounded-full bg-stencil/10 blur-[120px]" />
       <main
-        className="panel-surge mx-auto w-full max-w-3xl px-4 pb-36 sm:px-6 lg:max-w-4xl lg:px-10 lg:pb-16"
+        className="panel-surge mx-auto w-full max-w-3xl px-4 pb-36 sm:px-6 lg:max-w-5xl lg:px-10 lg:pb-16"
         style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
         {children}

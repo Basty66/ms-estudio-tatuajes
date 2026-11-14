@@ -423,6 +423,20 @@ export async function cambiarFoto(id: number, cambios: { visible?: boolean; move
   return { ok: true };
 }
 
+/** Corregir lo que dice una foto ya subida, sin volver a subirla. */
+export async function editarFoto(id: number, datos: { alt: string; estilo: string; zona: string }): Promise<Respuesta> {
+  if (!(await operador())) return SIN_SESION;
+  const fotoId = entero(id, 1, 2e9);
+  const alt = texto(datos.alt, 160);
+  const estilo = texto(datos.estilo, 30);
+  const zona = texto(datos.zona, 30);
+  if (!fotoId) return { ok: false, error: "No existe." };
+  if (!alt || alt.length < 3 || !estilo || !zona) return { ok: false, error: "Completa la descripción, el estilo y la zona." };
+  await sql`UPDATE galeria SET alt = ${alt}, estilo = ${estilo}, zona = ${zona} WHERE id = ${fotoId}`;
+  refrescar(`${PANEL}/galeria`, "/");
+  return { ok: true };
+}
+
 export async function borrarFoto(id: number): Promise<Respuesta> {
   if (!(await operador())) return SIN_SESION;
   const fotoId = entero(id, 1, 2e9);

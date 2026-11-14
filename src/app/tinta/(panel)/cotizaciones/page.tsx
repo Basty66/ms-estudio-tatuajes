@@ -1,8 +1,8 @@
 import { Encabezado, Tarjeta, TituloBloque } from "@/componentes/panel/Encabezado";
 import { MarcarVistas } from "@/componentes/panel/MarcarVistas";
 import { cotizaciones } from "@/db/panel";
-import { clp, nombreEstilo, nombreTamano, nombreZona, textoLado } from "@/lib/admin/etiquetas";
-import { fechaRelativa, hora, hoyChile } from "@/lib/admin/fecha";
+import { clp, nombreDonde, nombreEstilo, nombreTamano, nombreZona } from "@/lib/admin/etiquetas";
+import { fechaCorta, hora, hoyChile, sumarDias } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
 
@@ -29,6 +29,10 @@ export default async function Cotizaciones() {
   };
   const zonas = cuenta((c) => nombreZona(c.zona));
   const estilos = cuenta((c) => nombreEstilo(c.estilo));
+  const cuando = (instante: string) => {
+    const dia = instante.slice(0, 10);
+    return `${dia === hoy ? "hoy" : dia === sumarDias(hoy, -1) ? "ayer" : fechaCorta(dia)} · ${hora(instante)}`;
+  };
 
   return (
     <>
@@ -43,40 +47,32 @@ export default async function Cotizaciones() {
         <>
           <Tarjeta>
             <TituloBloque>Lo que más piden</TituloBloque>
-            <div className="grid grid-cols-2 gap-3 text-[14px]">
-              <ul className="flex flex-col gap-1">
-                {zonas.map(([n, v]) => (
-                  <li key={n} className="flex justify-between gap-2">
-                    <span>{n}</span>
-                    <span className="text-ceniza tabular-nums">{v}</span>
-                  </li>
-                ))}
-              </ul>
-              <ul className="flex flex-col gap-1">
-                {estilos.map(([n, v]) => (
-                  <li key={n} className="flex justify-between gap-2">
-                    <span>{n}</span>
-                    <span className="text-ceniza tabular-nums">{v}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[14px]">
+              {[zonas, estilos].map((lista, i) => (
+                <ul key={i} className="flex flex-col gap-1">
+                  {lista.map(([n, v]) => (
+                    <li key={n} className="flex justify-between gap-2">
+                      <span className="truncate">{n}</span>
+                      <span className="text-ceniza tabular-nums">{v}</span>
+                    </li>
+                  ))}
+                </ul>
+              ))}
             </div>
           </Tarjeta>
 
-          <ul className="mt-4 flex flex-col gap-2">
+          <ul className="mt-4 grid gap-2 lg:grid-cols-2">
             {lista.map((c) => (
               <li key={c.id} className={`rounded-2xl border p-4 ${c.vista ? "border-linea bg-hollin/60" : "border-stencil/60 bg-stencil/10"}`}>
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="font-semibold">
-                    {nombreZona(c.zona)}
-                    {c.lado ? ` ${textoLado(c.lado)}` : ""}
+                  <p className="min-w-0 font-semibold">
+                    {!c.vista && <span className="mr-2 inline-block size-2 rounded-full bg-stencil align-middle shadow-[0_0_8px_2px_rgba(47,107,255,0.8)]" />}
+                    {nombreDonde(c.zona, c.lado)}
                   </p>
-                  <p className="shrink-0 text-[12px] text-ceniza first-letter:uppercase">
-                    {fechaRelativa(c.creada, hoy)} · {hora(c.creada)}
-                  </p>
+                  <p className="shrink-0 text-[12px] text-ceniza first-letter:uppercase">{cuando(c.creada)}</p>
                 </div>
-                <p className="text-[14px] text-ceniza">
-                  {nombreTamano(c.tamano)} · {nombreEstilo(c.estilo)} · {clp(c.minimo)} a {clp(c.maximo)}
+                <p className="mt-0.5 text-[14px] text-ceniza">
+                  {nombreTamano(c.tamano)} · {nombreEstilo(c.estilo)} · <span className="text-piel tabular-nums">{clp(c.minimo)} a {clp(c.maximo)}</span>
                 </p>
                 {c.idea && <p className="mt-2 text-[15px] whitespace-pre-line">“{c.idea}”</p>}
               </li>

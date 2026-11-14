@@ -1,5 +1,5 @@
 import { PANEL } from "@/lib/admin/ruta";
-import { Ajustes, Billetera, Burbuja, Calendario, Hoy, Imagen, Mas, Menu, Personas } from "./Iconos";
+import { Ajustes, Billetera, Burbuja, Calendario, Hoy, Imagen, Mas, Menu, Mundo, Personas } from "./Iconos";
 
 /**
  * Las secciones del panel. Viven fuera de <Navegacion> (que es de cliente)
@@ -17,6 +17,7 @@ export const SECUNDARIAS = [
   { href: `${PANEL}/finanzas`, texto: "Finanzas", detalle: "Ingresos, gastos y saldos por cobrar", Icono: Billetera },
   { href: `${PANEL}/cotizaciones`, texto: "Cotizaciones", detalle: "Lo que la gente cotiza en la web", Icono: Burbuja },
   { href: `${PANEL}/galeria`, texto: "Galería", detalle: "Los trabajos que se ven en la web", Icono: Imagen },
+  { href: `${PANEL}/web`, texto: "Web", detalle: "Fotos, precios, contacto y textos de la web", Icono: Mundo },
   { href: `${PANEL}/cuenta`, texto: "Cuenta", detalle: "Face ID, avisos, PIN y sesión", Icono: Ajustes },
 ];
 

@@ -3,21 +3,14 @@
 import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { enlaceWhatsapp } from "@/lib/estudio";
-import { ESTILOS_PRECIO, estimar, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Tamano } from "@/lib/precios";
+import type { Fotos } from "@/lib/contenido";
+import { ESTILOS_PRECIO, estimar, pesos, TAMANOS, type EstiloPrecio, type Precios, type Tamano } from "@/lib/precios";
 import { BotonMagnetico } from "./BotonMagnetico";
+import { useEstudio } from "./DatosEstudio";
 import { clave, MapaCuerpo, nombreZona, textoLado, type Eleccion } from "./MapaCuerpo";
 import { Estrella } from "./Marquesina";
 import { Ornamento } from "./Ornamento";
 import { Titulo } from "./Titulo";
-
-/** Un trabajo real como muestra de cada estilo. Realismo aún no tiene foto. */
-const FOTO_ESTILO: Partial<Record<EstiloPrecio, string>> = {
-  fineline: "/images/tatuaje2.jpg",
-  lettering: "/trabajos/pared-01.jpg",
-  blackwork: "/images/tatuaje3.jpg",
-  color: "/trabajos/pared-02.jpg",
-};
 
 const PASOS = ["Cotizas", "Reservas con abono", "Apruebas el diseño", "Te tatúas"];
 
@@ -44,11 +37,11 @@ function Grupo({ titulo, nota, children }: { titulo: string; nota?: string; chil
 }
 
 /** Lo que dice el mapa: la zona elegida (o la que está bajo el cursor), su lado y si tiene recargo. */
-function Lectura({ eleccion, previa: bajoCursor }: { eleccion: Eleccion; previa: Eleccion | null }) {
+function Lectura({ eleccion, previa: bajoCursor, recargos }: { eleccion: Eleccion; previa: Eleccion | null; recargos: Precios["zonas"] }) {
   // Pasar sobre la zona que ya está elegida no es una vista previa.
   const previa = bajoCursor && clave(bajoCursor) !== clave(eleccion) ? bajoCursor : null;
   const mostrada = previa ?? eleccion;
-  const factor = ZONAS.find((x) => x.id === mostrada.zona)?.factor ?? 1;
+  const recargo = recargos[mostrada.zona] ?? 0;
   return (
     <div aria-live="polite" className="min-w-0">
       <p className="text-[12px] font-semibold tracking-[0.08em] text-ceniza uppercase">{previa ? "Toca para elegir" : "Zona elegida"}</p>
@@ -65,7 +58,7 @@ function Lectura({ eleccion, previa: bajoCursor }: { eleccion: Eleccion; previa:
           </p>
           <p className="mt-2 inline-flex rounded-full border border-linea px-2.5 py-1 text-[12px] text-piel/85">{textoLado(mostrada.lado)}</p>
           <p className="mt-2 text-[13px] leading-snug text-ceniza">
-            {factor > 1 ? `Piel fina o con movimiento: +${Math.round((factor - 1) * 100)}% al rango.` : "Zona cómoda: sin recargo."}
+            {recargo > 0 ? `Piel fina o con movimiento: +${recargo}% al rango.` : "Zona cómoda: sin recargo."}
           </p>
         </motion.div>
       </AnimatePresence>
@@ -76,8 +69,12 @@ function Lectura({ eleccion, previa: bajoCursor }: { eleccion: Eleccion; previa:
 /**
  * Cotizador en una sola tarjeta: el cuerpo a un lado y las opciones al otro,
  * con el rango y el botón siempre a la vista. Cada zona se elige con su lado.
+ *
+ * Los montos y la foto de muestra de cada estilo se cambian desde el panel
+ * (Web → Precios y Fotos).
  */
-export function Cotizador() {
+export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }) {
+  const { whatsappCon } = useEstudio();
   const [eleccion, setEleccion] = useState<Eleccion>({ zona: "antebrazo", lado: "izq" });
   const [previa, setPrevia] = useState<Eleccion | null>(null);
   const [tamano, setTamano] = useState<Tamano>("mediano");
@@ -85,7 +82,7 @@ export function Cotizador() {
   const [idea, setIdea] = useState("");
   const resultado = useRef<HTMLDivElement>(null);
   const [resultadoVisible, setResultadoVisible] = useState(false);
-  const rango = estimar(tamano, estilo, eleccion.zona);
+  const rango = estimar(precios, tamano, estilo, eleccion.zona);
 
   const nombre = (lista: readonly { id: string; nombre: string }[], id: string) => lista.find((x) => x.id === id)?.nombre ?? id;
   const zonaTexto = `${nombreZona(eleccion.zona)}${eleccion.lado ? ` (${textoLado(eleccion.lado).toLowerCase()})` : ""}`;
@@ -139,7 +136,7 @@ export function Cotizador() {
         {/* ---------- Cuerpo ---------- */}
         <div className="relative grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center gap-4 border-b border-linea p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_11rem] lg:border-r lg:border-b-0 lg:p-8">
           <MapaCuerpo valor={eleccion} cambiar={setEleccion} previa={setPrevia} className="max-w-[300px] lg:max-w-[250px]" />
-          <Lectura eleccion={eleccion} previa={previa} />
+          <Lectura eleccion={eleccion} previa={previa} recargos={precios.zonas} />
         </div>
 
         {/* ---------- Opciones y resultado ---------- */}
@@ -176,7 +173,7 @@ export function Cotizador() {
             <div className="flex flex-wrap gap-2">
               {ESTILOS_PRECIO.map((e) => {
                 const activo = e.id === estilo;
-                const foto = FOTO_ESTILO[e.id];
+                const foto = fotos[`estilo-${e.id}`]?.src;
                 return (
                   <label
                     key={e.id}
@@ -193,7 +190,7 @@ export function Cotizador() {
                       )}
                     </span>
                     <span className="font-semibold">{e.nombre}</span>
-                    {e.extra > 0 && <span className="text-[12px] text-ceniza">+{pesos(e.extra)}</span>}
+                    {precios.estilos[e.id] > 0 && <span className="text-[12px] text-ceniza">+{pesos(precios.estilos[e.id])}</span>}
                   </label>
                 );
               })}
@@ -228,7 +225,7 @@ export function Cotizador() {
                   {nombre(TAMANOS, tamano)} · {zonaTexto.toLowerCase()} · {nombre(ESTILOS_PRECIO, estilo).toLowerCase()}
                 </p>
               </div>
-              <BotonMagnetico href={enlaceWhatsapp(mensaje)} externo alTocar={anotar} className="shrink-0 shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]">
+              <BotonMagnetico href={whatsappCon(mensaje)} externo alTocar={anotar} className="shrink-0 shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]">
                 Pedir hora con esta idea
               </BotonMagnetico>
             </div>
@@ -257,7 +254,7 @@ export function Cotizador() {
             <Cifra valor={rango.max} />
           </span>
           <a
-            href={enlaceWhatsapp(mensaje)}
+            href={whatsappCon(mensaje)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={anotar}

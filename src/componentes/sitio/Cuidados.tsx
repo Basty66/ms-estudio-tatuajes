@@ -2,24 +2,25 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { ALERTAS, CUIDADOS, ESTUDIO, EVITAR } from "@/lib/estudio";
+import type { TextosCuidados } from "@/lib/contenido";
+import { ESTUDIO } from "@/lib/estudio";
 import { Ornamento } from "./Ornamento";
 import { Titulo } from "./Titulo";
 import { IconoWhatsapp } from "./WhatsappFlotante";
 
-const CORTO = ["24 horas", "Días 1–7", "Días 7–14", "Día 30"];
-
 /** Todos los cuidados en texto, para guardarlos en el WhatsApp propio. */
-const TEXTO_CUIDADOS = [
-  `Cuidados de mi tatuaje · ${ESTUDIO.nombre}`,
-  ...CUIDADOS.flatMap((c) => ["", `${c.cuando}:`, ...c.pasos.map((p) => `• ${p}`)]),
-  "",
-  "Evitar hasta que sane:",
-  ...EVITAR.map((e) => `• ${e}`),
-  "",
-  "Escribir de inmediato si hay:",
-  ...ALERTAS.map((a) => `• ${a}`),
-].join("\n");
+function enTexto({ etapas, evitar, alertas }: TextosCuidados): string {
+  return [
+    `Cuidados de mi tatuaje · ${ESTUDIO.nombre}`,
+    ...etapas.flatMap((c) => ["", `${c.cuando}:`, ...c.pasos.map((p) => `• ${p}`)]),
+    "",
+    "Evitar hasta que sane:",
+    ...evitar.map((e) => `• ${e}`),
+    "",
+    "Escribir de inmediato si hay:",
+    ...alertas.map((a) => `• ${a}`),
+  ].join("\n");
+}
 
 function Check() {
   return (
@@ -35,10 +36,11 @@ function Check() {
  * ahí. Una pantalla en vez de tres, y lo de evitar y las alertas siempre a la
  * vista al lado.
  */
-export function Cuidados() {
+export function Cuidados({ cuidados }: { cuidados: TextosCuidados }) {
+  const { etapas, evitar, alertas } = cuidados;
   const [etapa, setEtapa] = useState(0);
-  const actual = CUIDADOS[etapa];
-  const ultima = CUIDADOS.length - 1;
+  const actual = etapas[etapa];
+  const ultima = etapas.length - 1;
   const ir = (i: number) => setEtapa(Math.max(0, Math.min(ultima, i)));
 
   return (
@@ -60,7 +62,7 @@ export function Cuidados() {
                   transition={{ type: "spring", stiffness: 180, damping: 26 }}
                 />
               </div>
-              {CUIDADOS.map((c, i) => {
+              {etapas.map((c, i) => {
                 const elegida = i === etapa;
                 return (
                   <button
@@ -80,7 +82,7 @@ export function Cuidados() {
                     >
                       {i + 1}
                     </span>
-                    <span className={`text-[12px] leading-tight font-semibold transition-colors sm:text-[14px] ${elegida ? "text-piel" : "text-ceniza"}`}>{CORTO[i]}</span>
+                    <span className={`text-[12px] leading-tight font-semibold transition-colors sm:text-[14px] ${elegida ? "text-piel" : "text-ceniza"}`}>{c.corto}</span>
                   </button>
                 );
               })}
@@ -100,7 +102,7 @@ export function Cuidados() {
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={etapa} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}>
                     <p className="text-[12px] font-semibold tracking-[0.18em] text-stencil-claro uppercase">
-                      Etapa {etapa + 1} de {CUIDADOS.length}
+                      Etapa {etapa + 1} de {etapas.length}
                     </p>
                     <h3 className="mt-2 font-gotica text-[2.6rem] leading-none sm:text-5xl">{actual.cuando}</h3>
                     <ul className="mt-5 space-y-3">
@@ -138,7 +140,7 @@ export function Cuidados() {
             <div className="rounded-3xl border border-linea bg-tinta p-5 sm:p-7">
               <h3 className="text-lg font-semibold">Evita hasta que sane</h3>
               <ul className="mt-4 space-y-2.5 text-[15px] text-ceniza">
-                {EVITAR.map((e) => (
+                {evitar.map((e) => (
                   <li key={e} className="flex gap-3">
                     <span aria-hidden className="mt-[10px] h-px w-3 shrink-0 bg-ceniza" />
                     {e}
@@ -149,7 +151,7 @@ export function Cuidados() {
             <div className="rounded-3xl border border-sangre/40 bg-sangre/[0.06] p-5 sm:p-7">
               <h3 className="text-lg font-semibold text-piel">Escríbeme de inmediato si ves</h3>
               <ul className="mt-4 space-y-2.5 text-[15px] text-piel/80">
-                {ALERTAS.map((a) => (
+                {alertas.map((a) => (
                   <li key={a} className="flex gap-3">
                     <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sangre" />
                     {a}
@@ -159,7 +161,7 @@ export function Cuidados() {
             </div>
             {/* wa.me sin número abre la lista de chats: se lo manda uno mismo y queda guardado. */}
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(TEXTO_CUIDADOS)}`}
+              href={`https://wa.me/?text=${encodeURIComponent(enTexto(cuidados))}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex min-h-14 items-center justify-center gap-3 rounded-full border border-linea px-6 text-[15px] font-semibold transition-[border-color,box-shadow] hover:border-stencil hover:shadow-[0_0_24px_-4px_rgba(47,107,255,0.7)] sm:col-span-2 lg:col-span-1"

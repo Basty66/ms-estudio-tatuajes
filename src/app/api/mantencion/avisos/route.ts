@@ -1,6 +1,6 @@
 import { citasEntre, sinCerrar } from "@/db/panel";
 import { avisar } from "@/lib/admin/avisos";
-import { clp, nombreZona, textoLado, TIPO } from "@/lib/admin/etiquetas";
+import { clp, nombreDonde, TIPO } from "@/lib/admin/etiquetas";
 import { hora, hoyChile, sumarDias } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const [citas, abiertas] = await Promise.all([citasEntre(hoy, manana), sinCerrar()]);
   const sesiones = citas.filter((c) => c.tipo !== "bloqueo" && c.estado === "confirmada");
   const linea = (c: (typeof sesiones)[number]) =>
-    `${hora(c.inicio)} ${c.cliente} · ${c.zona ? `${nombreZona(c.zona)}${c.lado ? ` ${textoLado(c.lado)}` : ""}` : TIPO[c.tipo]}${c.saldo ? ` · cobrar ${clp(c.saldo)}` : ""}`;
+    `${hora(c.inicio)} ${c.cliente} · ${nombreDonde(c.zona, c.lado) ?? TIPO[c.tipo]}${c.saldo ? ` · cobrar ${clp(c.saldo)}` : ""}`;
   const deHoy = sesiones.filter((c) => c.inicio.startsWith(hoy));
   const deManana = sesiones.filter((c) => c.inicio.startsWith(manana));
 

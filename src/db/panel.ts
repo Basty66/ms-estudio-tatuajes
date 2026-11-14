@@ -156,7 +156,7 @@ export type Gasto = { id: number; fecha: string; categoria: string; descripcion:
 
 export async function resumenMes(mes: string) {
   const desde = `${mes}-01`;
-  const [ingresos, gastos, porDia] = await Promise.all([
+  const [ingresos, gastos] = await Promise.all([
     sql`
       SELECT COALESCE(SUM(monto), 0)::INT AS total, COUNT(*)::INT AS cuantos,
              COALESCE(SUM(monto) FILTER (WHERE medio = 'transferencia'), 0)::INT AS transferencia,
@@ -168,19 +168,9 @@ export async function resumenMes(mes: string) {
       FROM gastos WHERE fecha >= ${desde}::DATE AND fecha < (${desde}::DATE + INTERVAL '1 month')
       ORDER BY fecha DESC, id DESC
     `,
-    sql`
-      SELECT d::DATE::TEXT AS dia,
-             COALESCE((SELECT SUM(monto) FROM pagos WHERE fecha = d::DATE), 0)::INT AS ingresos,
-             COALESCE((SELECT SUM(monto) FROM gastos WHERE fecha = d::DATE), 0)::INT AS gastos
-      FROM generate_series(${desde}::DATE, (${desde}::DATE + INTERVAL '1 month' - INTERVAL '1 day'), INTERVAL '1 day') d
-    `,
   ]);
   const i = ingresos[0] as { total: number; cuantos: number; transferencia: number; efectivo: number };
-  return {
-    ingresos: i,
-    gastos: gastos as Gasto[],
-    porDia: porDia as Array<{ dia: string; ingresos: number; gastos: number }>,
-  };
+  return { ingresos: i, gastos: gastos as Gasto[] };
 }
 
 export async function pagosDelMes(mes: string) {

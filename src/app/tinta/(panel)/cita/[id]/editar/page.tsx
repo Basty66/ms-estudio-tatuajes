@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Encabezado } from "@/componentes/panel/Encabezado";
 import { FormularioCita } from "@/componentes/panel/FormularioCita";
+import { leerContenido } from "@/db/contenido";
 import { cita as leerCita } from "@/db/panel";
 import { hoyChile, minutosEntre } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
@@ -16,6 +17,7 @@ export default async function EditarCita({ params }: { params: Promise<{ id: str
     <>
       <Encabezado volver={`${PANEL}/cita/${c.id}`} etiqueta={c.cliente ?? ""} titulo="Editar cita" />
       <FormularioCita
+        precios={(await leerContenido()).precios}
         hoy={hoyChile()}
         fechaInicial={c.inicio.slice(0, 10)}
         edicion={{

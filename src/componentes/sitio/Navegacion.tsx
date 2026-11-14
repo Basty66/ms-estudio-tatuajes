@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring } from "motion/react";
 import { useEffect, useState } from "react";
-import { enlaceWhatsapp, ESTUDIO, SECCIONES } from "@/lib/estudio";
+import { SECCIONES } from "@/lib/estudio";
+import { useEstudio } from "./DatosEstudio";
 
 type Lenis = { stop: () => void; start: () => void };
 
@@ -197,6 +198,7 @@ function BotonMenu({ abierto, alternar }: { abierto: boolean; alternar: () => vo
 }
 
 function MenuCompleto({ activa, cerrar }: { activa: string | null; cerrar: () => void }) {
+  const estudio = useEstudio();
   const [vista, setVista] = useState(SECCIONES.find((s) => s.id === activa) ?? SECCIONES[0]);
 
   return (
@@ -311,14 +313,14 @@ function MenuCompleto({ activa, cerrar }: { activa: string | null; cerrar: () =>
             Cotizar y pedir hora
           </a>
           <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 text-[14px] text-ceniza lg:justify-start">
-            <a href={enlaceWhatsapp("Hola, quiero consultar por un tatuaje.")} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
+            <a href={estudio.whatsappCon("Hola, quiero consultar por un tatuaje.")} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
               WhatsApp
             </a>
-            <a href={`https://instagram.com/${ESTUDIO.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
-              @{ESTUDIO.instagram}
+            <a href={`https://instagram.com/${estudio.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
+              @{estudio.instagram}
             </a>
             <span className="w-full text-ceniza/80 lg:w-auto">
-              {ESTUDIO.direccion}, {ESTUDIO.comuna}
+              {estudio.direccion}, {estudio.comuna}
             </span>
           </div>
         </div>
@@ -328,6 +330,7 @@ function MenuCompleto({ activa, cerrar }: { activa: string | null; cerrar: () =>
 }
 
 function PanelEscritorio({ activa, cerrar }: { activa: string | null; cerrar: () => void }) {
+  const estudio = useEstudio();
   const [vista, setVista] = useState(SECCIONES.find((s) => s.id === activa) ?? SECCIONES[0]);
 
   return (
@@ -429,14 +432,14 @@ function PanelEscritorio({ activa, cerrar }: { activa: string | null; cerrar: ()
         </div>
         <div className="flex items-center justify-between border-t border-linea px-6 py-4 text-[13px] text-ceniza">
           <span>
-            {ESTUDIO.direccion}, {ESTUDIO.comuna}
+            {estudio.direccion}, {estudio.comuna}
           </span>
           <span className="flex gap-6">
-            <a href={enlaceWhatsapp("Hola, quiero consultar por un tatuaje.")} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
+            <a href={estudio.whatsappCon("Hola, quiero consultar por un tatuaje.")} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
               WhatsApp
             </a>
-            <a href={`https://instagram.com/${ESTUDIO.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
-              @{ESTUDIO.instagram}
+            <a href={`https://instagram.com/${estudio.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
+              @{estudio.instagram}
             </a>
           </span>
         </div>

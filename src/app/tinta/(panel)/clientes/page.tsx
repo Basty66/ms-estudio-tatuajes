@@ -19,7 +19,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
   return (
     <>
       <Encabezado etiqueta={`${lista.length} ${lista.length === 1 ? "persona" : "personas"}`} titulo="Clientes" />
-      <form className="relative mb-4" role="search">
+      <form className="relative mb-4 lg:max-w-md" role="search">
         <Buscar className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ceniza" />
         <input
           name="q"
@@ -34,7 +34,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
           {q ? "Nadie con ese nombre o teléfono." : "Todavía no hay clientes. Se crean solos al agendar."}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="grid gap-2 lg:grid-cols-2">
           {lista.map((c) => (
             <li key={c.id}>
               <Link href={`${PANEL}/cliente/${c.id}`} className="group flex items-center gap-3 rounded-2xl border border-linea bg-hollin/60 p-3 pl-4 hover:border-stencil/60">

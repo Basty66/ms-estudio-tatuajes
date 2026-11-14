@@ -12,6 +12,16 @@ export function hoyChile(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_HORARIA }).format(new Date());
 }
 
+/** "2026-11-10T15:42" en Chile, ahora: el mismo formato que las citas, para compararlas como texto. */
+export function ahoraChile(): string {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_HORARIA, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date())
+      .map((x) => [x.type, x.value]),
+  );
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
 /** Suma días a una fecha "YYYY-MM-DD" sin pasar por zonas horarias. */
 export function sumarDias(fecha: string, dias: number): string {
   const [a, m, d] = fecha.split("-").map(Number);
@@ -53,6 +63,12 @@ export function fechaRelativa(fecha: string, hoy = hoyChile()): string {
 export function nombreMes(mes: string): string {
   const [a, m] = mes.split("-").map(Number);
   return `${MESES[m - 1]} ${a}`;
+}
+
+/** El mes anterior (-1) o siguiente (1) a "2026-11". */
+export function mesVecino(mes: string, paso: number): string {
+  const [a, m] = mes.split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1 + paso, 1)).toISOString().slice(0, 7);
 }
 
 /** "15:00" de "2026-11-10T15:00" */

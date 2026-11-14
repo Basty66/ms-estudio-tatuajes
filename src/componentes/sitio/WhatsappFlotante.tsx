@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { enlaceWhatsapp } from "@/lib/estudio";
+import { useEstudio } from "./DatosEstudio";
 
 export function IconoWhatsapp({ className = "" }: { className?: string }) {
   return (
@@ -17,9 +17,10 @@ export function IconoWhatsapp({ className = "" }: { className?: string }) {
  * de abajo del teléfono le dejan su espacio a la derecha.
  */
 export function WhatsappFlotante() {
+  const { whatsappCon } = useEstudio();
   return (
     <motion.a
-      href={enlaceWhatsapp("Hola, vengo de la web y quiero consultar por un tatuaje.")}
+      href={whatsappCon("Hola, vengo de la web y quiero consultar por un tatuaje.")}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Escribir por WhatsApp"

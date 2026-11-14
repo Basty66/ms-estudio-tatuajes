@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { sql } from "@/db/conexion";
+import { leerContenido } from "@/db/contenido";
 import { avisar } from "@/lib/admin/avisos";
-import { clp, nombreEstilo, nombreTamano, nombreZona, textoLado } from "@/lib/admin/etiquetas";
+import { clp, nombreDonde, nombreEstilo, nombreTamano } from "@/lib/admin/etiquetas";
 import { PANEL } from "@/lib/admin/ruta";
 import { ESTILOS_PRECIO, estimar, TAMANOS, ZONAS, type EstiloPrecio, type Tamano, type Zona } from "@/lib/precios";
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     if (!zona || !tamano || !estilo) return new Response(null, { status: 204 });
     const lado = d.lado === "izq" || d.lado === "der" ? d.lado : null;
     const idea = typeof d.idea === "string" && d.idea.trim() ? d.idea.trim().slice(0, 600) : null;
-    const rango = estimar(tamano, estilo, zona);
+    const rango = estimar((await leerContenido()).precios, tamano, estilo, zona);
 
     const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "sin-ip";
     const origen = createHash("sha256").update(`${new Date().toISOString().slice(0, 10)}|${ip}`).digest("hex").slice(0, 32);
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       VALUES (${zona}, ${lado}, ${tamano}, ${estilo}, ${idea}, ${rango.min}, ${rango.max}, ${origen})
     `;
 
-    const donde = `${nombreZona(zona)}${lado ? ` ${textoLado(lado)}` : ""}`;
+    const donde = nombreDonde(zona, lado);
     await avisar({
       titulo: "Alguien cotizó en la web",
       cuerpo: `${nombreTamano(tamano)} · ${donde} · ${nombreEstilo(estilo)} (${clp(rango.min)} a ${clp(rango.max)})${idea ? `\n“${idea.slice(0, 120)}”` : ""}\nDebería llegarte su WhatsApp.`,

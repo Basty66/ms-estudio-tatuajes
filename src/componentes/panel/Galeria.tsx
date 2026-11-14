@@ -3,13 +3,13 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { borrarFoto, cambiarFoto, subirFoto } from "@/app/tinta/_acciones/panel";
+import { borrarFoto, cambiarFoto, editarFoto, subirFoto } from "@/app/tinta/_acciones/panel";
 import { reducirImagen } from "@/lib/admin/imagenes";
 import { ESTILOS, type Trabajo } from "@/lib/estudio";
 import { ZONAS } from "@/lib/precios";
 import { Boton } from "./Boton";
 import { campo, Chip, Etiqueta } from "./FormularioCita";
-import { Atras, Flecha, Ojo, Papelera, Subir } from "./Iconos";
+import { Atras, Flecha, Lapiz, Ojo, Papelera, Subir } from "./Iconos";
 
 /** Subir un trabajo: se reduce en el teléfono, se describe y queda primero en la web. */
 export function SubirFoto() {
@@ -111,6 +111,10 @@ export function SubirFoto() {
 export function FotoGaleria({ f, primera, ultima }: { f: Trabajo & { id: number; visible: boolean }; primera: boolean; ultima: boolean }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
+  const [editando, setEditando] = useState(false);
+  const [alt, setAlt] = useState(f.alt);
+  const [estilo, setEstilo] = useState(f.estilo);
+  const [zona, setZona] = useState(f.zona);
   const hacer = (accion: () => Promise<{ ok: boolean; error?: string }>) =>
     iniciar(async () => {
       const r = await accion();
@@ -125,9 +129,48 @@ export function FotoGaleria({ f, primera, ultima }: { f: Trabajo & { id: number;
         {!f.visible && <span className="absolute top-2 left-2 rounded-full bg-tinta/80 px-2 py-0.5 text-[11px]">Oculta</span>}
       </div>
       <div className="p-2.5">
-        <p className="truncate text-[13px] font-semibold">{f.estilo}</p>
-        <p className="truncate text-[12px] text-ceniza">{f.zona}</p>
-        <div className="mt-2 flex justify-between">
+        {editando ? (
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              hacer(async () => {
+                const r = await editarFoto(f.id, { alt, estilo, zona });
+                if (r.ok) setEditando(false);
+                return r;
+              });
+            }}
+          >
+            <textarea value={alt} onChange={(e) => setAlt(e.target.value.slice(0, 160))} rows={3} aria-label="Descripción" className={`${campo} resize-none px-3 py-2 text-[13px]`} />
+            <select value={estilo} onChange={(e) => setEstilo(e.target.value)} aria-label="Estilo" className={`${campo} min-h-10 px-3 text-[13px] [color-scheme:dark]`}>
+              {[...new Set([...ESTILOS, f.estilo])].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+            <select value={zona} onChange={(e) => setZona(e.target.value)} aria-label="Zona" className={`${campo} min-h-10 px-3 text-[13px] [color-scheme:dark]`}>
+              {[...new Set([...ZONAS.map((z) => z.nombre), f.zona])].sort((a, b) => a.localeCompare(b, "es")).map((n) => (
+                <option key={n}>{n}</option>
+              ))}
+            </select>
+            <div className="flex gap-1">
+              <Boton variante="fantasma" onClick={() => setEditando(false)} className="min-h-9 px-2 text-[13px]">
+                Cancelar
+              </Boton>
+              <Boton type="submit" disabled={pendiente || alt.trim().length < 3} className="min-h-9 flex-1 px-2 text-[13px]">
+                Guardar
+              </Boton>
+            </div>
+          </form>
+        ) : (
+          <button type="button" onClick={() => setEditando(true)} className="group block w-full text-left">
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold">
+              <span className="truncate">{f.estilo}</span>
+              <Lapiz className="size-3.5 shrink-0 text-ceniza group-hover:text-piel" />
+            </span>
+            <span className="block truncate text-[12px] text-ceniza">{f.zona}</span>
+          </button>
+        )}
+        <div className={`mt-2 flex justify-between ${editando ? "hidden" : ""}`}>
           <button type="button" aria-label="Mover antes" disabled={primera || pendiente} onClick={() => hacer(() => cambiarFoto(f.id, { mover: -1 }))} className="grid size-9 place-items-center rounded-full text-ceniza hover:text-piel disabled:opacity-25">
             <Atras className="size-4" />
           </button>

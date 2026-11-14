@@ -4,7 +4,8 @@ import { del, get, put } from "@vercel/blob";
 /**
  * Archivos del panel en Vercel Blob, en dos almacenes separados a propósito:
  *
- *   - PÚBLICO: las fotos de la galería. Se muestran en la web, es su función.
+ *   - PÚBLICO: las fotos de la galería y las fijas de la portada (retratos,
+ *     proceso…). Se muestran en la web, es su función.
  *   - PRIVADO: los comprobantes de pago. Llevan nombre, RUT, banco y cuenta de
  *     un tercero; nunca se sirven directo, solo por /tinta/comprobante, que
  *     exige sesión del panel.
@@ -54,11 +55,12 @@ export async function borrarComprobante(ruta: string): Promise<void> {
   await del(ruta, { token: TOKEN_PRIVADO });
 }
 
-export async function guardarFoto(archivo: File): Promise<{ url: string; ruta: string }> {
+/** `carpeta`: "galeria" para el portafolio, "web" para las fotos fijas de la portada. */
+export async function guardarFoto(archivo: File, carpeta: "galeria" | "web" = "galeria"): Promise<{ url: string; ruta: string }> {
   const bytes = new Uint8Array(await archivo.arrayBuffer());
   const tipo = tipoReal(bytes);
   if (!tipo || tipo === "application/pdf") throw new Error("El archivo no es una foto.");
-  const r = await put(`galeria/${Date.now()}.${EXTENSION[tipo]}`, Buffer.from(bytes), {
+  const r = await put(`${carpeta}/${Date.now()}.${EXTENSION[tipo]}`, Buffer.from(bytes), {
     access: "public",
     contentType: tipo,
     addRandomSuffix: true,

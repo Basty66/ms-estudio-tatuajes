@@ -1,7 +1,9 @@
+import type { Pieza } from "@/componentes/sitio/MuroTatuajes";
+
 /**
- * Datos del estudio en un solo lugar. Todo lo que diga dónde está, cómo
- * contactar o qué se hace sale de acá, para que cambiar un número no sea
- * buscarlo en diez componentes.
+ * Datos del estudio de fábrica. WhatsApp, Instagram y dirección se cambian
+ * desde el panel (Web → Datos del estudio): la web los lee de la base con
+ * leerContenido(), y estos quedan como respaldo (ver src/lib/contenido.ts).
  */
 export const ESTUDIO = {
   nombre: "Matness",
@@ -14,10 +16,6 @@ export const ESTUDIO = {
     "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3319.671837850001!2d-71.2191187651123!3d-33.6915605!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662550034d24fdb%3A0x17acc011bcc2a11e!2sMATNESS_TATTOOS!5e0!3m2!1ses!2sus!4v1785733217062!5m2!1ses!2sus",
   comoLlegar: "https://maps.app.goo.gl/?q=MATNESS_TATTOOS+Melipilla",
 } as const;
-
-export function enlaceWhatsapp(mensaje: string): string {
-  return `https://wa.me/${ESTUDIO.whatsapp}?text=${encodeURIComponent(mensaje)}`;
-}
 
 /**
  * Las secciones de la portada, en el orden en que aparecen. De acá salen el
@@ -102,7 +100,22 @@ export const TRABAJOS: Trabajo[] = [
   },
 ];
 
-/** Cuadros reales de una sesión, en orden: el proceso completo. */
+/**
+ * La pared del hero en escritorio, de fábrica. La portada pone delante los
+ * trabajos de la galería y completa con estos.
+ */
+export const PARED: Pieza[] = [
+  ...Array.from({ length: 14 }, (_, i) => ({
+    tipo: "foto" as const,
+    src: `/trabajos/pared-${String(i + 1).padStart(2, "0")}.jpg`,
+    alt: "",
+  })),
+  { tipo: "foto", src: "/images/tatuaje3.jpg", alt: "" },
+  { tipo: "foto", src: "/images/tatuaje2.jpg", alt: "" },
+  { tipo: "foto", src: "/images/tatuaje1.jpg", alt: "" },
+];
+
+/** Cuadros reales de una sesión, en orden: el proceso completo. Las fotos se cambian desde el panel. */
 export const PROCESO = [
   { src: "/trabajos/pared-15.jpg", paso: "Stencil", texto: "El diseño aprobado se calca sobre la piel. Si no queda perfecto, se vuelve a poner." },
   { src: "/trabajos/pared-03.jpg", paso: "Líneas", texto: "La máquina repasa el calco. Es la parte que define todo lo demás." },
@@ -113,6 +126,7 @@ export const PROCESO = [
 export const CUIDADOS = [
   {
     cuando: "Primeras 24 horas",
+    corto: "24 horas",
     pasos: [
       "Deja el vendaje puesto entre 2 y 4 horas.",
       "Lava con agua tibia y jabón neutro, sin frotar.",
@@ -121,6 +135,7 @@ export const CUIDADOS = [
   },
   {
     cuando: "Días 1 a 7",
+    corto: "Días 1–7",
     pasos: [
       "Una capa fina de crema (Bepanthol o similar) 2 a 3 veces al día.",
       "Lava siempre antes de volver a aplicar crema.",
@@ -129,6 +144,7 @@ export const CUIDADOS = [
   },
   {
     cuando: "Días 7 a 14",
+    corto: "Días 7–14",
     pasos: [
       "Sale piel nueva y el tatuaje puede verse opaco. El color vuelve.",
       "No te rasques ni saques las costras: se llevan la tinta.",
@@ -136,6 +152,7 @@ export const CUIDADOS = [
   },
   {
     cuando: "Día 30",
+    corto: "Día 30",
     pasos: [
       "Curado completo. Ya puedes tomar sol, siempre con protector.",
       "Si perdió color o detalle, coordinamos el retoque.",

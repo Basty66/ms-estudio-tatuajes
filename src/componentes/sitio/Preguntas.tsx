@@ -2,17 +2,19 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { enlaceWhatsapp, PREGUNTAS } from "@/lib/estudio";
+import type { Par } from "@/lib/contenido";
 import { BotonMagnetico } from "./BotonMagnetico";
+import { useEstudio } from "./DatosEstudio";
 import { Indice } from "./Indice";
 import { Ornamento } from "./Ornamento";
 
 function Contacto({ className = "" }: { className?: string }) {
+  const { whatsappCon } = useEstudio();
   return (
     <div className={`rounded-3xl border border-linea bg-hollin/70 p-6 ${className}`}>
       <p className="text-lg font-semibold">¿No está tu pregunta?</p>
       <p className="mt-1 text-[15px] leading-relaxed text-ceniza">Escríbeme y te respondo por WhatsApp. Si tienes una foto o una referencia, mándala también.</p>
-      <BotonMagnetico href={enlaceWhatsapp("Hola, tengo una pregunta sobre un tatuaje.")} externo className="mt-5 w-full">
+      <BotonMagnetico href={whatsappCon("Hola, tengo una pregunta sobre un tatuaje.")} externo className="mt-5 w-full">
         Preguntar por WhatsApp
       </BotonMagnetico>
     </div>
@@ -24,7 +26,7 @@ function Contacto({ className = "" }: { className?: string }) {
  * la izquierda mientras se leen las respuestas; en el teléfono, el contacto va
  * al final, justo donde termina la duda.
  */
-export function Preguntas() {
+export function Preguntas({ preguntas }: { preguntas: Par[] }) {
   const [abierta, setAbierta] = useState<number | null>(0);
 
   return (
@@ -45,10 +47,10 @@ export function Preguntas() {
 
         <div className="lg:col-span-7">
           <ul className="border-t border-linea">
-            {PREGUNTAS.map((q, i) => {
+            {preguntas.map((q, i) => {
               const abierto = abierta === i;
               return (
-                <li key={q.p} className="border-b border-linea">
+                <li key={q.titulo} className="border-b border-linea">
                   <h3>
                     <button
                       type="button"
@@ -61,7 +63,7 @@ export function Preguntas() {
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <span className={`flex-1 text-[18px] leading-snug font-semibold transition-colors sm:text-[22px] ${abierto ? "text-piel" : "text-piel/80 group-hover:text-piel"}`}>
-                        {q.p}
+                        {q.titulo}
                       </span>
                       <span
                         aria-hidden
@@ -82,7 +84,7 @@ export function Preguntas() {
                         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                         className="overflow-hidden"
                       >
-                        <p className="max-w-[62ch] pb-6 pl-10 text-[16px] leading-relaxed text-ceniza sm:text-[17px]">{q.r}</p>
+                        <p className="max-w-[62ch] pb-6 pl-10 text-[16px] leading-relaxed text-ceniza sm:text-[17px]">{q.texto}</p>
                       </motion.div>
                     )}
                   </AnimatePresence>

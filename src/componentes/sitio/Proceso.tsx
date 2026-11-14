@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion, useScroll } from "motion/react";
 import { useRef } from "react";
-import { PROCESO } from "@/lib/estudio";
+import type { Foto } from "@/lib/contenido";
 import { Carrusel } from "./Carrusel";
 import { Indice } from "./Indice";
 
@@ -14,7 +14,7 @@ import { Indice } from "./Indice";
  * - Escritorio: una fila unida por una línea de neón que avanza con el
  *   scroll (y retrocede al subir), con el texto bajo cada foto.
  */
-export function Proceso() {
+export function Proceso({ pasos }: { pasos: Array<{ paso: string; texto: string; foto: Foto }> }) {
   const fila = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: fila, offset: ["start 0.85", "start 0.35"] });
 
@@ -40,13 +40,13 @@ export function Proceso() {
         </div>
 
         <Carrusel etiqueta="Etapas de una sesión" className="sm:px-8 lg:grid lg:grid-cols-4 lg:gap-5 lg:overflow-visible lg:px-0">
-          {PROCESO.map((p, i) => (
+          {pasos.map((p, i) => (
             <li key={p.paso} className="w-[80%] shrink-0 snap-center sm:w-[46%] lg:w-auto">
               <span className="relative z-10 mb-4 hidden h-[52px] w-[52px] place-items-center rounded-full border border-stencil bg-tinta font-gotica text-3xl leading-none shadow-[0_0_22px_-2px_rgba(47,107,255,0.9)] lg:grid">
                 {i + 1}
               </span>
               <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-linea lg:rounded-2xl">
-                <Image src={p.src} alt={`${p.paso}: ${p.texto}`} fill sizes="(min-width: 1024px) 22vw, 80vw" className="object-cover" />
+                <Image src={p.foto.src} alt={p.foto.alt} fill sizes="(min-width: 1024px) 22vw, 80vw" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-tinta via-tinta/40 to-transparent lg:from-tinta/80 lg:via-transparent" />
                 {/* Teléfono: el número y la etapa van sobre la foto. */}
                 <span className="absolute top-4 left-4 grid h-10 w-10 place-items-center rounded-full border border-stencil bg-tinta/80 font-gotica text-2xl leading-none shadow-[0_0_22px_-2px_rgba(47,107,255,0.9)] backdrop-blur-sm lg:hidden">

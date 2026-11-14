@@ -3,13 +3,15 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { ESTUDIO, TRABAJOS, type Trabajo } from "@/lib/estudio";
+import type { Foto } from "@/lib/contenido";
+import { TRABAJOS, type Trabajo } from "@/lib/estudio";
+import { useEstudio } from "./DatosEstudio";
 import { FotoStencil } from "./FotoStencil";
 import { Ornamento } from "./Ornamento";
 import { Titulo } from "./Titulo";
 
-/** El mismo tatuaje en dos momentos: el calco violeta y el resultado. */
-function DelStencilALaPiel() {
+/** El mismo tatuaje en dos momentos: el calco violeta y el resultado. Las dos fotos se cambian desde el panel. */
+function DelStencilALaPiel({ antes, despues }: { antes: Foto; despues: Foto }) {
   const [final, setFinal] = useState(false);
   const [aMano, setAMano] = useState(false);
 
@@ -28,16 +30,16 @@ function DelStencilALaPiel() {
   return (
     <figure className="relative h-full min-h-[460px] overflow-hidden sm:min-h-[520px] rounded-3xl border border-linea bg-hollin">
       <Image
-        src="/trabajos/comparar-stencil.jpg"
-        alt="Stencil del lettering Everything puesto en el cuello, antes de tatuar"
+        src={antes.src}
+        alt={antes.alt}
         fill
         sizes="(min-width: 1024px) 40vw, 100vw"
         className="object-cover"
       />
       <motion.div className="absolute inset-0" animate={{ opacity: final ? 1 : 0 }} transition={{ duration: 0.9, ease: [0.65, 0, 0.35, 1] }}>
         <Image
-          src="/trabajos/comparar-final.jpg"
-          alt="El mismo lettering Everything ya tatuado"
+          src={despues.src}
+          alt={despues.alt}
           fill
           sizes="(min-width: 1024px) 40vw, 100vw"
           className="object-cover"
@@ -45,7 +47,7 @@ function DelStencilALaPiel() {
       </motion.div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-tinta via-tinta/70 to-transparent p-5 pt-24 sm:p-7 sm:pt-28">
         <p className="font-gotica text-4xl leading-none sm:text-5xl">Del stencil a la piel</p>
-        <p className="mt-2 max-w-sm text-[15px] text-ceniza">Lettering a mano alzada en el cuello. Mismo diseño, antes y después de la sesión.</p>
+        <p className="mt-2 max-w-sm text-[15px] text-ceniza">{despues.alt}. Mismo diseño, antes y después de la sesión.</p>
         <div role="group" aria-label="Ver etapa" className="mt-5 inline-flex rounded-full border border-linea bg-tinta/70 p-1 backdrop-blur-md">
           {[
             { v: false, t: "Stencil" },
@@ -75,7 +77,8 @@ function DelStencilALaPiel() {
 }
 
 /** `trabajos` viene de la galería del panel; si todavía está vacía, quedan los de muestra. */
-export function Trabajos({ trabajos = TRABAJOS }: { trabajos?: Trabajo[] }) {
+export function Trabajos({ trabajos = TRABAJOS, antes, despues }: { trabajos?: Trabajo[]; antes: Foto; despues: Foto }) {
+  const { instagram } = useEstudio();
   const estilos = ["Todos", ...Array.from(new Set(trabajos.map((t) => t.estilo)))];
   const [filtro, setFiltro] = useState("Todos");
   const [abierto, setAbierto] = useState<Trabajo | null>(null);
@@ -101,7 +104,7 @@ export function Trabajos({ trabajos = TRABAJOS }: { trabajos?: Trabajo[] }) {
 
         <div className="mt-12 grid gap-4 lg:grid-cols-12 lg:gap-5">
           <div className="lg:col-span-5 lg:row-span-2">
-            <DelStencilALaPiel />
+            <DelStencilALaPiel antes={antes} despues={despues} />
           </div>
 
           <div className="lg:col-span-7">
@@ -172,7 +175,7 @@ export function Trabajos({ trabajos = TRABAJOS }: { trabajos?: Trabajo[] }) {
             </motion.ul>
 
             <a
-              href={`https://instagram.com/${ESTUDIO.instagram}`}
+              href={`https://instagram.com/${instagram}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 inline-flex min-h-12 items-center gap-3 rounded-full border border-linea px-6 text-[15px] transition-[border-color,box-shadow] hover:border-stencil hover:shadow-[0_0_24px_-4px_rgba(47,107,255,0.7)]"

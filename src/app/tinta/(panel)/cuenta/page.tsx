@@ -22,7 +22,7 @@ export default async function Cuenta() {
   return (
     <>
       <Encabezado etiqueta={`${yo.nombre} · ${aparato}`} titulo="Cuenta" />
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:max-w-2xl">
         <BiometriaAparato activa={bio} aparato={aparato} />
         <ActivarAvisos llave={LLAVE_PUBLICA} />
         <CambiarPin />

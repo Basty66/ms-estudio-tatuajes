@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { enlaceWhatsapp } from "@/lib/estudio";
 import { BotonMagnetico } from "./BotonMagnetico";
+import { useEstudio } from "./DatosEstudio";
 import { Indice } from "./Indice";
 
 const DATOS = [
@@ -75,6 +75,7 @@ function Diagrama() {
 }
 
 export function Laser() {
+  const { whatsappCon } = useEstudio();
   const video = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -92,7 +93,7 @@ export function Laser() {
   const evaluar = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
       <BotonMagnetico
-        href={enlaceWhatsapp("Hola, quiero evaluar un tatuaje para borrado láser. Te mando una foto.")}
+        href={whatsappCon("Hola, quiero evaluar un tatuaje para borrado láser. Te mando una foto.")}
         externo
         className="shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]"
       >

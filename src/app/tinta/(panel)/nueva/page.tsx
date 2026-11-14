@@ -1,5 +1,6 @@
 import { Encabezado } from "@/componentes/panel/Encabezado";
 import { FormularioCita } from "@/componentes/panel/FormularioCita";
+import { leerContenido } from "@/db/contenido";
 import { cliente as leerCliente } from "@/db/panel";
 import { esFecha, hoyChile } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
@@ -15,6 +16,7 @@ export default async function NuevaCita({ searchParams }: { searchParams: Promis
     <>
       <Encabezado volver={elegido ? `${PANEL}/cliente/${elegido.id}` : PANEL} etiqueta="Agenda" titulo="Nueva cita" />
       <FormularioCita
+        precios={(await leerContenido()).precios}
         hoy={hoyChile()}
         fechaInicial={esFecha(fecha) ? fecha : hoyChile()}
         cliente={elegido ? { id: elegido.id, nombre: elegido.nombre, telefono: elegido.telefono } : null}

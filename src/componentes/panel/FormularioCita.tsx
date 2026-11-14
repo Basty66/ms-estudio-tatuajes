@@ -7,7 +7,7 @@ import { clp } from "@/lib/admin/etiquetas";
 import { duracionTexto, fechaCorta, hora, sumarDias, sumarMinutos } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { formatearTelefono } from "@/lib/admin/telefono";
-import { ESTILOS_PRECIO, estimar, TAMANOS, ZONAS, type EstiloPrecio, type Tamano, type Zona } from "@/lib/precios";
+import { ESTILOS_PRECIO, estimar, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Boton } from "./Boton";
 import { Buscar, Cerrar } from "./Iconos";
 
@@ -47,13 +47,14 @@ export function Etiqueta({ children, nota }: { children: React.ReactNode; nota?:
 }
 
 /** Un paso del formulario: número, título y contenido, en su propia tarjeta. */
-function Paso({ n, titulo, children }: { n: number; titulo: string; children: React.ReactNode }) {
+function Paso({ n, titulo, opcional = false, children }: { n: number; titulo: string; opcional?: boolean; children: React.ReactNode }) {
   return (
     <fieldset className="min-w-0 rounded-3xl border border-linea bg-hollin/70 p-4 sm:p-5">
       <legend className="sr-only">{titulo}</legend>
       <p aria-hidden className="mb-4 flex items-center gap-3 text-[15px] font-semibold">
         <span className="grid size-7 place-items-center rounded-full border border-stencil font-gotica text-[16px] leading-none shadow-[0_0_12px_-2px_rgba(47,107,255,0.9)]">{n}</span>
         {titulo}
+        {opcional && <span className="ml-auto text-[12px] font-normal text-ceniza">Opcional</span>}
       </p>
       <div className="flex min-w-0 flex-col gap-5">{children}</div>
     </fieldset>
@@ -81,7 +82,9 @@ export function FormularioCita({
   fechaInicial,
   cliente: clienteInicial,
   edicion,
+  precios,
 }: {
+  precios: Precios;
   hoy: string;
   fechaInicial: string;
   cliente?: ClienteElegido | null;
@@ -141,8 +144,8 @@ export function FormularioCita({
 
   const conLado = Boolean(zona) && !SIN_LADO.includes(zona);
   const rango = useMemo(
-    () => (zona && tamano && estilo ? estimar(tamano as Tamano, estilo as EstiloPrecio, zona as Zona) : null),
-    [zona, tamano, estilo],
+    () => (zona && tamano && estilo ? estimar(precios, tamano as Tamano, estilo as EstiloPrecio, zona as Zona) : null),
+    [precios, zona, tamano, estilo],
   );
   const inicio = horaElegida ? `${fecha}T${horaElegida}` : null;
   const resumen = inicio ? `${fechaCorta(fecha)} · ${horaElegida} a ${hora(sumarMinutos(inicio, duracion))}` : `${fechaCorta(fecha)} · elige la hora`;
@@ -193,7 +196,7 @@ export function FormularioCita({
 
   let n = 0;
   return (
-    <form onSubmit={guardar} className="flex min-w-0 flex-col gap-4">
+    <form onSubmit={guardar} className="flex min-w-0 flex-col gap-4 lg:max-w-2xl">
       {/* ---------- 1. Cliente ---------- */}
       {!edicion && (
         <Paso n={++n} titulo="Cliente">
@@ -351,7 +354,7 @@ export function FormularioCita({
       </Paso>
 
       {/* ---------- 3. El tatuaje ---------- */}
-      <Paso n={++n} titulo="El tatuaje">
+      <Paso n={++n} titulo="El tatuaje" opcional>
         <div className="flex flex-wrap gap-2">
           {[
             ["tatuaje", "Tatuaje"],
@@ -426,10 +429,10 @@ export function FormularioCita({
       </Paso>
 
       {/* ---------- 4. Pago ---------- */}
-      <Paso n={++n} titulo="Pago">
+      <Paso n={++n} titulo="Pago" opcional>
         <label>
           <Etiqueta nota={rango ? `En la web: ${clp(rango.min)} a ${clp(rango.max)}` : undefined}>Valor acordado</Etiqueta>
-          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$ (opcional hasta ver el diseño)" className={`${campo} tabular-nums`} />
+          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
         </label>
         {!edicion && (
           <div>

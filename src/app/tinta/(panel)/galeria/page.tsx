@@ -22,7 +22,9 @@ export default async function Galeria() {
       <Encabezado volver={`${PANEL}/mas`} etiqueta={`${fotos.filter((f) => f.visible).length} en la web`} titulo="Galería" />
 
       {hayGaleria ? (
-        <SubirFoto />
+        <div className="lg:max-w-xl">
+          <SubirFoto />
+        </div>
       ) : (
         <p className="rounded-2xl border border-[#f59e0b]/40 bg-[#f59e0b]/[0.06] p-4 text-[14px] text-[#fbbf24]">
           Para subir fotos falta conectar un almacén de Vercel Blob al proyecto (BLOB_READ_WRITE_TOKEN).
@@ -30,7 +32,7 @@ export default async function Galeria() {
       )}
 
       {fotos.length > 0 ? (
-        <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {fotos.map((f, i) => (
             <FotoGaleria
               key={f.id}

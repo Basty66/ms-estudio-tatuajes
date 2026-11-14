@@ -10,8 +10,11 @@ import { Boton } from "./Boton";
 import { Chip, campo, Etiqueta } from "./FormularioCita";
 import { Documento, Papelera, Subir } from "./Iconos";
 
-/** Cambiar el estado de la cita: hecha, no vino, cancelar o reactivar. */
-export function EstadoCita({ id, estado }: { id: number; estado: string }) {
+/**
+ * Cambiar el estado de la cita. Antes de la hora solo se puede cancelar:
+ * "Hecha" o "No vino" recién tienen sentido cuando la sesión empezó.
+ */
+export function EstadoCita({ id, estado, empezo }: { id: number; estado: string; empezo: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pendiente, iniciar] = useTransition();
@@ -25,29 +28,62 @@ export function EstadoCita({ id, estado }: { id: number; estado: string }) {
       router.refresh();
     });
   };
+  const cancelar = () => cambiar("cancelada", "¿Cancelar la cita? La hora queda libre.");
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2">
-        {estado === "confirmada" ? (
-          <>
-            <Boton variante="linea" disabled={pendiente} onClick={() => cambiar("completada")} className="min-h-11 px-2 text-[14px]">
-              Hecha
+      {estado !== "confirmada" ? (
+        <Boton variante="linea" disabled={pendiente} onClick={() => cambiar("confirmada")} className="min-h-11 w-full">
+          Volver a confirmada
+        </Boton>
+      ) : empezo ? (
+        <>
+          <p className="mb-2 text-[13px] text-ceniza">¿Cómo terminó?</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Boton disabled={pendiente} onClick={() => cambiar("completada")} className="min-h-11 px-2 text-[14px]">
+              Se hizo
             </Boton>
             <Boton variante="linea" disabled={pendiente} onClick={() => cambiar("no_vino", "¿Marcar que no vino?")} className="min-h-11 px-2 text-[14px]">
               No vino
             </Boton>
-            <Boton variante="peligro" disabled={pendiente} onClick={() => cambiar("cancelada", "¿Cancelar la cita? La hora queda libre.")} className="min-h-11 px-2 text-[14px]">
-              Cancelar
-            </Boton>
-          </>
-        ) : (
-          <Boton variante="linea" disabled={pendiente} onClick={() => cambiar("confirmada")} className="col-span-3 min-h-11">
-            Volver a confirmada
+          </div>
+          <Boton variante="fantasma" disabled={pendiente} onClick={cancelar} className="mt-1 min-h-10 w-full text-[14px] hover:text-[#ff8a80]">
+            Cancelar la cita
           </Boton>
-        )}
-      </div>
+        </>
+      ) : (
+        <Boton variante="fantasma" disabled={pendiente} onClick={cancelar} className="min-h-10 w-full text-[14px] hover:text-[#ff8a80]">
+          Cancelar la cita
+        </Boton>
+      )}
       {error && <p className="mt-2 text-[14px] font-semibold text-[#ff8a80]">{error}</p>}
+    </div>
+  );
+}
+
+/** En una lista: una cita que ya pasó y sigue confirmada se cierra en un toque, sin abrirla. */
+export function CerrarRapido({ id }: { id: number }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pendiente, iniciar] = useTransition();
+  const cambiar = (nuevo: string) =>
+    iniciar(async () => {
+      setError(null);
+      const r = await cambiarEstadoCita(id, nuevo);
+      if (!r.ok) setError(r.error);
+      router.refresh();
+    });
+  const boton = "min-h-9 rounded-full border px-3.5 text-[13px] font-semibold transition-colors disabled:opacity-40";
+
+  return (
+    <div className="flex items-center gap-2 px-1 pt-2">
+      <span className="min-w-0 flex-1 text-[13px] text-ceniza">{error ?? "¿Cómo terminó?"}</span>
+      <button type="button" disabled={pendiente} onClick={() => cambiar("completada")} className={`${boton} border-stencil/60 bg-stencil/15 text-piel hover:bg-stencil/25`}>
+        Se hizo
+      </button>
+      <button type="button" disabled={pendiente} onClick={() => cambiar("no_vino")} className={`${boton} border-linea text-ceniza hover:text-piel`}>
+        No vino
+      </button>
     </div>
   );
 }
@@ -67,8 +103,9 @@ export function NuevoPago({ citaId, saldo, tieneAbono }: { citaId: number; saldo
   const [guardando, setGuardando] = useState(false);
 
   if (!abierto) {
+    // Saldada: anotar otro pago pasa a ser lo raro, no la acción principal.
     return (
-      <Boton variante="cromo" onClick={() => setAbierto(true)} className="w-full">
+      <Boton variante={saldo === 0 ? "linea" : "cromo"} onClick={() => setAbierto(true)} className="w-full">
         Anotar pago
       </Boton>
     );

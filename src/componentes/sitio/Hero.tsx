@@ -2,22 +2,12 @@
 
 import { motion, useScroll, useTransform } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { ESTUDIO } from "@/lib/estudio";
 import { BotonMagnetico } from "./BotonMagnetico";
+import { useEstudio } from "./DatosEstudio";
+import { PARED } from "@/lib/estudio";
 import { MuroTatuajes, type Pieza } from "./MuroTatuajes";
 import { NombreCromo } from "./NombreCromo";
 import { NombreHero } from "./NombreHero";
-
-const PARED: Pieza[] = [
-  ...Array.from({ length: 14 }, (_, i) => ({
-    tipo: "foto" as const,
-    src: `/trabajos/pared-${String(i + 1).padStart(2, "0")}.jpg`,
-    alt: "",
-  })),
-  { tipo: "foto", src: "/images/tatuaje3.jpg", alt: "" },
-  { tipo: "foto", src: "/images/tatuaje2.jpg", alt: "" },
-  { tipo: "foto", src: "/images/tatuaje1.jpg", alt: "" },
-];
 
 /**
  * El hero muestra el trabajo real en movimiento:
@@ -28,7 +18,8 @@ const PARED: Pieza[] = [
  * Encima, el nombre en metal líquido. Al bajar, todo se acerca y se apaga
  * como un plano de cine, solo con transform y opacity.
  */
-export function Hero() {
+export function Hero({ pared = PARED }: { pared?: Pieza[] }) {
+  const estudio = useEstudio();
   const escena = useRef<HTMLElement>(null);
   const videos = useRef<HTMLVideoElement[]>([]);
   const [quieto, setQuieto] = useState(false);
@@ -92,7 +83,7 @@ export function Hero() {
         </video>
         {/* Escritorio: la pared de trabajos. */}
         <div className="absolute inset-0 hidden lg:block">
-          <MuroTatuajes piezas={PARED} columnas={6} />
+          <MuroTatuajes piezas={pared} columnas={6} />
         </div>
         {/* Viñeta: oscurece el centro y los bordes para que el nombre y el texto se lean siempre. */}
         <div className="absolute inset-0 bg-[radial-gradient(70%_55%_at_50%_45%,rgba(7,8,13,0.55),rgba(7,8,13,0.2)_60%,transparent)]" />
@@ -107,7 +98,7 @@ export function Hero() {
         style={{ scale: escala, y: subida, opacity: opacidad }}
         className="flex flex-1 flex-col items-center justify-center px-4 pt-20 will-change-transform lg:pt-28"
       >
-        <h1 className="sr-only">Matness Studio, estudio de tatuajes en {ESTUDIO.comuna}</h1>
+        <h1 className="sr-only">Matness Studio, estudio de tatuajes en {estudio.comuna}</h1>
         <div className="flex w-full max-w-[min(1180px,100%)] flex-col items-center">
           <NombreHero className="w-full drop-shadow-[0_24px_50px_rgba(0,0,0,0.85)]" />
           {/* "Studio" va en cromo SVG: el mismo estilo sin un segundo motor WebGL. */}
@@ -157,15 +148,15 @@ export function Hero() {
         </div>
         <div className="flex items-center justify-between gap-4 border-t border-white/15 pt-4 pr-[72px] text-[13px] text-piel/70 lg:pr-20">
           <span>
-            {ESTUDIO.direccion}, {ESTUDIO.comuna}
+            {estudio.direccion}, {estudio.comuna}
           </span>
           <a
-            href={`https://instagram.com/${ESTUDIO.instagram}`}
+            href={`https://instagram.com/${estudio.instagram}`}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-piel"
           >
-            @{ESTUDIO.instagram}
+            @{estudio.instagram}
           </a>
         </div>
       </motion.div>

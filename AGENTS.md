@@ -34,14 +34,17 @@ src/app/not-found.tsx   404 del láser. También es lo que ve quien prueba /admi
 src/app/tinta/          Panel (ruta "secreta"; constante PANEL en src/lib/admin/ruta.ts)
   entrar/               Nombre → clave del panel → PIN; o desbloqueo con PIN / Face ID
   (panel)/              Hoy, agenda, nueva, cita/[id], clientes, cliente/[id], finanzas,
-                        cotizaciones, galeria, cuenta, mas
-  _acciones/            Server Actions (entrar, avisos, panel). CADA una comprueba la sesión.
+                        cotizaciones, galeria, web/*, cuenta, mas
+  (panel)/web/          Lo que se cambia de la web: fotos fijas, precios, contacto,
+                        tatuador, preguntas y cuidados
+  _acciones/            Server Actions (entrar, avisos, panel, contenido). CADA una comprueba la sesión.
   cambios/              "¿Cambió algo?" + versión publicada (el panel se refresca solo)
   comprobante/[...]     Entrega comprobantes del almacén privado, solo con sesión
 src/app/api/cotizacion  POST público del cotizador → guarda y avisa por push (10/h por origen)
 src/app/api/mantencion/avisos  Cron diario (vercel.json): sesiones de hoy y mañana
 src/proxy.ts            Barrera barata del panel (en Next 16 se llama proxy, no middleware)
-src/db/                 conexion.ts y lecturas del panel (panel.ts)
+src/db/                 conexion.ts, lecturas del panel (panel.ts) y contenido de la web (contenido.ts)
+src/lib/contenido.ts    Contenido editable: tipos, valores de fábrica y revisión de lo guardado
 src/lib/admin/          sesion, pin, biometria, apertura (candado), avisos, almacen, fecha (hora de Chile)
 src/lib/cuerpo.ts       Siluetas del mapa del cotizador (generado; trazos MIT de react-native-body-highlighter)
 public/tinta/           manifest.webmanifest, sw.js e íconos de la PWA del panel
@@ -58,6 +61,10 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
 - Constantes o listas que use una página del servidor no pueden vivir en un archivo `"use client"`
   (llegarían como referencia de cliente, no como valor).
 - Comprobantes: primero se borra el archivo, después la fila.
+- El contenido de la web (tabla `contenido`, un JSON por bloque) siempre pasa por `mezclar()`: lo que
+  falte o venga mal vuelve al valor de fábrica. La portada nunca lee la tabla directo.
+- WhatsApp, Instagram y dirección llegan a los componentes de cliente por `useEstudio()`
+  (layout del sitio); no importar `ESTUDIO` para mostrarlos, son solo los de fábrica.
 
 ## Base de datos
 
@@ -87,6 +94,8 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
 ## Pendientes
 
 - [x] `db/001` aplicado en la rama `production` de Neon (2026-11-10). Usuario inicial: Cristian.
+- [ ] `db/002_contenido.sql` (contenido editable de la web): aplicado en `dev`, falta en `production`
+      (`node --env-file=.env.local scripts/migrar.mjs --produccion`). Sin él la web sale con lo de fábrica.
 - [x] Variables del panel cargadas en Vercel para **Preview** (con la base `dev`).
 - [ ] Variables del panel en Vercel para **Production** antes de publicar la v2 con panel:
       `node scripts/variables-vercel.mjs production` (cambiar antes la clave corta del panel).
