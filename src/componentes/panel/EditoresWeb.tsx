@@ -8,6 +8,7 @@ import { ESTILOS_PRECIO, estimar, OBJETIVOS_LASER, pesos, TAMANOS, ZONAS, type E
 import { Tarjeta, TituloBloque } from "./Encabezado";
 import { BarraGuardar, Campo, Lineas, ListaPares, useEditor } from "./EditorWeb";
 import { TarjetaGracias } from "@/componentes/sitio/TarjetaGracias";
+import { Boton } from "./Boton";
 import { campo } from "./FormularioCita";
 import { DobleVisto, Externo, Flecha } from "./Iconos";
 
@@ -402,6 +403,7 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
   const m = e.valor;
   // Uno abierto a la vez: así la pantalla no se llena de cuadros de texto.
   const [abierto, setAbierto] = useState<keyof Mensajes | null>("confirmacion");
+  const [repetir, setRepetir] = useState(0);
   const valores = (clave: keyof Mensajes) => ({
     ...MUESTRA,
     cuidados: `${origen}/#cuidados`,
@@ -467,10 +469,15 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
             <Campo etiqueta="Título" valor={m.graciasTitulo} cambiar={(v) => e.cambiar({ ...m, graciasTitulo: v })} max={60} />
             <Campo etiqueta="Nota" valor={m.graciasNota} cambiar={(v) => e.cambiar({ ...m, graciasNota: v })} max={160} lineas={3} />
           </div>
-          <TarjetaGracias
-            estatica
-            datos={{ codigo: "MS-K7Q2", titulo: m.graciasTitulo, nota: m.graciasNota, rango: "$50.000 a $90.000", extra: "", detalle: "Mediano · antebrazo (lado izquierdo) · fineline" }}
-          />
+          <div className="flex flex-col items-center gap-4 overflow-hidden py-8">
+            <TarjetaGracias
+              key={repetir}
+              datos={{ codigo: "MS-K7Q2", titulo: m.graciasTitulo, nota: m.graciasNota, rango: "$50.000 a $90.000", extra: "", detalle: "Mediano · antebrazo (lado izquierdo) · fineline" }}
+            />
+            <Boton variante="linea" onClick={() => setRepetir((n) => n + 1)} className="min-h-10 px-4 text-[13px]">
+              Ver la animación de nuevo
+            </Boton>
+          </div>
         </div>
       </section>
       <BarraGuardar {...e} />

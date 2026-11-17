@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 
 /**
  * La tarjeta de "gracias por tu cotización": aparece después de tocar "Pedir
- * hora", con el código que también va en el WhatsApp. Entra inclinada, le
- * pasa un brillo, se da vuelta sola y suelta destellos azules; después flota
- * y, con mouse, se inclina siguiendo el puntero. Un toque la vuelve a girar.
+ * hora", con el código que también va en el WhatsApp. Llega "repartida":
+ * sube girando desde abajo y se asienta con un rebote, mientras detrás se
+ * enciende un halo azul. Le pasa un brillo, se da vuelta sola y suelta
+ * destellos; después flota y, con mouse, se inclina siguiendo el puntero.
+ * Un toque la vuelve a girar.
  *
  * Todo se mueve con transform y opacity. Si el sistema pide menos movimiento,
- * muestra directo el reverso y gira sin animación.
+ * aparece con un fundido, muestra directo el reverso y gira sin animación.
  */
 export type DatosGracias = {
   codigo: string;
@@ -22,8 +24,6 @@ export type DatosGracias = {
   extra: string;
   detalle: string;
 };
-
-const SALIDA = [0.16, 1, 0.3, 1] as const;
 
 /** Destellos que salen del centro cuando aparece el agradecimiento (CSS: .chispa). */
 const CHISPAS = Array.from({ length: 16 }, (_, i) => {
@@ -43,8 +43,8 @@ function Estrella({ className = "" }: { className?: string }) {
 
 const CARA = "absolute inset-0 overflow-hidden rounded-[5.5cqw] [backface-visibility:hidden] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.95)]";
 
-export function TarjetaGracias({ datos, estatica = false }: { datos: DatosGracias; /** En la vista previa del panel: quieta, mostrando el reverso. */ estatica?: boolean }) {
-  const reducir = useReducedMotion() || estatica;
+export function TarjetaGracias({ datos }: { datos: DatosGracias }) {
+  const reducir = Boolean(useReducedMotion());
   const [girada, setGirada] = useState(Boolean(reducir));
   const [estallido, setEstallido] = useState(0);
 
@@ -59,7 +59,7 @@ export function TarjetaGracias({ datos, estatica = false }: { datos: DatosGracia
     const t = setTimeout(() => {
       setGirada(true);
       setEstallido((n) => n + 1);
-    }, 1900);
+    }, 2300);
     return () => clearTimeout(t);
   }, [reducir]);
 
@@ -73,15 +73,23 @@ export function TarjetaGracias({ datos, estatica = false }: { datos: DatosGracia
 
   return (
     <div className="relative mx-auto w-full max-w-[420px] [container-type:inline-size]">
+      {/* El halo azul que se enciende detrás cuando llega la tarjeta, y queda latiendo. */}
       <motion.div
-        initial={reducir ? false : { opacity: 0, y: 48 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: SALIDA }}
+        aria-hidden
+        className="pointer-events-none absolute inset-[-25%] rounded-full bg-[radial-gradient(closest-side,rgba(47,107,255,0.45),rgba(47,107,255,0.12)_55%,transparent)]"
+        initial={{ opacity: 0, scale: 0.4 }}
+        animate={reducir ? { opacity: 0.6, scale: 1 } : { opacity: [0, 1, 0.55, 0.75, 0.55], scale: [0.4, 1.15, 1, 1.05, 1] }}
+        transition={reducir ? { duration: 0.4 } : { duration: 5, times: [0, 0.18, 0.4, 0.7, 1], ease: "easeInOut", repeat: Infinity, repeatType: "mirror", repeatDelay: 0.5 }}
+      />
+      <motion.div
+        // Llega "repartida": desde abajo, girada e inclinada, y se asienta con un rebote.
+        initial={reducir ? { opacity: 0, scale: 0.97 } : { opacity: 0, y: 160, rotateX: 55, rotateZ: -12, scale: 0.72 }}
+        animate={{ opacity: 1, y: 0, rotateX: 0, rotateZ: 0, scale: 1 }}
+        transition={reducir ? { duration: 0.4 } : { type: "spring", stiffness: 80, damping: 13, mass: 0.9, opacity: { duration: 0.35 } }}
         className="relative [perspective:1400px]"
       >
         <motion.button
           type="button"
-          disabled={estatica}
           onClick={() => girar(!girada)}
           onPointerMove={(e) => {
             if (e.pointerType !== "mouse" || reducir) return;
@@ -100,10 +108,9 @@ export function TarjetaGracias({ datos, estatica = false }: { datos: DatosGracia
             reflejo.set(0);
           }}
           aria-label={girada ? "Ver el frente de la tarjeta" : "Girar la tarjeta"}
-          className="relative block aspect-[1.586] w-full cursor-pointer rounded-[5.5cqw] [transform-style:preserve-3d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stencil-claro disabled:cursor-default"
-          initial={reducir ? false : { rotateX: 30 }}
-          animate={reducir ? { rotateX: 0 } : { rotateX: 0, y: [0, -7, 0] }}
-          transition={{ rotateX: { duration: 1.1, ease: SALIDA }, y: { duration: 6, delay: 1.2, repeat: Infinity, ease: "easeInOut" } }}
+          className="relative block aspect-[1.586] w-full cursor-pointer rounded-[5.5cqw] [transform-style:preserve-3d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stencil-claro"
+          animate={reducir ? undefined : { y: [0, -7, 0] }}
+          transition={{ y: { duration: 6, delay: 1.6, repeat: Infinity, ease: "easeInOut" } }}
         >
           <motion.div className="absolute inset-0 [transform-style:preserve-3d]" style={{ rotateX: rx, rotateY: ry }}>
             <motion.div
@@ -122,7 +129,7 @@ export function TarjetaGracias({ datos, estatica = false }: { datos: DatosGracia
                     style={{ skewX: -18 }}
                     initial={{ x: "-120%" }}
                     animate={{ x: "420%" }}
-                    transition={{ duration: 1.3, delay: 0.6, ease: [0.65, 0, 0.35, 1] }}
+                    transition={{ duration: 1.2, delay: 1, ease: [0.65, 0, 0.35, 1] }}
                   />
                 )}
                 <motion.div aria-hidden className="absolute inset-0" style={{ background: luz, opacity: reflejo }} />

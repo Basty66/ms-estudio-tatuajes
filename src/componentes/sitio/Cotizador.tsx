@@ -134,20 +134,27 @@ function Gracias({ datos, whatsapp, cerrar }: { datos: DatosGracias; whatsapp: s
       onClick={(e) => e.target === e.currentTarget && cerrar()}
     >
       <TarjetaGracias datos={datos} />
-      <p className="mt-8 max-w-sm text-center text-[14px] leading-relaxed text-ceniza">Toca la tarjeta para darla vuelta. Si WhatsApp no se abrió, ábrelo desde acá.</p>
-      <div className="mt-5 flex flex-wrap justify-center gap-3">
-        <a
-          href={whatsapp}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="boton-cromo inline-flex min-h-12 items-center rounded-full bg-[image:var(--acero)] px-6 text-[15px] font-semibold text-tinta shadow-[0_0_30px_-8px_rgba(47,107,255,0.9)]"
-        >
-          Abrir WhatsApp
-        </a>
-        <button type="button" onClick={cerrar} className="inline-flex min-h-12 items-center rounded-full border border-linea px-6 text-[15px] font-semibold text-piel/85 hover:border-ceniza/60">
-          Volver a la web
-        </button>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col items-center"
+      >
+        <p className="mt-10 max-w-sm text-center text-[14px] leading-relaxed text-ceniza">Toca la tarjeta para darla vuelta. Si WhatsApp no se abrió, ábrelo desde acá.</p>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <a
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="boton-cromo inline-flex min-h-12 items-center rounded-full bg-[image:var(--acero)] px-6 text-[15px] font-semibold text-tinta shadow-[0_0_30px_-8px_rgba(47,107,255,0.9)]"
+          >
+            Abrir WhatsApp
+          </a>
+          <button type="button" onClick={cerrar} className="inline-flex min-h-12 items-center rounded-full border border-linea px-6 text-[15px] font-semibold text-piel/85 hover:border-ceniza/60">
+            Volver a la web
+          </button>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
