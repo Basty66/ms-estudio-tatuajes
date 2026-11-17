@@ -15,7 +15,10 @@ export type Cita = {
   cliente: string | null;
   telefono: string | null;
   tipo: "tatuaje" | "laser" | "retoque" | "bloqueo";
-  estado: "confirmada" | "completada" | "cancelada" | "no_vino";
+  /** "solicitada": pedida desde la web, aparta la hora hasta que se confirma. */
+  estado: "solicitada" | "confirmada" | "completada" | "cancelada" | "no_vino";
+  origen: "panel" | "web";
+  creada: string;
   inicio: string;
   fin: string;
   zona: string | null;
@@ -39,7 +42,8 @@ const COLUMNAS = sql.unsafe(`
   c.id, c.cliente_id, cl.nombre AS cliente, cl.telefono, c.tipo, c.estado,
   to_char(c.inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio,
   to_char(c.fin, 'YYYY-MM-DD"T"HH24:MI') AS fin,
-  c.zona, c.lado, c.tamano, c.estilo, c.descripcion, c.precio, c.pagado, c.saldo, c.notas, c.creada_por,
+  c.zona, c.lado, c.tamano, c.estilo, c.descripcion, c.precio, c.pagado, c.saldo, c.notas, c.creada_por, c.origen,
+  to_char(c.creada_en AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD"T"HH24:MI') AS creada,
   k.estado AS consentimiento, COALESCE(k.alertas, '{}') AS alertas
 `);
 
@@ -246,6 +250,16 @@ const COLUMNAS_COTIZACION = sql.unsafe(`
  * escribió la persona. El código se busca sin importar mayúsculas ni si
  * escribieron "MS-" o no: "k7q2" encuentra "MS-K7Q2".
  */
+/** Las horas pedidas desde la web que esperan confirmación, la más próxima primero. */
+export async function porConfirmar(): Promise<Cita[]> {
+  return (await sql`
+    SELECT ${COLUMNAS}
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id ${CONSENTIMIENTO}
+    WHERE c.estado = 'solicitada'
+    ORDER BY c.inicio
+  `) as Cita[];
+}
+
 export async function cotizaciones({ estado = null, q = "", limite = 80 }: { estado?: EstadoCotizacion | null; q?: string; limite?: number } = {}): Promise<Cotizacion[]> {
   const t = q.trim().toLowerCase().replace(/^ms-?/, "");
   return (await sql`

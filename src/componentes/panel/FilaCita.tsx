@@ -5,12 +5,13 @@ import { fechaCorta, hora, hoyChile } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { Bloqueo, Flecha } from "./Iconos";
 
-export type Marca = "en-curso" | "siguiente" | "sin-cerrar";
+export type Marca = "en-curso" | "siguiente" | "sin-cerrar" | "por-confirmar";
 
 const MARCAS: Record<Marca, { texto: string; clase: string }> = {
   "en-curso": { texto: "En curso", clase: "text-stencil-claro" },
   siguiente: { texto: "Siguiente", clase: "text-piel" },
   "sin-cerrar": { texto: "Sin cerrar", clase: "text-[#fbbf24]" },
+  "por-confirmar": { texto: "Por confirmar", clase: "text-[#fbbf24]" },
 };
 
 const BARRA = { tatuaje: "bg-stencil", laser: "bg-[#a78bfa]", retoque: "bg-ceniza", bloqueo: "bg-linea" } as const;
@@ -19,7 +20,8 @@ const BARRA = { tatuaje: "bg-stencil", laser: "bg-[#a78bfa]", retoque: "bg-ceniz
  * Una cita en una lista: la hora manda, después quién y qué, y si debe plata.
  * En la ficha de un cliente (`sinNombre`) el nombre sobra: va el diseño.
  */
-export function FilaCita({ c, conFecha = false, marca, sinNombre = false }: { c: Cita; conFecha?: boolean; marca?: Marca; sinNombre?: boolean }) {
+export function FilaCita({ c, conFecha = false, marca: marcaDada, sinNombre = false }: { c: Cita; conFecha?: boolean; marca?: Marca; sinNombre?: boolean }) {
+  const marca: Marca | undefined = c.estado === "solicitada" ? "por-confirmar" : marcaDada;
   if (c.tipo === "bloqueo") {
     return (
       <div className="flex items-center gap-4 rounded-2xl border border-dashed border-linea px-4 py-3 text-ceniza">
@@ -43,7 +45,11 @@ export function FilaCita({ c, conFecha = false, marca, sinNombre = false }: { c:
     <Link
       href={`${PANEL}/cita/${c.id}`}
       className={`group flex items-center gap-4 rounded-2xl border bg-tinta/50 px-4 py-3 transition-[border-color,background-color] hover:border-stencil/60 hover:bg-tinta/80 ${
-        marca === "en-curso" ? "border-stencil/70 shadow-[0_0_30px_-14px_rgba(47,107,255,0.9)]" : "border-linea"
+        marca === "en-curso"
+          ? "border-stencil/70 shadow-[0_0_30px_-14px_rgba(47,107,255,0.9)]"
+          : marca === "por-confirmar"
+            ? "border-dashed border-[#f59e0b]/55"
+            : "border-linea"
       } ${apagada ? "opacity-55" : ""}`}
     >
       <span className="w-12 shrink-0">

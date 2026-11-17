@@ -74,7 +74,7 @@ export async function ocupado(desde: string, hasta: string): Promise<Array<{ id:
     SELECT c.id, to_char(c.inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio, to_char(c.fin, 'YYYY-MM-DD"T"HH24:MI') AS fin,
            COALESCE(cl.nombre, COALESCE(c.descripcion, 'Bloqueado')) AS quien
     FROM citas c LEFT JOIN clientes cl ON cl.id = c.cliente_id
-    WHERE c.estado IN ('confirmada', 'completada') AND c.inicio < (${hasta}::DATE + 1) AND c.fin > ${desde}::DATE
+    WHERE c.estado IN ('solicitada', 'confirmada', 'completada') AND c.inicio < (${hasta}::DATE + 1) AND c.fin > ${desde}::DATE
     ORDER BY c.inicio
   `) as Array<{ id: number; inicio: string; fin: string; quien: string }>;
 }

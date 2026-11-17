@@ -29,7 +29,7 @@ export function nombreDonde(zona: string | null, lado: string | null): string | 
 }
 
 export const TIPO = { tatuaje: "Tatuaje", laser: "Láser", retoque: "Retoque", bloqueo: "Bloqueo" } as const;
-export const ESTADO = { confirmada: "Confirmada", completada: "Hecha", cancelada: "Cancelada", no_vino: "No vino" } as const;
+export const ESTADO = { solicitada: "Por confirmar", confirmada: "Confirmada", completada: "Hecha", cancelada: "Cancelada", no_vino: "No vino" } as const;
 
 /** "Muslo izquierdo · Fineline · Mediano" */
 export function resumenTatuaje(c: { zona: string | null; lado: string | null; estilo: string | null; tamano: string | null; descripcion: string | null }): string {
