@@ -2,13 +2,14 @@
 
 import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import type { Fotos } from "@/lib/contenido";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { codigoCotizacion, type Fotos } from "@/lib/contenido";
 import { ESTILOS_PRECIO, estimar, estimarLaser, OBJETIVOS_LASER, pesos, TAMANOS, type EstiloPrecio, type ObjetivoLaser, type Precios, type Tamano } from "@/lib/precios";
 import { BotonMagnetico } from "./BotonMagnetico";
 import { useEstudio } from "./DatosEstudio";
 import { clave, MapaCuerpo, nombreZona, textoLado, type Eleccion } from "./MapaCuerpo";
 import { Ornamento } from "./Ornamento";
+import { TarjetaGracias, type DatosGracias } from "./TarjetaGracias";
 import { Titulo } from "./Titulo";
 
 type Modo = "tatuaje" | "laser";
@@ -110,7 +111,48 @@ function Lectura({ eleccion, previa: bajoCursor, recargos, laser }: { eleccion: 
  * Los montos y la foto de muestra de cada estilo se cambian desde el panel
  * (Web → Precios y Fotos).
  */
-export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }) {
+/**
+ * Después de tocar "Pedir hora": WhatsApp se abre aparte y acá queda la
+ * tarjeta de gracias, para cuando la persona vuelve a la web.
+ */
+function Gracias({ datos, whatsapp, cerrar }: { datos: DatosGracias; whatsapp: string; cerrar: () => void }) {
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [cerrar]);
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label={datos.titulo}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+      className="fixed inset-0 z-[70] flex flex-col items-center justify-center overflow-y-auto bg-tinta/[0.88] px-4 py-10 backdrop-blur-xl"
+      onClick={(e) => e.target === e.currentTarget && cerrar()}
+    >
+      <TarjetaGracias datos={datos} />
+      <p className="mt-8 max-w-sm text-center text-[14px] leading-relaxed text-ceniza">Toca la tarjeta para darla vuelta. Si WhatsApp no se abrió, ábrelo desde acá.</p>
+      <div className="mt-5 flex flex-wrap justify-center gap-3">
+        <a
+          href={whatsapp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="boton-cromo inline-flex min-h-12 items-center rounded-full bg-[image:var(--acero)] px-6 text-[15px] font-semibold text-tinta shadow-[0_0_30px_-8px_rgba(47,107,255,0.9)]"
+        >
+          Abrir WhatsApp
+        </a>
+        <button type="button" onClick={cerrar} className="inline-flex min-h-12 items-center rounded-full border border-linea px-6 text-[15px] font-semibold text-piel/85 hover:border-ceniza/60">
+          Volver a la web
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos: Fotos; gracias: { titulo: string; nota: string } }) {
   const { whatsappCon } = useEstudio();
   const [eleccion, setEleccion] = useState<Eleccion>({ zona: "antebrazo", lado: "izq" });
   const [previa, setPrevia] = useState<Eleccion | null>(null);
@@ -119,6 +161,14 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
   const [modo, setModo] = useState<Modo>("tatuaje");
   const [objetivo, setObjetivo] = useState<ObjetivoLaser>("borrar");
   const [idea, setIdea] = useState("");
+  const [tarjeta, setTarjeta] = useState<DatosGracias | null>(null);
+  // La sal del código se elige ya en el navegador: si la eligiera el servidor,
+  // el código del WhatsApp y el de la tarjeta podrían no coincidir.
+  const [sal, setSal] = useState("");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- se elige una sola vez al montar
+    setSal(Math.random().toString(36).slice(2));
+  }, []);
   const resultado = useRef<HTMLDivElement>(null);
   const [resultadoVisible, setResultadoVisible] = useState(false);
   const laser = modo === "laser";
@@ -141,6 +191,9 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
   const nombre = (lista: readonly { id: string; nombre: string }[], id: string) => lista.find((x) => x.id === id)?.nombre ?? id;
   const zonaTexto = `${nombreZona(eleccion.zona)}${eleccion.lado ? ` (${textoLado(eleccion.lado).toLowerCase()})` : ""}`;
 
+  const cotizado = JSON.stringify({ modo, zona: eleccion.zona, lado: eleccion.lado, tamano, estilo: laser ? objetivo : estilo });
+  const codigo = sal ? codigoCotizacion(sal, cotizado) : "";
+
   const mensaje = (
     laser
       ? [
@@ -150,6 +203,7 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
           `Busco: ${nombre(OBJETIVOS_LASER, objetivo).toLowerCase()}`,
           `Rango de la web: ${pesos(rango.min)} a ${pesos(rango.max)} por sesión, ${rangoLaser.sesiones.min} a ${rangoLaser.sesiones.max} sesiones`,
           idea.trim() && `Sobre el tatuaje: ${idea.trim()}`,
+          codigo && `Código: ${codigo}`,
         ]
       : [
           "Hola, quiero pedir hora para un tatuaje.",
@@ -158,16 +212,29 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
           `Estilo: ${nombre(ESTILOS_PRECIO, estilo)}`,
           `Rango de la web: ${pesos(rango.min)} a ${pesos(rango.max)}`,
           idea.trim() && `Idea: ${idea.trim()}`,
+          codigo && `Código: ${codigo}`,
         ]
   )
     .filter(Boolean)
     .join("\n");
 
+  const cerrarTarjeta = useCallback(() => setTarjeta(null), []);
+
   // Cada combinación distinta se anota una vez: el estudio recibe el aviso
   // aunque la persona nunca llegue a mandar el WhatsApp.
   const anotada = useRef("");
   const anotar = () => {
-    const datos = { tipo: modo, zona: eleccion.zona, lado: eleccion.lado, tamano, estilo: laser ? objetivo : estilo, idea: idea.trim() };
+    setTarjeta({
+      codigo: codigo || "MS-····",
+      titulo: gracias.titulo,
+      nota: gracias.nota,
+      rango: `${pesos(rango.min)} a ${pesos(rango.max)}`,
+      extra: laser ? `por sesión · ${rangoLaser.sesiones.min} a ${rangoLaser.sesiones.max} sesiones` : "",
+      detalle: laser
+        ? `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()}`
+        : `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(ESTILOS_PRECIO, estilo).toLowerCase()}`,
+    });
+    const datos = { tipo: modo, zona: eleccion.zona, lado: eleccion.lado, tamano, estilo: laser ? objetivo : estilo, idea: idea.trim(), codigo };
     const clave = JSON.stringify(datos);
     if (clave === anotada.current) return;
     anotada.current = clave;
@@ -359,6 +426,8 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
           </div>
         </form>
       </div>
+
+      <AnimatePresence>{tarjeta && <Gracias datos={tarjeta} whatsapp={whatsappCon(mensaje)} cerrar={cerrarTarjeta} />}</AnimatePresence>
 
       {/* Teléfono: el rango queda a la vista mientras se elige, pegado abajo. */}
       <div

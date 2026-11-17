@@ -60,6 +60,9 @@ export type Mensajes = {
   laser1: string;
   laserProxima: string;
   resena: string;
+  /** La tarjeta que aparece en la web después de cotizar (no es un WhatsApp). */
+  graciasTitulo: string;
+  graciasNota: string;
 };
 
 export type Foto = { src: string; ancho: number; alto: number; alt: string };
@@ -163,6 +166,8 @@ export const CONTENIDO_BASE: Contenido = {
     dia7: "Hola {nombre}, ya va una semana. Es normal que pique y se pele: no lo rasques y sigue hidratando. Nada de sol, piscina ni mar hasta que sane del todo.",
     dia30: "Hola {nombre}, a esta altura ya debería estar sano. Desde ahora, protector solar cada vez que le dé el sol para que se mantenga nítido. ¿Me mandas una foto de cómo quedó?",
     laser1: "Hola {nombre}, ¿cómo amaneció la zona del láser? Es normal que esté roja, hinchada o con pequeñas ampollas. No las revientes, mantén la zona limpia y seca, y protégela del sol. Cualquier duda, escríbeme.",
+    graciasTitulo: "Gracias por tu cotización",
+    graciasNota: "Te respondo por WhatsApp. Con tu código encuentro al tiro lo que cotizaste.",
     laserProxima: "Hola {nombre}, ya pasaron seis semanas desde tu sesión de láser: la piel está lista para la siguiente. ¿Te agendo una hora?",
     resena: "Hola {nombre}, gracias por confiar en mí. Si te gustó el resultado, me ayudas mucho dejando una reseña en Google:\n{link}",
   },
@@ -290,6 +295,8 @@ export function normalizarMensajes(v: unknown): Mensajes {
     laser1: m("laser1"),
     laserProxima: m("laserProxima"),
     resena: m("resena"),
+    graciasTitulo: texto(g.graciasTitulo, 60) || base.graciasTitulo,
+    graciasNota: texto(g.graciasNota, 160) || base.graciasNota,
   };
 }
 
@@ -304,6 +311,8 @@ export const LLAVES: Record<keyof Mensajes, string[]> = {
   laser1: ["nombre"],
   laserProxima: ["nombre"],
   resena: ["nombre", "link"],
+  graciasTitulo: [],
+  graciasNota: [],
 };
 
 /**
@@ -332,6 +341,23 @@ export function mezclar(guardado: Partial<Record<ClaveBloque, unknown>>): Conten
     consentimiento: normalizarTextosConsentimiento(guardado.consentimiento),
     mensajes: normalizarMensajes(guardado.mensajes),
   };
+}
+
+/**
+ * El código de una cotización: "MS-" y cuatro letras o números fáciles de
+ * dictar (sin 0/O ni 1/I). Sale de lo cotizado más una sal de la visita, así
+ * la misma cotización repetida da el mismo código y una distinta, otro.
+ */
+const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export function codigoCotizacion(sal: string, datos: string): string {
+  let h = 0x811c9dc5;
+  for (const ch of sal + datos) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193) >>> 0;
+  let c = "";
+  for (let i = 0; i < 4; i++) {
+    c += ALFABETO[h % ALFABETO.length];
+    h = Math.floor(h / ALFABETO.length);
+  }
+  return `MS-${c}`;
 }
 
 export function enlaceWhatsapp(numero: string, mensaje: string): string {

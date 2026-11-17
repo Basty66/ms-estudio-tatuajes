@@ -72,7 +72,10 @@ export default async function Cotizaciones() {
                     {c.tipo === "laser" && <span className="mr-2 text-[#a78bfa]">Láser ·</span>}
                     {nombreDonde(c.zona, c.lado)}
                   </p>
-                  <p className="shrink-0 text-[12px] text-ceniza first-letter:uppercase">{cuando(c.creada)}</p>
+                  <p className="shrink-0 text-[12px] text-ceniza first-letter:uppercase">
+                    {c.codigo && <span className="mr-2 rounded-full border border-linea px-2 py-0.5 font-semibold text-piel tabular-nums">{c.codigo}</span>}
+                    {cuando(c.creada)}
+                  </p>
                 </div>
                 <p className="mt-0.5 text-[14px] text-ceniza">
                   {c.tipo === "laser" ? (

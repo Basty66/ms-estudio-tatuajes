@@ -31,6 +31,8 @@ export async function POST(request: Request) {
     if (!zona || !tamano || !estilo) return new Response(null, { status: 204 });
     const lado = d.lado === "izq" || d.lado === "der" ? d.lado : null;
     const idea = typeof d.idea === "string" && d.idea.trim() ? d.idea.trim().slice(0, 600) : null;
+    // El código de la tarjeta de gracias, que también va en el WhatsApp.
+    const codigo = typeof d.codigo === "string" && /^MS-[A-Z2-9]{4}$/.test(d.codigo) ? d.codigo : null;
     const { precios } = await leerContenido();
     const rango = laser ? estimarLaser(precios, tamano, estilo as ObjetivoLaser) : { ...estimar(precios, tamano, estilo as EstiloPrecio, zona), sesiones: null };
 
@@ -43,9 +45,9 @@ export async function POST(request: Request) {
     if (n >= 10) return new Response(null, { status: 204 });
 
     await sql`
-      INSERT INTO cotizaciones (tipo, zona, lado, tamano, estilo, idea, minimo, maximo, sesiones_min, sesiones_max, origen)
+      INSERT INTO cotizaciones (tipo, zona, lado, tamano, estilo, idea, minimo, maximo, sesiones_min, sesiones_max, codigo, origen)
       VALUES (${laser ? "laser" : "tatuaje"}, ${zona}, ${lado}, ${tamano}, ${estilo}, ${idea}, ${rango.min}, ${rango.max},
-              ${rango.sesiones?.min ?? null}, ${rango.sesiones?.max ?? null}, ${origen})
+              ${rango.sesiones?.min ?? null}, ${rango.sesiones?.max ?? null}, ${codigo}, ${origen})
     `;
 
     const donde = nombreDonde(zona, lado);
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
       ? `${nombreTamano(tamano)} · ${donde} · ${OBJETIVOS_LASER.find((o) => o.id === estilo)?.nombre} (${clp(rango.min)} a ${clp(rango.max)} por sesión, ${rango.sesiones?.min} a ${rango.sesiones?.max} sesiones)`
       : `${nombreTamano(tamano)} · ${donde} · ${nombreEstilo(estilo)} (${clp(rango.min)} a ${clp(rango.max)})`;
     await avisar({
-      titulo: laser ? "Alguien cotizó un borrado láser" : "Alguien cotizó en la web",
+      titulo: `${laser ? "Alguien cotizó un borrado láser" : "Alguien cotizó en la web"}${codigo ? ` · ${codigo}` : ""}`,
       cuerpo: `${que}${idea ? `\n“${idea.slice(0, 120)}”` : ""}\nDebería llegarte su WhatsApp.`,
       url: `${PANEL}/cotizaciones`,
       tag: "cotizacion",

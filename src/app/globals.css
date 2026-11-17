@@ -629,6 +629,18 @@ body {
   100% { opacity: 0; transform: translateX(100%); }
 }
 
+/* Destellos de la tarjeta de gracias: salen del centro y se apagan. */
+.chispa {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+  animation: chispa 1s var(--ease-salida) both;
+}
+@keyframes chispa {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1); }
+}
+
 /* El mapa de Google en claro rompe la página: se invierte a oscuro. */
 .mapa-oscuro {
   filter: invert(0.92) hue-rotate(200deg) saturate(0.6) contrast(0.95);
@@ -663,6 +675,9 @@ body {
   .nh-trazo,
   .nh-aguja,
   .entintar-aguja {
+    display: none;
+  }
+  .chispa {
     display: none;
   }
   .paso-adelante,

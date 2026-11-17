@@ -7,6 +7,7 @@ import { LARGO, LLAVES, rellenar, type DatosEstudio, type Mensajes, type Par, ty
 import { ESTILOS_PRECIO, estimar, OBJETIVOS_LASER, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Tarjeta, TituloBloque } from "./Encabezado";
 import { BarraGuardar, Campo, Lineas, ListaPares, useEditor } from "./EditorWeb";
+import { TarjetaGracias } from "@/componentes/sitio/TarjetaGracias";
 import { campo } from "./FormularioCita";
 import { DobleVisto, Externo, Flecha } from "./Iconos";
 
@@ -457,6 +458,21 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
           );
         })}
       </ul>
+
+      <section className="mt-6 rounded-3xl border border-linea bg-hollin/70 p-4 sm:p-5">
+        <h2 className="font-semibold">Tarjeta de gracias en la web</h2>
+        <p className="mt-0.5 mb-4 text-[13px] text-ceniza">Aparece cuando alguien cotiza y toca Pedir hora. El código también va en su WhatsApp y en Cotizaciones.</p>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-center">
+          <div className="flex min-w-0 flex-col gap-4">
+            <Campo etiqueta="Título" valor={m.graciasTitulo} cambiar={(v) => e.cambiar({ ...m, graciasTitulo: v })} max={60} />
+            <Campo etiqueta="Nota" valor={m.graciasNota} cambiar={(v) => e.cambiar({ ...m, graciasNota: v })} max={160} lineas={3} />
+          </div>
+          <TarjetaGracias
+            estatica
+            datos={{ codigo: "MS-K7Q2", titulo: m.graciasTitulo, nota: m.graciasNota, rango: "$50.000 a $90.000", extra: "", detalle: "Mediano · antebrazo (lado izquierdo) · fineline" }}
+          />
+        </div>
+      </section>
       <BarraGuardar {...e} />
     </>
   );
