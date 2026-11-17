@@ -128,7 +128,7 @@ export function ReservarHora({
     }
   }
 
-  const etiquetaBoton = fecha && hora ? `Pedir el ${fechaLarga(fecha)} a las ${hora}` : "Pedir esta hora";
+  const etiquetaBoton = fecha && hora ? `Pedir el ${fechaCorta(fecha)}, ${hora}` : "Pedir esta hora";
   const avisar = listo
     ? whatsappCon(`Hola, soy ${nombre.trim()}. Pedí hora para el ${listo} desde la web (${pedido.codigo}). ¿Me pasas los datos para el abono?`)
     : "";
