@@ -84,11 +84,16 @@ export function Pie({ estudio }: { estudio: DatosEstudio }) {
         <span>
           © {new Date().getFullYear()} {estudio.nombreLargo} · Hecho en {estudio.comuna}
         </span>
-        {/* Lo que la gente busca al final de una web: cómo se cuidan sus datos. */}
-        <a href="/privacidad" className="-mx-2 inline-flex min-h-11 items-center gap-2 self-start rounded-full px-2 text-[14px] text-piel/80 transition-colors hover:text-piel sm:self-auto">
-          <Escudo />
-          Privacidad y datos
-        </a>
+        <span className="flex flex-wrap items-center gap-x-5">
+          {/* Lo que la gente busca al final de una web: cómo se cuidan sus datos. */}
+          <a href="/privacidad" className="-mx-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-[14px] text-piel/80 transition-colors hover:text-piel">
+            <Escudo />
+            Privacidad y datos
+          </a>
+          <a href="https://bsdigitaltech-web.vercel.app" target="_blank" rel="noopener" className="-mx-2 inline-flex min-h-11 items-center rounded-full px-2 transition-colors hover:text-piel">
+            Desarrollado por <span className="ml-1 font-semibold text-piel/80">BS Digital Tech</span>
+          </a>
+        </span>
       </div>
     </footer>
   );
