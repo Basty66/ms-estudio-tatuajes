@@ -460,47 +460,6 @@ body {
 }
 
 /* Diagrama del láser: pulso, destello y la tinta que se dispersa. */
-.laser-haz {
-  transform-box: fill-box;
-  transform-origin: top;
-  animation: laser-haz 4.5s var(--ease-aguja) infinite;
-}
-.laser-destello {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: laser-destello 4.5s ease-out infinite;
-}
-.laser-tinta {
-  animation: laser-tinta 4.5s var(--ease-salida) infinite;
-}
-.laser-etiqueta {
-  animation: laser-etiqueta 4.5s ease infinite;
-}
-@keyframes laser-haz {
-  0%, 12% { transform: scaleY(0); opacity: 0; }
-  20% { transform: scaleY(1); opacity: 1; }
-  30%, 100% { transform: scaleY(1); opacity: 0; }
-}
-@keyframes laser-destello {
-  0%, 18% { transform: scale(0.2); opacity: 0; }
-  24% { transform: scale(1); opacity: 1; }
-  40%, 100% { transform: scale(1.4); opacity: 0; }
-}
-@keyframes laser-tinta {
-  0%, 20% { transform: translate(0, 0) scale(1); opacity: 1; }
-  45% { transform: translate(var(--dx), var(--dy)) scale(0.55); opacity: 0.9; }
-  80% { transform: translate(calc(var(--dx) * 1.6), calc(var(--dy) * 1.6)) scale(0.2); opacity: 0; }
-  81%, 100% { transform: translate(0, 0) scale(1); opacity: 0; }
-}
-@keyframes laser-etiqueta {
-  0%, 22% { opacity: 0; }
-  32%, 70% { opacity: 1; }
-  85%, 100% { opacity: 0; }
-}
-.laser-tinta {
-  transform-box: fill-box;
-  transform-origin: center;
-}
 
 /* ---------- 404: el láser borra el número y se vuelve a tatuar ----------
    Ciclo de 9 s que arranca cuando el número ya está entintado (4 s): se
@@ -685,11 +644,7 @@ body {
   .panel-sacude,
   .borrado-tinta,
   .borrado-laser,
-  .borrado-chispas,
-  .laser-haz,
-  .laser-destello,
-  .laser-tinta,
-  .laser-etiqueta {
+  .borrado-chispas {
     animation: none;
   }
   .marquesina,

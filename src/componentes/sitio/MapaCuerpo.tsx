@@ -158,12 +158,12 @@ export function MapaCuerpo({
         id="zona-lista"
         value={elegida}
         onChange={(e) => elegirDeLista(e.target.value)}
-        className="mx-auto w-full max-w-[16rem] rounded-full border border-linea bg-tinta px-4 py-2 text-[13px] text-ceniza focus:border-stencil focus:outline-none"
+        className="mx-auto block min-h-10 w-full max-w-[16rem] appearance-none rounded-full border border-linea bg-tinta/80 bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ba4b6%22 stroke-width=%221.6%22 stroke-linecap=%22round%22><path d=%22m7 10 5 5 5-5%22/></svg>')] bg-[length:16px] bg-[position:right_0.75rem_center] bg-no-repeat py-2 pr-9 pl-4 text-[13px] text-piel/85 transition-colors [color-scheme:dark] hover:border-ceniza/60 focus:border-stencil focus:outline-none"
       >
         {opciones.map((o) => (
           <option key={clave(o)} value={clave(o)}>
             {nombreZona(o.zona)}
-            {o.lado ? ` · ${o.lado === "izq" ? "izquierdo" : "derecho"}` : ""}
+            {o.lado ? ` · ${o.lado === "izq" ? "izq." : "der."}` : ""}
           </option>
         ))}
       </select>

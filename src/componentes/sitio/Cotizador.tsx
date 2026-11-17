@@ -8,7 +8,6 @@ import { ESTILOS_PRECIO, estimar, estimarLaser, OBJETIVOS_LASER, pesos, TAMANOS,
 import { BotonMagnetico } from "./BotonMagnetico";
 import { useEstudio } from "./DatosEstudio";
 import { clave, MapaCuerpo, nombreZona, textoLado, type Eleccion } from "./MapaCuerpo";
-import { Estrella } from "./Marquesina";
 import { Ornamento } from "./Ornamento";
 import { Titulo } from "./Titulo";
 
@@ -213,27 +212,32 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
         {/* ---------- Opciones y resultado ---------- */}
         <form className="relative flex flex-col gap-7 p-4 sm:p-6 lg:p-8" onSubmit={(e) => e.preventDefault()}>
           <Grupo titulo={laser ? "Tamaño del tatuaje" : "Tamaño"}>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {/* Un solo control: cuatro celdas unidas, con una escala que crece de izquierda a derecha. */}
+            <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-linea bg-tinta/40 sm:grid-cols-4">
               {TAMANOS.map((t, i) => {
                 const activo = t.id === tamano;
                 return (
                   <label
                     key={t.id}
-                    className={`relative flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-2.5 transition-[border-color,box-shadow,background-color] duration-300 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-stencil-claro ${
-                      activo ? "border-stencil bg-stencil/10 shadow-[0_0_24px_-8px_rgba(47,107,255,0.9)]" : "border-linea hover:border-ceniza/60"
+                    className={`relative flex cursor-pointer flex-col gap-1.5 border-linea px-3.5 py-3 transition-colors duration-300 has-[:focus-visible]:bg-stencil/10 ${i % 2 === 1 ? "border-l" : ""} ${i >= 2 ? "border-t sm:border-t-0" : ""} ${i === 2 ? "sm:border-l" : ""} ${
+                      activo ? "bg-stencil/15" : "hover:bg-hollin/80"
                     }`}
                   >
                     <input type="radio" name="tamano" value={t.id} checked={activo} onChange={() => setTamano(t.id)} className="sr-only" />
-                    <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center">
-                      <Estrella
-                        className={`transition-colors duration-300 ${activo ? "text-stencil drop-shadow-[0_0_8px_rgba(47,107,255,0.9)]" : "text-ceniza/45"}`}
-                        style={{ width: `${10 + i * 6}px`, height: `${10 + i * 6}px` }}
-                      />
+                    <span aria-hidden className="flex h-3.5 items-end gap-[3px]">
+                      {[0, 1, 2, 3].map((b) => (
+                        <span
+                          key={b}
+                          className={`w-[3px] rounded-full transition-colors duration-300 ${b <= i ? (activo ? "bg-stencil shadow-[0_0_6px_rgba(47,107,255,0.9)]" : "bg-ceniza/60") : "bg-linea"}`}
+                          style={{ height: `${5 + b * 3}px` }}
+                        />
+                      ))}
                     </span>
                     <span className="min-w-0 leading-tight">
                       <span className="block truncate text-[14px] font-semibold">{t.id === "manga" ? "Manga" : t.nombre}</span>
                       <span className="block truncate text-[12px] text-ceniza">{t.detalle}</span>
                     </span>
+                    <span aria-hidden className={`absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-stencil shadow-[0_0_10px_rgba(47,107,255,0.9)] transition-opacity duration-300 ${activo ? "opacity-100" : "opacity-0"}`} />
                   </label>
                 );
               })}
@@ -265,27 +269,44 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
             </Grupo>
           ) : (
           <Grupo titulo="Estilo">
-            <div key="tatuaje" className="panel-surge flex flex-wrap gap-2">
+            {/* Se elige viendo un tatuaje de ese estilo (las fotos se cambian en Web → Fotos). En el teléfono se desliza de lado. */}
+            <div key="tatuaje" className="panel-surge -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
               {ESTILOS_PRECIO.map((e) => {
                 const activo = e.id === estilo;
                 const foto = fotos[`estilo-${e.id}`]?.src;
                 return (
                   <label
                     key={e.id}
-                    className={`relative inline-flex cursor-pointer items-center gap-2 rounded-full border py-1 pr-3.5 pl-1 text-[14px] transition-[border-color,background-color,color] duration-300 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-stencil-claro ${
-                      activo ? "border-stencil bg-stencil/10 text-piel" : "border-linea text-ceniza hover:border-ceniza/60 hover:text-piel"
+                    className={`group relative aspect-[4/5] w-[7.25rem] shrink-0 cursor-pointer snap-start overflow-hidden rounded-2xl border transition-[border-color,box-shadow] duration-300 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-stencil-claro sm:w-auto ${
+                      activo ? "border-stencil shadow-[0_0_28px_-8px_rgba(47,107,255,0.95)]" : "border-linea hover:border-ceniza/60"
                     }`}
                   >
                     <input type="radio" name="estilo" value={e.id} checked={activo} onChange={() => setEstilo(e.id)} className="sr-only" />
-                    <span aria-hidden className={`relative h-8 w-8 shrink-0 overflow-hidden rounded-full border ${activo ? "border-stencil" : "border-linea"}`}>
-                      {foto ? (
-                        <Image src={foto} alt="" fill sizes="32px" className={`object-cover transition-[filter] duration-300 ${activo ? "" : "grayscale"}`} />
-                      ) : (
-                        <span className="absolute inset-0 bg-[radial-gradient(circle_at_35%_35%,rgba(138,168,255,0.8),rgba(12,31,107,0.9))]" />
-                      )}
+                    {foto ? (
+                      <Image
+                        src={foto}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1024px) 140px, 120px"
+                        className={`object-cover transition-[transform,opacity,filter] duration-500 ${activo ? "scale-105" : "opacity-55 grayscale-[35%] group-hover:opacity-85"}`}
+                      />
+                    ) : (
+                      <span aria-hidden className={`absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_30%_25%,rgba(47,107,255,0.35),transparent_60%),linear-gradient(160deg,#151a25,#07080d)] transition-opacity duration-500 ${activo ? "" : "opacity-70"}`}>
+                        <span className="font-gotica text-5xl text-piel/25">{e.nombre.charAt(0)}</span>
+                      </span>
+                    )}
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-tinta via-tinta/75 to-transparent px-2.5 pt-8 pb-2.5">
+                      <span className="block text-[14px] leading-tight font-semibold">{e.nombre}</span>
+                      <span className="block text-[11px] text-ceniza">{precios.estilos[e.id] > 0 ? `+${pesos(precios.estilos[e.id])}` : "Sin recargo"}</span>
                     </span>
-                    <span className="font-semibold">{e.nombre}</span>
-                    {precios.estilos[e.id] > 0 && <span className="text-[12px] text-ceniza">+{pesos(precios.estilos[e.id])}</span>}
+                    <span
+                      aria-hidden
+                      className={`absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-stencil text-white shadow-[0_0_12px_rgba(47,107,255,0.9)] transition-[opacity,transform] duration-300 ${activo ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}
+                    >
+                      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m5 12.5 4.5 4.5L19 7.5" />
+                      </svg>
+                    </span>
                   </label>
                 );
               })}
