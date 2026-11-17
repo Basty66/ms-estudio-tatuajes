@@ -18,10 +18,70 @@ const SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
  * ocupado lleva su número de citas además del color (el color nunca es la
  * única señal).
  */
-export default async function Agenda({ searchParams }: { searchParams: Promise<{ mes?: string; dia?: string }> }) {
+/** Calendario o lista: dos maneras de ver lo mismo. */
+function Vistas({ actual }: { actual: "calendario" | "lista" }) {
+  return (
+    <nav aria-label="Ver la agenda como" className="mb-4 inline-flex rounded-full border border-linea p-1">
+      {(
+        [
+          ["calendario", "Calendario", `${PANEL}/agenda`],
+          ["lista", "Lista", `${PANEL}/agenda?vista=lista`],
+        ] as const
+      ).map(([id, texto, href]) => (
+        <Link
+          key={id}
+          href={href}
+          aria-current={actual === id ? "page" : undefined}
+          className={`inline-flex min-h-10 items-center rounded-full px-5 text-[14px] font-semibold transition-colors ${actual === id ? "bg-piel text-tinta" : "text-ceniza hover:text-piel"}`}
+        >
+          {texto}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+/** La lista: todo lo que viene, en orden y agrupado por día, para saber al tiro cuándo hay sesión. */
+async function Lista({ hoy }: { hoy: string }) {
+  const citas = (await citasEntre(hoy, sumarDias(hoy, 90))).filter((c) => c.tipo !== "bloqueo" || c.inicio.slice(0, 10) >= hoy);
+  const porDia = new Map<string, Cita[]>();
+  for (const c of citas) porDia.set(c.inicio.slice(0, 10), [...(porDia.get(c.inicio.slice(0, 10)) ?? []), c]);
+  return (
+    <>
+      <Encabezado etiqueta="Agenda" titulo="Lo que viene" accion={<Link href={`${PANEL}/nueva`} className={claseBoton("cromo", "min-h-10 px-4 text-[14px]")}><Mas className="size-4" /> Nueva</Link>} />
+      <Vistas actual="lista" />
+      {porDia.size === 0 ? (
+        <p className="rounded-2xl border border-dashed border-linea px-4 py-8 text-center text-ceniza">Nada agendado en los próximos tres meses.</p>
+      ) : (
+        <div className="flex flex-col gap-6 lg:max-w-3xl">
+          {[...porDia].map(([d, lista]) => (
+            <section key={d}>
+              <h2 className="mb-2 flex items-baseline justify-between gap-3">
+                <Link href={`${PANEL}/agenda?mes=${d.slice(0, 7)}&dia=${d}`} className="text-[15px] font-semibold first-letter:uppercase hover:text-stencil-claro">
+                  {fechaRelativa(d, hoy)}
+                </Link>
+                {fechaRelativa(d, hoy) !== fechaLarga(d) && <span className="text-[12px] text-ceniza first-letter:uppercase">{fechaLarga(d)}</span>}
+              </h2>
+              <ul className="flex flex-col gap-2">
+                {lista.map((c) => (
+                  <li key={c.id}>
+                    <FilaCita c={c} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+export default async function Agenda({ searchParams }: { searchParams: Promise<{ mes?: string; dia?: string; vista?: string }> }) {
   await operadorDelPanel();
   const sp = await searchParams;
   const hoy = hoyChile();
+  if (sp.vista === "lista") return <Lista hoy={hoy} />;
   const dia = esFecha(sp.dia) ? sp.dia : hoy;
   const mes = esMes(sp.mes) ? sp.mes : dia.slice(0, 7);
 
@@ -50,6 +110,7 @@ export default async function Agenda({ searchParams }: { searchParams: Promise<{
         titulo={<span className="capitalize">{nombreMes(mes)}</span>}
         accion={<CambiarMes mes={mes} actual={hoy.slice(0, 7)} enlace={(m) => (m === hoy.slice(0, 7) ? `${PANEL}/agenda` : `${PANEL}/agenda?mes=${m}&dia=${m}-01`)} />}
       />
+      <Vistas actual="calendario" />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start">
         <Tarjeta className="p-3 sm:p-4 lg:sticky lg:top-6">

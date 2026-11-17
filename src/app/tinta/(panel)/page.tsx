@@ -8,7 +8,7 @@ import { Calendario, Campana, Cara, Flecha, Mas } from "@/componentes/panel/Icon
 import { sql } from "@/db/conexion";
 import { ETAPAS, seguimientosDeHoy } from "@/db/consentimientos";
 import { leerContenido } from "@/db/contenido";
-import { citasEntre, cotizacionesSinVer, saldosPendientes, sinCerrar, type Cita } from "@/db/panel";
+import { citasEntre, cotizacionesSinVer, porConfirmar, saldosPendientes, sinCerrar, type Cita } from "@/db/panel";
 import { credencialDeEsteAparato } from "@/lib/admin/biometria";
 import { clp, clpCorto } from "@/lib/admin/etiquetas";
 import { ahoraChile, fechaLarga, fechaRelativa, hoyChile, sumarDias } from "@/lib/admin/fecha";
@@ -30,7 +30,7 @@ export default async function PaginaHoy() {
   const yo = await operadorDelPanel();
   const hoy = hoyChile();
   const ahora = ahoraChile();
-  const [semana, saldos, abiertas, sinVer, bio, avisos, escribir, { mensajes }] = await Promise.all([
+  const [semana, saldos, abiertas, sinVer, bio, avisos, escribir, { mensajes }, pedidas] = await Promise.all([
     citasEntre(hoy, sumarDias(hoy, 7)),
     saldosPendientes(),
     sinCerrar(),
@@ -39,6 +39,7 @@ export default async function PaginaHoy() {
     sql`SELECT COUNT(*)::INT AS n FROM suscripciones_push WHERE usuario_id = ${yo.id}`.then((f) => (f as Array<{ n: number }>)[0].n),
     seguimientosDeHoy(hoy),
     leerContenido(),
+    porConfirmar(),
   ]);
 
   const deHoy = semana.filter((c) => c.inicio.slice(0, 10) === hoy);
@@ -137,6 +138,20 @@ export default async function PaginaHoy() {
               </span>
               <Flecha className="size-4 shrink-0 text-ceniza" />
             </Link>
+          )}
+
+          {pedidas.length > 0 && (
+            <Tarjeta className="order-1 border-dashed border-[#f59e0b]/50 xl:order-none">
+              <TituloBloque accion={<span className="text-[13px] font-semibold text-[#fbbf24] tabular-nums">{pedidas.length}</span>}>Por confirmar</TituloBloque>
+              <p className="-mt-1 mb-3 text-[13px] text-ceniza">Horas pedidas desde la web. Confírmalas con el precio y el abono.</p>
+              <ul className="flex flex-col gap-2">
+                {pedidas.map((c) => (
+                  <li key={c.id}>
+                    <FilaCita c={c} conFecha />
+                  </li>
+                ))}
+              </ul>
+            </Tarjeta>
           )}
 
           {porResolver.length > 0 && (
