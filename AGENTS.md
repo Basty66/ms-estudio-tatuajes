@@ -11,8 +11,9 @@ Contexto para asistentes de código que trabajen en este repo.
 Sitio del estudio (Av. Manso 529, Melipilla) + panel privado del tatuador.
 
 - Producción: `https://tatuajes-azure.vercel.app` (Vercel, región `gru1`).
-- La v2 vive en la rama `v2`. **`master` todavía tiene el sitio viejo (Vite + Telegram) y el proyecto
-  auto-despliega desde ahí: un push a `master` vuelve a poner el sitio viejo.**
+- Se trabaja en la rama `v2` y se publica con `vercel --prod`. Desde el 2026-11-17 `master` quedó igual
+  a `v2` (adelantada sin forzar): el sitio viejo ya no está en ninguna rama. El proyecto auto-despliega
+  desde `master`, así que solo se adelanta a `v2` cuando algo está listo para producción.
 
 ## Stack
 
@@ -128,8 +129,11 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
 - [x] `db/003_consentimientos.sql` en `production` (2026-11-17) y publicado.
 - [x] `db/004` y `db/005` (láser en el cotizador y su seguimiento) en `production`, publicado (2026-11-17).
 - [ ] Revisar los precios del láser (vienen con valores de partida) en Web → Precios del cotizador.
-- [ ] Borrar el proyecto viejo de Neon (con los consentimientos de prueba del sitio viejo).
-- [ ] Quitar de Vercel las variables del sitio viejo y rotar sus credenciales.
+- [x] Borrado lo del sitio viejo (2026-11-17): proyecto viejo de Neon, variables de Telegram,
+      `ADMIN_PASSWORD` y `JWT_SECRET` en Vercel, y los reels y la imagen del blog del almacén público.
+- [x] `db/006` (código de cotización de la tarjeta de gracias) en `production`.
+- [ ] Borrar el proyecto Vercel `matness-studio` (copia vieja) y revocar el bot de Telegram en BotFather.
+- [ ] Dominio propio: conectarlo en Vercel y cambiar las URLs `tatuajes-azure.vercel.app` del código.
 - [ ] Probar Face ID y avisos en un iPhone y un Android reales, con la app instalada.
 
 <!-- BEGIN:nextjs-agent-rules -->
