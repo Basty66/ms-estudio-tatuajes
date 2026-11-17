@@ -12,7 +12,7 @@ import { Estrella } from "./Marquesina";
 import { Ornamento } from "./Ornamento";
 import { Titulo } from "./Titulo";
 
-const PASOS = ["Cotizas", "Reservas con abono", "Apruebas el diseño", "Te tatúas"];
+const PASOS = ["Cotizas", "Reservas con abono", "Apruebas el diseño", "Firmas desde tu teléfono", "Te tatúas"];
 
 function Cifra({ valor }: { valor: number }) {
   const mv = useMotionValue(valor);

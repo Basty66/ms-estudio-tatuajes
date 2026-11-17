@@ -96,7 +96,7 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
         </section>
       )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta>
             <p className="text-[clamp(1.4rem,5vw,1.9rem)] leading-tight font-semibold first-letter:uppercase">{fechaRelativa(c.inicio)}</p>

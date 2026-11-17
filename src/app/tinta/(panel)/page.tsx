@@ -71,10 +71,10 @@ export default async function PaginaHoy() {
         <Cifra texto={sinVer === 1 ? "cotización nueva" : "cotizaciones nuevas"} valor={sinVer} tono={sinVer ? "azul" : "neutro"} href={`${PANEL}/cotizaciones`} />
       </div>
 
-      <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] lg:items-start lg:gap-5">
-        {/* En el teléfono las dos columnas se deshacen y manda el `order`. */}
-        <div className="contents lg:flex lg:flex-col lg:gap-5">
-          <Tarjeta className="order-2 lg:order-none">
+      <div className="mt-4 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start xl:gap-5">
+        {/* En el teléfono y la tablet las dos columnas se deshacen y manda el `order`. */}
+        <div className="contents xl:flex xl:flex-col xl:gap-5">
+          <Tarjeta className="order-2 xl:order-none">
             <TituloBloque accion={<Link href={`${PANEL}/agenda`} className="text-[13px] text-stencil-claro">Agenda</Link>}>Hoy</TituloBloque>
             {deHoy.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-6 text-center">
@@ -96,7 +96,7 @@ export default async function PaginaHoy() {
             )}
           </Tarjeta>
 
-          <Tarjeta className="order-4 lg:order-none">
+          <Tarjeta className="order-4 xl:order-none">
             <TituloBloque>Próximos días</TituloBloque>
             {porDia.size === 0 ? (
               <p className="py-2 text-[14px] text-ceniza">Nada agendado en los próximos 7 días.</p>
@@ -121,11 +121,11 @@ export default async function PaginaHoy() {
           </Tarjeta>
         </div>
 
-        <div className="contents lg:flex lg:flex-col lg:gap-5">
+        <div className="contents xl:flex xl:flex-col xl:gap-5">
           {(!bio || avisos === 0) && (
             <Link
               href={`${PANEL}/cuenta`}
-              className="order-1 flex items-center gap-3 rounded-2xl border border-stencil/50 bg-stencil/10 px-4 py-3 transition-colors hover:bg-stencil/15 lg:order-none"
+              className="order-1 flex items-center gap-3 rounded-2xl border border-stencil/50 bg-stencil/10 px-4 py-3 transition-colors hover:bg-stencil/15 xl:order-none"
             >
               <span className="flex shrink-0 -space-x-1.5 text-stencil-claro">
                 {!bio && <Cara className="size-5" />}
@@ -140,7 +140,7 @@ export default async function PaginaHoy() {
           )}
 
           {porResolver.length > 0 && (
-            <Tarjeta className="order-3 border-[#f59e0b]/30 lg:order-none">
+            <Tarjeta className="order-3 border-[#f59e0b]/30 xl:order-none">
               <TituloBloque accion={atrasado > 0 && <span className="text-[13px] font-semibold text-[#fbbf24] tabular-nums">{clp(atrasado)}</span>}>
                 Por resolver
               </TituloBloque>
@@ -161,7 +161,7 @@ export default async function PaginaHoy() {
           )}
 
           {escribir.length > 0 && (
-            <Tarjeta className="order-3 lg:order-none">
+            <Tarjeta className="order-3 xl:order-none">
               <TituloBloque>Cuidados por WhatsApp</TituloBloque>
               <ul className="flex flex-col">
                 {escribir.map((e) => (

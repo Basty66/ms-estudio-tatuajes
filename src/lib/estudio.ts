@@ -25,8 +25,8 @@ export const ESTUDIO = {
 export const SECCIONES = [
   { id: "trabajos", texto: "Trabajos", etiqueta: "Portafolio", detalle: "Lo último que salió del estudio", img: "/trabajos/pared-01.jpg", corto: true },
   { id: "tatuador", texto: "El tatuador", etiqueta: "Quién tatúa", detalle: "Su historia, su formación y su estudio", img: "/trabajos/tatuador-1.jpg", corto: true },
-  { id: "proceso", texto: "Una sesión", etiqueta: "Paso a paso", detalle: "Del stencil a la piel, paso a paso", img: "/trabajos/pared-15.jpg", corto: true },
   { id: "cotiza", texto: "Cotiza", etiqueta: "Precio al instante", detalle: "Tu rango de precio en un minuto", img: "/trabajos/pared-02.jpg", corto: false },
+  { id: "proceso", texto: "Una sesión", etiqueta: "Paso a paso", detalle: "Del stencil a la piel, paso a paso", img: "/trabajos/pared-15.jpg", corto: true },
   { id: "laser", texto: "Borrado láser", etiqueta: "Otro servicio", detalle: "Borrar del todo o aclarar para un cover", img: "/videos/laser.jpg", corto: true },
   { id: "cuidados", texto: "Cuidados", etiqueta: "Después de la sesión", detalle: "El primer mes, día por día", img: "/trabajos/pared-06.jpg", corto: false },
   { id: "preguntas", texto: "Preguntas", etiqueta: "Dudas frecuentes", detalle: "Dolor, pagos, edad y retoques", img: "/images/tatuaje3.jpg", corto: false },
@@ -201,6 +201,10 @@ export const PREGUNTAS = [
   {
     p: "¿Cuánto cuesta un retoque?",
     r: "Según el tamaño y la complejidad. Mándame una foto por WhatsApp y te paso el valor exacto.",
+  },
+  {
+    p: "¿Qué pasa con mis datos?",
+    r: "Antes de la sesión firmas un consentimiento desde tu teléfono, con unas preguntas de salud. Solo lo ve el estudio, se guarda en un espacio privado y se borra solo a los 5 años. Puedes pedir verlo o borrarlo cuando quieras. El detalle está en Privacidad, al final de la página.",
   },
   {
     p: "¿Haces borrado con láser?",

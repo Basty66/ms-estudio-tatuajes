@@ -51,7 +51,7 @@ export default async function Agenda({ searchParams }: { searchParams: Promise<{
         accion={<CambiarMes mes={mes} actual={hoy.slice(0, 7)} enlace={(m) => (m === hoy.slice(0, 7) ? `${PANEL}/agenda` : `${PANEL}/agenda?mes=${m}&dia=${m}-01`)} />}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start">
         <Tarjeta className="p-3 sm:p-4 lg:sticky lg:top-6">
           <div className="grid grid-cols-7 text-center text-[12px] font-semibold text-ceniza">
             {SEMANA.map((d, i) => (

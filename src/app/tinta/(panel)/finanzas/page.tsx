@@ -41,7 +41,7 @@ export default async function Finanzas({ searchParams }: { searchParams: Promise
         accion={<CambiarMes mes={mes} actual={hoy.slice(0, 7)} enlace={(m) => `${PANEL}/finanzas${m === hoy.slice(0, 7) ? "" : `?mes=${m}`}`} />}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta>
             <p className="text-[13px] text-ceniza">Resultado del mes</p>

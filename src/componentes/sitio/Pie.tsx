@@ -5,6 +5,15 @@ import { BotonMagnetico } from "./BotonMagnetico";
 import { NombreCromo } from "./NombreCromo";
 import { Ornamento } from "./Ornamento";
 
+function Escudo() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4 text-stencil-claro" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6z" />
+      <path d="m9.5 12 1.8 1.8 3.4-3.6" />
+    </svg>
+  );
+}
+
 export function Pie({ estudio }: { estudio: DatosEstudio }) {
   return (
     <footer id="ubicacion" className="relative overflow-hidden border-t border-linea/70">
@@ -71,16 +80,15 @@ export function Pie({ estudio }: { estudio: DatosEstudio }) {
         <Ornamento tipo="filigrana" className="relative mx-auto mb-6 block w-64 opacity-70" flotar={0} />
         <NombreCromo animar={false} className="w-full opacity-90" />
       </div>
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 pt-6 pb-28 text-[13px] text-ceniza sm:flex-row sm:justify-between sm:px-8 lg:pr-28 lg:pb-8">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 pt-6 pb-28 text-[13px] text-ceniza sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:pr-28 lg:pb-8">
         <span>
-          © {new Date().getFullYear()} {estudio.nombreLargo}
+          © {new Date().getFullYear()} {estudio.nombreLargo} · Hecho en {estudio.comuna}
         </span>
-        <span className="flex gap-5">
-          <a href="/privacidad" className="hover:text-piel">
-            Privacidad
-          </a>
-          <span>Hecho en {estudio.comuna}</span>
-        </span>
+        {/* Lo que la gente busca al final de una web: cómo se cuidan sus datos. */}
+        <a href="/privacidad" className="-mx-2 inline-flex min-h-11 items-center gap-2 self-start rounded-full px-2 text-[14px] text-piel/80 transition-colors hover:text-piel sm:self-auto">
+          <Escudo />
+          Privacidad y datos
+        </a>
       </div>
     </footer>
   );

@@ -105,7 +105,7 @@ export function EditarPrecios({ inicial }: { inicial: Precios }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta className="border-stencil/40">
             <TituloBloque>Probar</TituloBloque>
@@ -170,7 +170,7 @@ export function EditarPrecios({ inicial }: { inicial: Precios }) {
         <Tarjeta>
           <TituloBloque>Recargo por zona</TituloBloque>
           <p className="-mt-1 mb-3 text-[13px] text-ceniza">Piel fina, hueso cerca o mucho movimiento. 10 % = el rango sube un 10 %.</p>
-          <ul className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <ul className="grid gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             {[...ZONAS]
               .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
               .map((z) => (
@@ -196,7 +196,7 @@ export function EditarTatuador({ inicial }: { inicial: TextosTatuador }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta>
             <TituloBloque>Presentación</TituloBloque>
@@ -246,7 +246,7 @@ export function EditarCuidados({ inicial }: { inicial: TextosCuidados }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <ol className="flex flex-col gap-4 lg:gap-5">
           {c.etapas.map((x, i) => (
             <li key={i}>
@@ -287,7 +287,7 @@ export function EditarConsentimiento({ inicial }: { inicial: TextosConsentimient
   const c = e.valor;
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta>
             <TituloBloque>Riesgos del tatuaje</TituloBloque>
@@ -402,7 +402,7 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
                 <Flecha className={`size-4 shrink-0 text-ceniza transition-transform duration-300 ${abiertoEste ? "rotate-90" : ""}`} />
               </button>
               {abiertoEste && (
-                <div className="panel-surge grid grid-cols-1 gap-4 px-4 pb-5 sm:px-5 lg:grid-cols-2 lg:gap-6">
+                <div className="panel-surge grid grid-cols-1 gap-4 px-4 pb-5 sm:px-5 xl:grid-cols-2 xl:gap-6">
                   <div className="min-w-0">
                     <Campo etiqueta="Mensaje" valor={m[clave]} cambiar={(v) => e.cambiar({ ...m, [clave]: v })} max={800} lineas={clave === "confirmacion" ? 12 : 5} />
                     <p className="mt-2 flex flex-wrap gap-1.5 text-[12px] text-ceniza">

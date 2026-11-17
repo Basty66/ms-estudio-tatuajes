@@ -32,7 +32,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
     <>
       <Encabezado volver={`${PANEL}/clientes`} titulo={c.nombre} accion={<EditarCliente c={c} />} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-3 gap-2">
             <Cifra texto={hechas.length === 1 ? "sesión" : "sesiones"} valor={hechas.length} />

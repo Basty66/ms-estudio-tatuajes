@@ -319,6 +319,9 @@ function MenuCompleto({ activa, cerrar }: { activa: string | null; cerrar: () =>
             <a href={`https://instagram.com/${estudio.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
               @{estudio.instagram}
             </a>
+            <a href="/privacidad" onClick={cerrar} className="hover:text-piel">
+              Privacidad
+            </a>
             <span className="w-full text-ceniza/80 lg:w-auto">
               {estudio.direccion}, {estudio.comuna}
             </span>
@@ -440,6 +443,9 @@ function PanelEscritorio({ activa, cerrar }: { activa: string | null; cerrar: ()
             </a>
             <a href={`https://instagram.com/${estudio.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-piel">
               @{estudio.instagram}
+            </a>
+            <a href="/privacidad" onClick={cerrar} className="hover:text-piel">
+              Privacidad
             </a>
           </span>
         </div>

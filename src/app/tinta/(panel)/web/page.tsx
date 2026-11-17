@@ -51,7 +51,7 @@ export default async function Web() {
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:gap-8">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start xl:gap-8">
         {GRUPOS.map((g) => (
           <section key={g.titulo}>
             <h2 className="mb-3 px-1 text-[12px] font-semibold tracking-[0.16em] text-ceniza uppercase">{g.titulo}</h2>
