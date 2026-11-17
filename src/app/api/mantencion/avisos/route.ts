@@ -1,6 +1,8 @@
 import { sql } from "@/db/conexion";
 import { seguimientosDeHoy } from "@/db/consentimientos";
-import { citasEntre, resumenCotizaciones, sinCerrar } from "@/db/panel";
+import { leerContenido } from "@/db/contenido";
+import { citasEntre, porConfirmar, resumenCotizaciones, sinCerrar } from "@/db/panel";
+import { liberarVencidas } from "@/db/reservas";
 import { borrarPrivado } from "@/lib/admin/almacen";
 import { avisar } from "@/lib/admin/avisos";
 import { clp, nombreDonde, TIPO } from "@/lib/admin/etiquetas";
@@ -32,10 +34,18 @@ export async function GET(request: Request) {
 
   const hoy = hoyChile();
   const manana = sumarDias(hoy, 1);
-  const [citas, abiertas, mensajes, cotizaciones] = await Promise.all([citasEntre(hoy, manana), sinCerrar(), seguimientosDeHoy(hoy), resumenCotizaciones()]);
+  // Las horas pedidas que nadie confirmó a tiempo se liberan antes de contar.
+  const liberadas = simular ? 0 : await liberarVencidas((await leerContenido()).reservas.vence);
+  const [citas, abiertas, mensajes, cotizaciones, pedidas] = await Promise.all([
+    citasEntre(hoy, manana),
+    sinCerrar(),
+    seguimientosDeHoy(hoy),
+    resumenCotizaciones(),
+    porConfirmar(),
+  ]);
   const sesiones = citas.filter((c) => c.tipo !== "bloqueo" && c.estado === "confirmada");
   const linea = (c: (typeof sesiones)[number]) =>
-    `${hora(c.inicio)} ${c.cliente} · ${nombreDonde(c.zona, c.lado) ?? TIPO[c.tipo]}${c.saldo ? ` · cobrar ${clp(c.saldo)}` : ""}${c.consentimiento === "firmado" ? "" : " · sin consentimiento"}`;
+    `${hora(c.inicio)} ${c.cliente} · ${nombreDonde(c.zona, c.lado) ?? TIPO[c.tipo]}${c.saldo ? ` · cobrar ${clp(c.saldo)}` : ""}${c.pagado === 0 && c.precio !== 0 ? " · sin abono" : ""}${c.consentimiento === "firmado" ? "" : " · sin consentimiento"}`;
   const deHoy = sesiones.filter((c) => c.inicio.startsWith(hoy));
   const deManana = sesiones.filter((c) => c.inicio.startsWith(manana));
 
@@ -46,18 +56,19 @@ export async function GET(request: Request) {
     // Los mensajes salen del WhatsApp del estudio (gratis): el aviso solo recuerda a quién escribir.
     mensajes.length ? `${mensajes.length} ${mensajes.length === 1 ? "mensaje de cuidados o próxima sesión" : "mensajes de cuidados o próxima sesión"} por mandar.` : null,
     cotizaciones.nueva ? `${cotizaciones.nueva} ${cotizaciones.nueva === 1 ? "cotización" : "cotizaciones"} de la web sin responder.` : null,
+    pedidas.length ? `${pedidas.length} ${pedidas.length === 1 ? "hora pedida por confirmar" : "horas pedidas por confirmar"} (precio y abono).` : null,
   ].filter(Boolean);
 
-  if (partes.length === 0) return Response.json({ enviado: false, motivo: "nada que avisar", limpieza });
+  if (partes.length === 0) return Response.json({ enviado: false, motivo: "nada que avisar", limpieza, liberadas });
 
   const aviso = {
-    titulo: deHoy.length ? `Hoy: ${deHoy.length} ${deHoy.length === 1 ? "sesión" : "sesiones"}` : deManana.length ? `Mañana: ${deManana.length} ${deManana.length === 1 ? "sesión" : "sesiones"}` : "Citas sin cerrar",
+    titulo: deHoy.length ? `Hoy: ${deHoy.length} ${deHoy.length === 1 ? "sesión" : "sesiones"}` : deManana.length ? `Mañana: ${deManana.length} ${deManana.length === 1 ? "sesión" : "sesiones"}` : "Resumen del día",
     cuerpo: partes.join("\n\n"),
     url: PANEL,
     tag: "resumen-diario",
   };
   if (simular) return Response.json({ simulado: aviso });
-  return Response.json({ enviado: true, ...(await avisar(aviso)), limpieza });
+  return Response.json({ enviado: true, ...(await avisar(aviso)), limpieza, liberadas });
 }
 
 async function limpiarConsentimientos(): Promise<{ vencidos: number; links: number }> {
