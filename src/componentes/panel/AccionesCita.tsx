@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { borrarPago, cambiarEstadoCita, registrarPago } from "@/app/tinta/_acciones/panel";
+import { borrarPago, cambiarEstadoCita, confirmarReserva, rechazarReserva, registrarPago } from "@/app/tinta/_acciones/panel";
 import { reducirImagen } from "@/lib/admin/imagenes";
 import { clp } from "@/lib/admin/etiquetas";
 import { PANEL } from "@/lib/admin/ruta";
@@ -224,5 +224,96 @@ export function FilaPago({
         <Papelera className="size-5" />
       </button>
     </li>
+  );
+}
+
+/**
+ * Confirmar una hora pedida desde la web: el precio final y el abono (con su
+ * comprobante, si llegó). Con eso la cita pasa a confirmada y se puede
+ * mandar la confirmación y el consentimiento.
+ */
+export function ConfirmarReserva({ citaId, sugerido, rechazo }: { citaId: number; sugerido: string | null; rechazo: string | null }) {
+  const router = useRouter();
+  const [precio, setPrecio] = useState("");
+  const [abono, setAbono] = useState("");
+  const [medio, setMedio] = useState("transferencia");
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  const [pendiente, iniciar] = useTransition();
+
+  async function confirmar(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setGuardando(true);
+    try {
+      const f = new FormData();
+      f.set("cita", String(citaId));
+      f.set("precio", precio.replace(/\D/g, ""));
+      f.set("abono", abono.replace(/\D/g, ""));
+      f.set("medio", medio);
+      if (archivo) {
+        const reducida = await reducirImagen(archivo);
+        f.set("comprobante", new File([reducida], archivo.name, { type: reducida.type || archivo.type }));
+      }
+      const r = await confirmarReserva(f);
+      if (!r.ok) return setError(r.error);
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message || "No se pudo confirmar.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <form onSubmit={confirmar} className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        <label className="min-w-0">
+          <Etiqueta nota={sugerido ? "cotizó" : undefined}>Precio final</Etiqueta>
+          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder={sugerido ?? "$"} className={`${campo} tabular-nums`} />
+        </label>
+        <label className="min-w-0">
+          <Etiqueta>Abono</Etiqueta>
+          <input value={abono} onChange={(e) => setAbono(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
+        </label>
+      </div>
+      {sugerido && <p className="-mt-2 text-[12px] text-ceniza">En la web cotizó {sugerido}.</p>}
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["transferencia", "Transferencia"],
+          ["efectivo", "Efectivo"],
+        ].map(([v, t]) => (
+          <Chip key={v} activo={medio === v} onClick={() => setMedio(v)}>
+            {t}
+          </Chip>
+        ))}
+      </div>
+      <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-linea px-4 text-[14px] text-ceniza hover:border-stencil/60 hover:text-piel">
+        <Subir className="size-5 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{archivo ? archivo.name : "Comprobante del abono (opcional)"}</span>
+        <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
+      </label>
+      {error && <p className="text-[14px] font-semibold text-[#ff8a80]">{error}</p>}
+      <Boton type="submit" disabled={guardando} className="w-full">
+        {guardando ? "Confirmando…" : "Confirmar la hora"}
+      </Boton>
+      <a
+        href={rechazo ?? "#"}
+        target={rechazo ? "_blank" : undefined}
+        rel="noopener noreferrer"
+        onClick={(e) => {
+          if (!window.confirm("¿Liberar esta hora? Queda disponible para otra persona.")) return e.preventDefault();
+          if (!rechazo) e.preventDefault();
+          iniciar(async () => {
+            await rechazarReserva(citaId);
+            router.refresh();
+          });
+        }}
+        className={`text-center text-[14px] text-ceniza hover:text-[#ff8a80] ${pendiente ? "pointer-events-none opacity-40" : ""}`}
+      >
+        No puedo esa hora
+      </a>
+    </form>
   );
 }

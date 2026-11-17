@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EstadoCita, FilaPago, NuevoPago } from "@/componentes/panel/AccionesCita";
+import { ConfirmarReserva, EstadoCita, FilaPago, NuevoPago } from "@/componentes/panel/AccionesCita";
 import { claseBoton } from "@/componentes/panel/Boton";
 import { BotonSeguimiento, ConsentimientoCita } from "@/componentes/panel/Consentimiento";
 import { Encabezado, Tarjeta, TituloBloque } from "@/componentes/panel/Encabezado";
@@ -10,8 +10,8 @@ import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
 import { leerContenido } from "@/db/contenido";
 import { consentimientoDeCita, etapasPara, fotosDeCita, seguimientosDeCita } from "@/db/consentimientos";
 import { cita as leerCita, cotizacionDeCita, pagosDeCita } from "@/db/panel";
-import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, nombreZona, TIPO } from "@/lib/admin/etiquetas";
-import { ahoraChile, duracionTexto, fechaCorta, fechaLarga, fechaRelativa, hora, hoyChile, minutosEntre, sumarDias } from "@/lib/admin/fecha";
+import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, nombreZona, textoCotizacion, TIPO } from "@/lib/admin/etiquetas";
+import { ahoraChile, duracionTexto, fechaCorta, fechaLarga, fechaRelativa, hora, hoyChile, minutosEntre, sumarDias, sumarMinutos } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
 import { formatearTelefono } from "@/lib/admin/telefono";
@@ -36,7 +36,7 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
   await operadorDelPanel();
   const c = await leerCita(Number((await params).id) || 0);
   if (!c || c.tipo === "bloqueo") notFound();
-  const [pagos, { estudio, mensajes }, consentimiento, enviados, fotos, cotizada] = await Promise.all([
+  const [pagos, { estudio, mensajes, reservas }, consentimiento, enviados, fotos, cotizada] = await Promise.all([
     pagosDeCita(c.id),
     leerContenido(),
     consentimientoDeCita(c.id),
@@ -49,6 +49,10 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
   const duracion = duracionTexto(minutosEntre(c.inicio, c.fin));
   const empezo = c.inicio <= ahoraChile();
   const hecha = c.estado === "completada";
+  const pedida = c.estado === "solicitada";
+  // Lo que cotizó en la web, para sugerir el precio al confirmar.
+  const sugerido = cotizada ? textoCotizacion(cotizada).rango : (c.notas?.match(/\$[\d.]+ a \$[\d.]+/)?.[0] ?? null);
+  const seLibera = sumarMinutos(c.creada, reservas.vence * 60);
   const activa = c.estado === "confirmada" || hecha;
   const manana = fechaRelativa(c.inicio).toLowerCase() === "mañana";
 
@@ -83,6 +87,27 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
           </Link>
         }
       />
+
+      {pedida && (
+        <section aria-label="Hora pedida desde la web" className="mb-4 grid gap-4 rounded-3xl border border-dashed border-[#f59e0b]/60 bg-[#f59e0b]/[0.05] p-4 sm:p-5 lg:mb-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
+          <div>
+            <h2 className="text-[17px] font-semibold text-[#fbbf24]">Pidió esta hora desde la web</h2>
+            <p className="mt-1 text-[14px] leading-relaxed text-ceniza">
+              La hora está apartada. Confírmala con el precio final y el abono; si no, se libera el {fechaCorta(seLibera)} a las {hora(seLibera)}.
+            </p>
+            {c.telefono && (
+              <a href={`https://wa.me/${c.telefono}`} target="_blank" rel="noopener noreferrer" className={claseBoton("linea", "mt-4 min-h-11 px-4 text-[14px]")}>
+                <IconoWhatsapp className="size-5 shrink-0" /> Escribirle para el abono
+              </a>
+            )}
+          </div>
+          <ConfirmarReserva
+            citaId={c.id}
+            sugerido={sugerido}
+            rechazo={c.telefono ? whatsapp(c.telefono, rellenar(mensajes.reservaRechazada, { nombre, fecha: cuando, link: `${SITIO}/#cotiza` })) : null}
+          />
+        </section>
+      )}
 
       {alertas.length > 0 && (
         <section aria-label="Antes de empezar" className="mb-4 rounded-3xl border border-sangre/50 bg-sangre/[0.08] p-4 sm:p-5 lg:mb-5">
@@ -121,16 +146,23 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
                   <IconoWhatsapp className="size-5 shrink-0" /> Escribirle por WhatsApp
                 </a>
               ))}
-            <div className="mt-5 border-t border-linea pt-4">
-              <EstadoCita id={c.id} estado={c.estado} empezo={empezo} />
-            </div>
+            {!pedida && (
+              <div className="mt-5 border-t border-linea pt-4">
+                <EstadoCita id={c.id} estado={c.estado} empezo={empezo} />
+              </div>
+            )}
           </Tarjeta>
 
           <Tarjeta>
             <TituloBloque>Consentimiento</TituloBloque>
-            <ConsentimientoCita citaId={c.id} resumen={consentimiento} telefono={c.telefono} activa={activa} hecha={hecha} />
+            {pedida ? (
+              <p className="text-[14px] text-ceniza">Se pide cuando confirmes la hora.</p>
+            ) : (
+              <ConsentimientoCita citaId={c.id} resumen={consentimiento} telefono={c.telefono} activa={activa} hecha={hecha} />
+            )}
           </Tarjeta>
 
+          {!pedida && (
           <Tarjeta>
             <TituloBloque>Pagos</TituloBloque>
             {c.precio == null ? (
@@ -170,6 +202,7 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
               <NuevoPago citaId={c.id} saldo={c.saldo} tieneAbono={pagos.some((p) => p.tipo === "abono")} />
             </div>
           </Tarjeta>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 lg:gap-5">

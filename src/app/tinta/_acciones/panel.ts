@@ -352,6 +352,69 @@ export async function borrarPago(id: number): Promise<Respuesta> {
   return { ok: true };
 }
 
+/* ------------------------------------------------- reservas de la web -- */
+
+/**
+ * Confirma una hora pedida desde la web: el precio final y, si ya abonó, el
+ * abono con su comprobante. Todo en una sentencia y solo si sigue "por
+ * confirmar"; si no, el comprobante subido se borra (no queda huérfano).
+ */
+export async function confirmarReserva(formulario: FormData): Promise<Respuesta> {
+  const u = await operador();
+  if (!u) return SIN_SESION;
+  const citaId = entero(formulario.get("cita"), 1, 2e9);
+  const precioTexto = String(formulario.get("precio") ?? "").replace(/\D/g, "");
+  const abonoTexto = String(formulario.get("abono") ?? "").replace(/\D/g, "");
+  const precio = precioTexto ? entero(precioTexto, 0, 50_000_000) : null;
+  const abono = abonoTexto ? entero(abonoTexto, 1, 50_000_000) : null;
+  const medio = formulario.get("medio") === "efectivo" ? "efectivo" : "transferencia";
+  if (!citaId) return { ok: false, error: "Esa cita no existe." };
+  if (precioTexto && precio === null) return { ok: false, error: "El precio no es un número válido." };
+  if (abonoTexto && !abono) return { ok: false, error: "El abono no es un número válido." };
+
+  const archivo = formulario.get("comprobante");
+  let ruta: string | null = null;
+  if (archivo instanceof File && archivo.size > 0) {
+    if (!abono) return { ok: false, error: "Anota el monto del abono del comprobante." };
+    if (!hayPrivado) return { ok: false, error: "Falta conectar el almacén privado de comprobantes en Vercel." };
+    if (archivo.size > 4 * 1024 * 1024) return { ok: false, error: "El archivo pesa más de 4 MB." };
+    try {
+      ruta = await guardarComprobante(citaId, archivo);
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+
+  const filas = (await sql`
+    WITH cita AS (
+      UPDATE citas SET estado = 'confirmada', precio = COALESCE(${precio}::INT, precio)
+      WHERE id = ${citaId} AND estado = 'solicitada'
+      RETURNING id
+    ),
+    pago AS (
+      INSERT INTO pagos (cita_id, monto, tipo, medio, comprobante, anotado_por)
+      SELECT id, ${abono}::INT, 'abono', ${medio}, ${ruta}, ${u.nombre} FROM cita WHERE ${abono}::INT IS NOT NULL
+    )
+    SELECT id FROM cita
+  `) as Array<{ id: number }>;
+  if (filas.length === 0) {
+    if (ruta) await borrarPrivado(ruta).catch(() => undefined);
+    return { ok: false, error: "Esta hora ya no está por confirmar: quizás venció o ya se confirmó." };
+  }
+  refrescar(`${PANEL}/cita/${citaId}`, `${PANEL}/agenda`);
+  return { ok: true };
+}
+
+/** No se puede la hora pedida: se libera para que otra persona la tome. */
+export async function rechazarReserva(id: number): Promise<Respuesta> {
+  if (!(await operador())) return SIN_SESION;
+  const citaId = entero(id, 1, 2e9);
+  if (!citaId) return { ok: false, error: "Esa cita no existe." };
+  await sql`UPDATE citas SET estado = 'cancelada' WHERE id = ${citaId} AND estado = 'solicitada'`;
+  refrescar(`${PANEL}/cita/${citaId}`, `${PANEL}/agenda`);
+  return { ok: true };
+}
+
 /* -------------------------------------------------------------- gastos -- */
 
 const CATEGORIAS = ["insumos", "arriendo", "servicios", "publicidad", "equipos", "otro"] as const;
