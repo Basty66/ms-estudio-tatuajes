@@ -83,15 +83,18 @@ export function FormularioCita({
   cliente: clienteInicial,
   edicion,
   precios,
+  desde,
 }: {
   precios: Precios;
   hoy: string;
   fechaInicial: string;
   cliente?: ClienteElegido | null;
   edicion?: { id: number; datos: DatosCita & { cliente: string } };
+  /** Agendar desde una cotización de la web: llega con lo cotizado y queda unida a la cita. */
+  desde?: { id: number; codigo: string | null; rango: string; datos: Partial<DatosCita> };
 }) {
   const router = useRouter();
-  const d = edicion?.datos;
+  const d: Partial<DatosCita> | undefined = edicion?.datos ?? desde?.datos;
   const [cliente, setCliente] = useState<ClienteElegido | null>(clienteInicial ?? null);
   const [busqueda, setBusqueda] = useState("");
   const [sugeridos, setSugeridos] = useState<ClienteElegido[]>([]);
@@ -173,6 +176,7 @@ export function FormularioCita({
       notas,
       abono: abono.trim() === "" ? null : Number(abono.replace(/\D/g, "")),
       medioAbono,
+      cotizacion: desde?.id ?? null,
     };
     try {
       let id: number;
@@ -197,6 +201,12 @@ export function FormularioCita({
   let n = 0;
   return (
     <form onSubmit={guardar} className="flex min-w-0 flex-col gap-4 lg:max-w-2xl">
+      {desde && (
+        <p className="rounded-2xl border border-stencil/50 bg-stencil/10 px-4 py-3 text-[14px] leading-snug">
+          <span className="font-semibold">Desde la cotización {desde.codigo ?? "de la web"}</span>
+          <span className="text-ceniza"> · {desde.rango}. Ya viene lo que cotizó: falta quién, cuándo y el valor.</span>
+        </p>
+      )}
       {/* ---------- 1. Cliente ---------- */}
       {!edicion && (
         <Paso n={++n} titulo="Cliente">

@@ -5,11 +5,11 @@ import { claseBoton } from "@/componentes/panel/Boton";
 import { BotonSeguimiento, ConsentimientoCita } from "@/componentes/panel/Consentimiento";
 import { Encabezado, Tarjeta, TituloBloque } from "@/componentes/panel/Encabezado";
 import { FotoDeCita } from "@/componentes/panel/Galeria";
-import { Check, Telefono } from "@/componentes/panel/Iconos";
+import { Check, Flecha, Telefono } from "@/componentes/panel/Iconos";
 import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
 import { leerContenido } from "@/db/contenido";
 import { consentimientoDeCita, etapasPara, fotosDeCita, seguimientosDeCita } from "@/db/consentimientos";
-import { cita as leerCita, pagosDeCita } from "@/db/panel";
+import { cita as leerCita, cotizacionDeCita, pagosDeCita } from "@/db/panel";
 import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, nombreZona, TIPO } from "@/lib/admin/etiquetas";
 import { ahoraChile, duracionTexto, fechaCorta, fechaLarga, fechaRelativa, hora, hoyChile, minutosEntre, sumarDias } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
@@ -36,12 +36,13 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
   await operadorDelPanel();
   const c = await leerCita(Number((await params).id) || 0);
   if (!c || c.tipo === "bloqueo") notFound();
-  const [pagos, { estudio, mensajes }, consentimiento, enviados, fotos] = await Promise.all([
+  const [pagos, { estudio, mensajes }, consentimiento, enviados, fotos, cotizada] = await Promise.all([
     pagosDeCita(c.id),
     leerContenido(),
     consentimientoDeCita(c.id),
     seguimientosDeCita(c.id),
     fotosDeCita(c.id),
+    cotizacionDeCita(c.id),
   ]);
   const nombre = (c.cliente ?? "").split(" ")[0];
   const cuando = `${fechaLarga(c.inicio)} a las ${hora(c.inicio)}`;
@@ -182,6 +183,14 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
               {c.descripcion && <Dato t="Diseño" v={c.descripcion} ancho />}
               {c.notas && <Dato t="Notas" v={c.notas} ancho />}
             </dl>
+            {cotizada && (
+              <Link href={`${PANEL}/cotizaciones?q=${cotizada.codigo ?? ""}`} className="mt-4 flex items-center justify-between gap-3 border-t border-linea pt-3 text-[13px] text-ceniza hover:text-piel">
+                <span>
+                  Vino de la cotización <span className="font-semibold text-piel">{cotizada.codigo ?? "de la web"}</span>
+                </span>
+                <Flecha className="size-4 shrink-0" />
+              </Link>
+            )}
           </Tarjeta>
 
           {hecha && (

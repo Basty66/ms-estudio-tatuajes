@@ -133,6 +133,8 @@ export type DatosCita = {
   notas?: string;
   abono?: number | null;
   medioAbono?: string;
+  /** Si se agenda desde una cotización de la web: queda unida a esta cita. */
+  cotizacion?: number | null;
 };
 
 function validarCita(d: DatosCita) {
@@ -182,6 +184,7 @@ export async function crearCita(d: DatosCita): Promise<Respuesta<{ id: number }>
   if (d.telefono?.trim() && !telefono) return { ok: false, error: "El teléfono no parece chileno. Ej.: 9 1234 5678." };
 
   const abono = d.abono ? entero(d.abono, 1, 50_000_000) : null;
+  const cotizacion = d.cotizacion ? entero(d.cotizacion, 1, 2e9) : null;
   if (d.abono && !abono) return { ok: false, error: "El abono no es un número válido." };
   const medio = d.medioAbono === "efectivo" ? "efectivo" : "transferencia";
 
@@ -208,11 +211,15 @@ export async function crearCita(d: DatosCita): Promise<Respuesta<{ id: number }>
       pago AS (
         INSERT INTO pagos (cita_id, monto, tipo, medio, anotado_por)
         SELECT id, ${abono}::INT, 'abono', ${medio}, ${u.nombre} FROM cita WHERE ${abono}::INT IS NOT NULL
+      ),
+      desde AS (
+        UPDATE cotizaciones SET estado = 'agendada', cita_id = cita.id, vista = TRUE
+        FROM cita WHERE cotizaciones.id = ${cotizacion}::INT
       )
       SELECT id FROM cita
     `) as Array<{ id: number }>;
     if (!fila) return { ok: false, error: "No se encontró al cliente." };
-    refrescar(`${PANEL}/agenda`);
+    refrescar(`${PANEL}/agenda`, `${PANEL}/cotizaciones`);
     return { ok: true, id: fila.id };
   } catch (e) {
     if (esChoqueDeHoras(e)) return { ok: false, error: await conQuienChoca(c.inicio, c.fin, null) };
@@ -460,6 +467,17 @@ export async function borrarFoto(id: number): Promise<Respuesta> {
 }
 
 /* -------------------------------------------------------- cotizaciones -- */
+
+/** En qué va una cotización. "agendada" no se pone a mano: la pone crearCita al agendar desde ella. */
+export async function cambiarEstadoCotizacion(id: number, estado: string): Promise<Respuesta> {
+  if (!(await operador())) return SIN_SESION;
+  const cotId = entero(id, 1, 2e9);
+  const nuevo = ["nueva", "respondida", "descartada"].find((e) => e === estado);
+  if (!cotId || !nuevo) return { ok: false, error: "No se pudo cambiar." };
+  await sql`UPDATE cotizaciones SET estado = ${nuevo}, vista = TRUE WHERE id = ${cotId} AND estado <> 'agendada'`;
+  refrescar(`${PANEL}/cotizaciones`);
+  return { ok: true };
+}
 
 export async function marcarCotizacionesVistas(): Promise<Respuesta> {
   if (!(await operador())) return SIN_SESION;

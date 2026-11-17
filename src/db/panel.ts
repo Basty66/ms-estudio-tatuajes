@@ -219,6 +219,8 @@ export type Cotizacion = {
   id: number;
   tipo: "tatuaje" | "laser";
   codigo: string | null;
+  estado: EstadoCotizacion;
+  cita_id: number | null;
   sesiones_min: number | null;
   sesiones_max: number | null;
   zona: string;
@@ -232,12 +234,46 @@ export type Cotizacion = {
   creada: string;
 };
 
-export async function cotizaciones(limite = 60): Promise<Cotizacion[]> {
+export type EstadoCotizacion = "nueva" | "respondida" | "agendada" | "descartada";
+
+const COLUMNAS_COTIZACION = sql.unsafe(`
+  id, tipo, codigo, estado, cita_id, sesiones_min, sesiones_max, zona, lado, tamano, estilo, idea, minimo, maximo, vista,
+  to_char(creada_en AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD"T"HH24:MI') AS creada
+`);
+
+/**
+ * Las cotizaciones, filtradas por estado y buscadas por código o por lo que
+ * escribió la persona. El código se busca sin importar mayúsculas ni si
+ * escribieron "MS-" o no: "k7q2" encuentra "MS-K7Q2".
+ */
+export async function cotizaciones({ estado = null, q = "", limite = 80 }: { estado?: EstadoCotizacion | null; q?: string; limite?: number } = {}): Promise<Cotizacion[]> {
+  const t = q.trim().toLowerCase().replace(/^ms-?/, "");
   return (await sql`
-    SELECT id, tipo, codigo, sesiones_min, sesiones_max, zona, lado, tamano, estilo, idea, minimo, maximo, vista,
-           to_char(creada_en AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD"T"HH24:MI') AS creada
-    FROM cotizaciones ORDER BY creada_en DESC LIMIT ${limite}
+    SELECT ${COLUMNAS_COTIZACION}
+    FROM cotizaciones
+    WHERE (${estado}::TEXT IS NULL OR estado = ${estado})
+      AND (${t} = '' OR lower(codigo) LIKE ${`%${t}%`} OR lower(idea) LIKE ${`%${t}%`})
+    ORDER BY creada_en DESC LIMIT ${limite}
   `) as Cotizacion[];
+}
+
+export async function cotizacion(id: number): Promise<Cotizacion | null> {
+  const [f] = (await sql`SELECT ${COLUMNAS_COTIZACION} FROM cotizaciones WHERE id = ${id}`) as Cotizacion[];
+  return f ?? null;
+}
+
+/** De qué cotización vino una cita, si vino de una. */
+export async function cotizacionDeCita(citaId: number): Promise<Cotizacion | null> {
+  const [f] = (await sql`SELECT ${COLUMNAS_COTIZACION} FROM cotizaciones WHERE cita_id = ${citaId} ORDER BY creada_en DESC LIMIT 1`) as Cotizacion[];
+  return f ?? null;
+}
+
+/** Cuántas hay en cada estado, para los filtros, y cuántas terminaron en cita. */
+export async function resumenCotizaciones(): Promise<Record<EstadoCotizacion, number>> {
+  const filas = (await sql`SELECT estado, COUNT(*)::INT AS n FROM cotizaciones GROUP BY estado`) as Array<{ estado: EstadoCotizacion; n: number }>;
+  const r = { nueva: 0, respondida: 0, agendada: 0, descartada: 0 };
+  for (const f of filas) r[f.estado] = f.n;
+  return r;
 }
 
 export async function cotizacionesSinVer(): Promise<number> {

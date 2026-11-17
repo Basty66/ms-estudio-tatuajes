@@ -350,6 +350,7 @@ export function EditarConsentimiento({ inicial }: { inicial: TextosConsentimient
 const MENSAJES: Array<{ clave: keyof Mensajes; titulo: string; cuando: string }> = [
   { clave: "confirmacion", titulo: "Confirmar la hora", cuando: "Botón Confirmar de la cita, antes de la sesión." },
   { clave: "recordatorio", titulo: "Recordar la hora", cuando: "Botón Recordar de la cita, el día antes." },
+  { clave: "respuestaCotizacion", titulo: "Responder una cotización", cuando: "Botón Responder en Cotizaciones: al abrir WhatsApp eliges el chat." },
   { clave: "consentimiento", titulo: "Pedir el consentimiento", cuando: "Con el link para firmar. Tiene que llevar {link}." },
   { clave: "dia1", titulo: "Cuidados: día siguiente", cuando: "Aparece en Hoy el día después de un tatuaje." },
   { clave: "dia7", titulo: "Cuidados: una semana", cuando: "Aparece en Hoy a los 7 días." },
@@ -361,6 +362,9 @@ const MENSAJES: Array<{ clave: keyof Mensajes; titulo: string; cuando: string }>
 
 /** Lo que se ve en la vista previa: una cita inventada pero creíble. */
 const MUESTRA: Record<string, string> = {
+  codigo: "MS-K7Q2",
+  detalle: "mediano en antebrazo derecho, fineline",
+  rango: "$50.000 a $90.000",
   nombre: "Camila",
   estudio: "Matness",
   fecha: "jueves 20 de noviembre a las 15:00",

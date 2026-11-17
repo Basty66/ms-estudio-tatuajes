@@ -53,6 +53,8 @@ export type TextosCuidados = {
 export type Mensajes = {
   confirmacion: string;
   recordatorio: string;
+  /** Para responder una cotización de la web: se elige el chat al abrir WhatsApp. */
+  respuestaCotizacion: string;
   consentimiento: string;
   dia1: string;
   dia7: string;
@@ -160,6 +162,7 @@ export const CONTENIDO_BASE: Contenido = {
       "Antes de venir: come bien, toma agua y evita el alcohol 24 h antes.",
       "Cuidados después de la sesión: {cuidados}",
     ].join("\n"),
+    respuestaCotizacion: "Hola, gracias por escribir. Vi tu cotización {codigo}: {detalle}, {rango}.\n¿Me mandas una referencia o una foto de la idea? Con eso afino el diseño y el precio, y te paso mis horas disponibles.",
     recordatorio: "Hola {nombre}, te recuerdo tu sesión {cuando} en {direccion}.\nEl saldo es {saldo} (efectivo o transferencia).\nSi necesitas cambiar algo, avísame por acá.",
     consentimiento: "Hola {nombre}. Antes de tu sesión del {fecha}, llena y firma tu consentimiento acá. Toma dos minutos:\n{link}",
     dia1: "Hola {nombre}, ¿cómo amaneció el tatuaje? Lávalo con jabón neutro 2 o 3 veces al día y ponle una capa delgada de crema. Los cuidados, paso a paso: {cuidados}\nCualquier duda, escríbeme.",
@@ -288,6 +291,7 @@ export function normalizarMensajes(v: unknown): Mensajes {
   return {
     confirmacion: m("confirmacion"),
     recordatorio: m("recordatorio"),
+    respuestaCotizacion: m("respuestaCotizacion"),
     consentimiento: m("consentimiento"),
     dia1: m("dia1"),
     dia7: m("dia7"),
@@ -304,6 +308,7 @@ export function normalizarMensajes(v: unknown): Mensajes {
 export const LLAVES: Record<keyof Mensajes, string[]> = {
   confirmacion: ["nombre", "estudio", "fecha", "duracion", "direccion", "valor", "abono", "saldo", "cuidados"],
   recordatorio: ["nombre", "cuando", "direccion", "saldo"],
+  respuestaCotizacion: ["codigo", "detalle", "rango"],
   consentimiento: ["nombre", "fecha", "link"],
   dia1: ["nombre", "cuidados"],
   dia7: ["nombre", "cuidados"],
