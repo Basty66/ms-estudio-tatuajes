@@ -82,7 +82,9 @@ export default async function Inicio() {
       <Marquesina />
       <Trabajos trabajos={trabajos} antes={fija("comparar-stencil")} despues={fija("comparar-final")} />
       <Tatuador textos={contenido.tatuador} grande={fija("tatuador-1")} chica={fija("tatuador-2")} />
-      <Cotizador precios={contenido.precios} fotos={fotos} gracias={{ titulo: contenido.mensajes.graciasTitulo, nota: contenido.mensajes.graciasNota }} />
+      <Cotizador precios={contenido.precios} fotos={fotos} gracias={{ titulo: contenido.mensajes.graciasTitulo, nota: contenido.mensajes.graciasNota }}
+        reservas={{ activas: contenido.reservas.activas, titulo: contenido.mensajes.reservaTitulo, nota: contenido.mensajes.reservaNota }}
+      />
       <Proceso pasos={PROCESO.map((p, i) => ({ paso: p.paso, texto: p.texto, foto: fija(`proceso-${i + 1}`) }))} />
       <Laser />
       <Cuidados cuidados={contenido.cuidados} />

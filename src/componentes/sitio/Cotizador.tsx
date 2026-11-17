@@ -9,6 +9,7 @@ import { BotonMagnetico } from "./BotonMagnetico";
 import { useEstudio } from "./DatosEstudio";
 import { clave, MapaCuerpo, nombreZona, textoLado, type Eleccion } from "./MapaCuerpo";
 import { Ornamento } from "./Ornamento";
+import { ReservarHora, type Pedido } from "./ReservarHora";
 import { TarjetaGracias, type DatosGracias } from "./TarjetaGracias";
 import { Titulo } from "./Titulo";
 
@@ -159,7 +160,18 @@ function Gracias({ datos, whatsapp, cerrar }: { datos: DatosGracias; whatsapp: s
   );
 }
 
-export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos: Fotos; gracias: { titulo: string; nota: string } }) {
+export function Cotizador({
+  precios,
+  fotos,
+  gracias,
+  reservas,
+}: {
+  precios: Precios;
+  fotos: Fotos;
+  gracias: { titulo: string; nota: string };
+  /** Si se puede elegir día y hora en la web (Web → Horario y reservas). */
+  reservas: { activas: boolean; titulo: string; nota: string };
+}) {
   const { whatsappCon } = useEstudio();
   const [eleccion, setEleccion] = useState<Eleccion>({ zona: "antebrazo", lado: "izq" });
   const [previa, setPrevia] = useState<Eleccion | null>(null);
@@ -169,6 +181,7 @@ export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos
   const [objetivo, setObjetivo] = useState<ObjetivoLaser>("borrar");
   const [idea, setIdea] = useState("");
   const [tarjeta, setTarjeta] = useState<DatosGracias | null>(null);
+  const [reservando, setReservando] = useState<Pedido | null>(null);
   // La sal del código se elige ya en el navegador: si la eligiera el servidor,
   // el código del WhatsApp y el de la tarjeta podrían no coincidir.
   const [sal, setSal] = useState("");
@@ -226,10 +239,44 @@ export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos
     .join("\n");
 
   const cerrarTarjeta = useCallback(() => setTarjeta(null), []);
+  const cerrarReserva = useCallback(() => setReservando(null), []);
 
   // Cada combinación distinta se anota una vez: el estudio recibe el aviso
   // aunque la persona nunca llegue a mandar el WhatsApp.
   const anotada = useRef("");
+  // Anota la cotización (una vez por combinación) sin mostrar nada.
+  const registrar = () => {
+    const datos = { tipo: modo, zona: eleccion.zona, lado: eleccion.lado, tamano, estilo: laser ? objetivo : estilo, idea: idea.trim(), codigo };
+    const clave = JSON.stringify(datos);
+    if (clave === anotada.current) return;
+    anotada.current = clave;
+    try {
+      navigator.sendBeacon("/api/cotizacion", new Blob([clave], { type: "application/json" }));
+    } catch {
+      // Sin beacon no se anota; lo demás sigue igual.
+    }
+  };
+
+  const detalleTexto = laser
+    ? `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(OBJETIVOS_LASER, objetivo).toLowerCase()}`
+    : `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(ESTILOS_PRECIO, estilo).toLowerCase()}`;
+
+  /** Elegir día y hora: anota la cotización y abre el calendario. */
+  const abrirReserva = () => {
+    registrar();
+    setReservando({
+      tipo: modo,
+      zona: eleccion.zona,
+      lado: eleccion.lado,
+      tamano,
+      estilo: laser ? objetivo : estilo,
+      idea: idea.trim(),
+      codigo: codigo || "MS-····",
+      resumen: detalleTexto,
+      rango: `${pesos(rango.min)} a ${pesos(rango.max)}${laser ? " por sesión" : ""}`,
+    });
+  };
+
   const anotar = () => {
     setTarjeta({
       codigo: codigo || "MS-····",
@@ -241,15 +288,7 @@ export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos
         ? `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()}`
         : `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(ESTILOS_PRECIO, estilo).toLowerCase()}`,
     });
-    const datos = { tipo: modo, zona: eleccion.zona, lado: eleccion.lado, tamano, estilo: laser ? objetivo : estilo, idea: idea.trim(), codigo };
-    const clave = JSON.stringify(datos);
-    if (clave === anotada.current) return;
-    anotada.current = clave;
-    try {
-      navigator.sendBeacon("/api/cotizacion", new Blob([clave], { type: "application/json" }));
-    } catch {
-      // Sin beacon no se anota; el WhatsApp se abre igual.
-    }
+    registrar();
   };
 
   // En el teléfono la barra de abajo repite el rango y el botón: sobra
@@ -418,9 +457,24 @@ export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos
                     : `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(ESTILOS_PRECIO, estilo).toLowerCase()}`}
                 </p>
               </div>
-              <BotonMagnetico href={whatsappCon(mensaje)} externo alTocar={anotar} className="shrink-0 shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]">
-                {laser ? "Evaluar mi tatuaje" : "Pedir hora con esta idea"}
-              </BotonMagnetico>
+              {reservas.activas ? (
+                <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                  <button
+                    type="button"
+                    onClick={abrirReserva}
+                    className="boton-cromo inline-flex min-h-12 items-center justify-center rounded-full bg-[image:var(--acero)] px-6 text-[15px] font-semibold text-tinta shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)] transition-transform active:scale-[0.97]"
+                  >
+                    Elegir día y hora
+                  </button>
+                  <a href={whatsappCon(mensaje)} target="_blank" rel="noopener noreferrer" onClick={anotar} className="text-center text-[13px] text-ceniza underline decoration-linea underline-offset-4 hover:text-piel sm:text-right">
+                    {laser ? "o mándame una foto por WhatsApp" : "o pídela por WhatsApp"}
+                  </a>
+                </div>
+              ) : (
+                <BotonMagnetico href={whatsappCon(mensaje)} externo alTocar={anotar} className="shrink-0 shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]">
+                  {laser ? "Evaluar mi tatuaje" : "Pedir hora con esta idea"}
+                </BotonMagnetico>
+              )}
             </div>
             <ol className="relative mt-5 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-linea pt-4 text-[12px] text-ceniza">
               {PASOS[modo].map((p, i) => (
@@ -435,6 +489,9 @@ export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos
       </div>
 
       <AnimatePresence>{tarjeta && <Gracias datos={tarjeta} whatsapp={whatsappCon(mensaje)} cerrar={cerrarTarjeta} />}</AnimatePresence>
+      <AnimatePresence>
+        {reservando && <ReservarHora pedido={reservando} textos={{ titulo: reservas.titulo, nota: reservas.nota }} whatsappCon={whatsappCon} cerrar={cerrarReserva} />}
+      </AnimatePresence>
 
       {/* Teléfono: el rango queda a la vista mientras se elige, pegado abajo. */}
       <div
@@ -449,15 +506,25 @@ export function Cotizador({ precios, fotos, gracias }: { precios: Precios; fotos
             <Cifra valor={rango.max} />
             {laser && <span className="text-[12px] font-normal text-ceniza"> c/u</span>}
           </span>
-          <a
-            href={whatsappCon(mensaje)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={anotar}
-            className="boton-cromo inline-flex min-h-11 shrink-0 items-center rounded-full bg-[image:var(--acero)] px-4 text-sm font-semibold whitespace-nowrap text-tinta"
-          >
-            {laser ? "Evaluar" : "Pedir hora"}
-          </a>
+          {reservas.activas ? (
+            <button
+              type="button"
+              onClick={abrirReserva}
+              className="boton-cromo inline-flex min-h-11 shrink-0 items-center rounded-full bg-[image:var(--acero)] px-4 text-sm font-semibold whitespace-nowrap text-tinta"
+            >
+              Elegir hora
+            </button>
+          ) : (
+            <a
+              href={whatsappCon(mensaje)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={anotar}
+              className="boton-cromo inline-flex min-h-11 shrink-0 items-center rounded-full bg-[image:var(--acero)] px-4 text-sm font-semibold whitespace-nowrap text-tinta"
+            >
+              {laser ? "Evaluar" : "Pedir hora"}
+            </a>
+          )}
         </div>
       </div>
     </section>

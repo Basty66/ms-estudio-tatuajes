@@ -45,7 +45,7 @@ export function VistaEnVivo({ base, bloque, hoy }: { base: Contenido; bloque: st
   return (
     <ProveedorEstudio estudio={c.estudio}>
       {bloque === "estudio" && <Pie estudio={c.estudio} />}
-      {bloque === "precios" && <Cotizador precios={c.precios} fotos={c.fotos} gracias={{ titulo: c.mensajes.graciasTitulo, nota: c.mensajes.graciasNota }} />}
+      {bloque === "precios" && <Cotizador precios={c.precios} fotos={c.fotos} gracias={{ titulo: c.mensajes.graciasTitulo, nota: c.mensajes.graciasNota }} reservas={{ activas: c.reservas.activas, titulo: c.mensajes.reservaTitulo, nota: c.mensajes.reservaNota }} />}
       {bloque === "tatuador" && <Tatuador textos={c.tatuador} grande={foto("tatuador-1")} chica={foto("tatuador-2")} />}
       {bloque === "preguntas" && <Preguntas preguntas={c.preguntas} />}
       {bloque === "cuidados" && <Cuidados cuidados={c.cuidados} />}
