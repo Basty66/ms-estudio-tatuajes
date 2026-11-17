@@ -126,8 +126,7 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
 - [x] Consentimiento informado digital, seguimiento por WhatsApp, reseñas, foto desde la cita,
       privacidad y vista previa en los editores (2026-11-17). `db/003` aplicado en `dev`.
 - [x] `db/003_consentimientos.sql` en `production` (2026-11-17) y publicado.
-- [ ] `db/004_cotizaciones_laser.sql` y `db/005_seguimiento_laser.sql` en `production` antes de publicar
-      el cotizador con láser.
+- [x] `db/004` y `db/005` (láser en el cotizador y su seguimiento) en `production`, publicado (2026-11-17).
 - [ ] Revisar los precios del láser (vienen con valores de partida) en Web → Precios del cotizador.
 - [ ] Borrar el proyecto viejo de Neon (con los consentimientos de prueba del sitio viejo).
 - [ ] Quitar de Vercel las variables del sitio viejo y rotar sus credenciales.
