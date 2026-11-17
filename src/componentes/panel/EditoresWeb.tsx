@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { formatearTelefono } from "@/lib/admin/telefono";
-import { LARGO, type DatosEstudio, type Par, type TextosCuidados, type TextosTatuador } from "@/lib/contenido";
+import type { TextosConsentimiento } from "@/lib/consentimiento";
+import { LARGO, LLAVES, rellenar, type DatosEstudio, type Mensajes, type Par, type TextosCuidados, type TextosTatuador } from "@/lib/contenido";
 import { ESTILOS_PRECIO, estimar, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Tarjeta, TituloBloque } from "./Encabezado";
 import { BarraGuardar, Campo, Lineas, ListaPares, useEditor } from "./EditorWeb";
 import { campo } from "./FormularioCita";
+import { DobleVisto, Externo, Flecha } from "./Iconos";
 
 // ------------------------------------------------------------- estudio --
 
@@ -16,6 +18,9 @@ export function EditarEstudio({ inicial }: { inicial: DatosEstudio }) {
     instagram: inicial.instagram,
     direccion: inicial.direccion,
     comuna: inicial.comuna,
+    resenas: inicial.resenas,
+    responsable: inicial.responsable,
+    correo: inicial.correo,
   });
   const poner = (p: Partial<typeof e.valor>) => e.cambiar({ ...e.valor, ...p });
   const numero = e.valor.whatsapp.replace(/\D/g, "");
@@ -31,8 +36,8 @@ export function EditarEstudio({ inicial }: { inicial: DatosEstudio }) {
             <p className="text-[13px] text-ceniza">
               Todos los botones de WhatsApp de la web van a este número.{" "}
               {numero.length >= 9 && (
-                <a href={`https://wa.me/${numero.length === 9 ? `56${numero}` : numero}`} target="_blank" rel="noopener noreferrer" className="text-stencil-claro">
-                  Probarlo ↗
+                <a href={`https://wa.me/${numero.length === 9 ? `56${numero}` : numero}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-stencil-claro">
+                  Probarlo <Externo className="size-3.5" />
                 </a>
               )}
             </p>
@@ -44,6 +49,28 @@ export function EditarEstudio({ inicial }: { inicial: DatosEstudio }) {
             <Campo etiqueta="Dirección" valor={e.valor.direccion} cambiar={(v) => poner({ direccion: v })} max={80} />
             <Campo etiqueta="Comuna" valor={e.valor.comuna} cambiar={(v) => poner({ comuna: v })} max={40} />
             <p className="text-[13px] text-ceniza">Si cambias la dirección, el mapa de la web pasa a buscar la nueva.</p>
+          </div>
+        </Tarjeta>
+        <Tarjeta>
+          <TituloBloque>Reseñas en Google</TituloBloque>
+          <div className="flex flex-col gap-4">
+            <Campo etiqueta="Link para dejar una reseña" valor={e.valor.resenas} cambiar={(v) => poner({ resenas: v.trim() })} max={300} placeholder="https://g.page/r/…/review" inputMode="url" />
+            <p className="text-[13px] leading-snug text-ceniza">
+              Sale de tu Perfil de Empresa en Google: abre Google Maps, entra a tu negocio y toca <span className="text-piel">Pedir reseñas</span> para copiar el link. Con él, cada cita hecha ofrece pedirle una reseña al cliente.{" "}
+              {e.valor.resenas && (
+                <a href={e.valor.resenas} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-stencil-claro">
+                  Probarlo <Externo className="size-3.5" />
+                </a>
+              )}
+            </p>
+          </div>
+        </Tarjeta>
+        <Tarjeta>
+          <TituloBloque>Quién cuida los datos</TituloBloque>
+          <div className="flex flex-col gap-4">
+            <Campo etiqueta="Nombre del responsable" valor={e.valor.responsable} cambiar={(v) => poner({ responsable: v })} max={80} placeholder="MS Estudio de Tatuajes" />
+            <Campo etiqueta="Correo (opcional)" valor={e.valor.correo} cambiar={(v) => poner({ correo: v.trim() })} max={120} placeholder="contacto@…" inputMode="email" />
+            <p className="text-[13px] leading-snug text-ceniza">Aparece en el consentimiento y en la página de privacidad. Puede ser tu nombre o el del estudio.</p>
           </div>
         </Tarjeta>
       </div>
@@ -186,11 +213,6 @@ export function EditarTatuador({ inicial }: { inicial: TextosTatuador }) {
         </div>
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta>
-            <TituloBloque>Trayectoria</TituloBloque>
-            <p className="-mt-1 mb-3 text-[13px] text-ceniza">El último hito se ve destacado como el presente.</p>
-            <ListaPares valor={t.trayectoria} cambiar={(trayectoria) => poner({ trayectoria })} rotulos={["Hito", "Texto"]} largos={[LARGO.titulo, LARGO.item]} tope={8} />
-          </Tarjeta>
-          <Tarjeta>
             <TituloBloque>Cómo trabajo</TituloBloque>
             <ListaPares valor={t.lugar} cambiar={(lugar) => poner({ lugar })} rotulos={["Dato", "Detalle"]} largos={[LARGO.titulo, LARGO.item]} fijos />
           </Tarjeta>
@@ -253,6 +275,159 @@ export function EditarCuidados({ inicial }: { inicial: TextosCuidados }) {
           <p className="px-1 text-[13px] text-ceniza">Las etapas son cuatro porque la web las dibuja como un recorrido de cuatro puntos.</p>
         </div>
       </div>
+      <BarraGuardar {...e} />
+    </>
+  );
+}
+
+// ------------------------------------------------------ consentimiento --
+
+export function EditarConsentimiento({ inicial }: { inicial: TextosConsentimiento }) {
+  const e = useEditor("consentimiento", inicial);
+  const c = e.valor;
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
+        <div className="flex flex-col gap-4 lg:gap-5">
+          <Tarjeta>
+            <TituloBloque>Riesgos del tatuaje</TituloBloque>
+            <Lineas etiqueta="Uno por línea" nota="También para retoques" valor={c.riesgosTatuaje} cambiar={(riesgosTatuaje) => e.cambiar({ ...c, riesgosTatuaje })} max={200} />
+          </Tarjeta>
+          <Tarjeta>
+            <TituloBloque>Riesgos del láser</TituloBloque>
+            <Lineas etiqueta="Uno por línea" valor={c.riesgosLaser} cambiar={(riesgosLaser) => e.cambiar({ ...c, riesgosLaser })} max={200} />
+          </Tarjeta>
+        </div>
+        <div className="flex flex-col gap-4 lg:gap-5">
+          <Tarjeta>
+            <TituloBloque>A qué se compromete</TituloBloque>
+            <Lineas etiqueta="Uno por línea" valor={c.compromisos} cambiar={(compromisos) => e.cambiar({ ...c, compromisos })} max={200} />
+          </Tarjeta>
+          <div className="px-1 text-[13px] leading-relaxed text-ceniza">
+            <p>Lo ya firmado no cambia: cada consentimiento guarda el texto exacto que aceptó la persona.</p>
+            <p className="mt-2">
+              Las preguntas de salud y las declaraciones (veracidad, datos personales y fotos) son fijas: están escritas para cumplir la ley de datos personales.
+            </p>
+          </div>
+        </div>
+      </div>
+      <BarraGuardar {...e} />
+    </>
+  );
+}
+
+// ------------------------------------------------------------ mensajes --
+
+const MENSAJES: Array<{ clave: keyof Mensajes; titulo: string; cuando: string }> = [
+  { clave: "confirmacion", titulo: "Confirmar la hora", cuando: "Botón Confirmar de la cita, antes de la sesión." },
+  { clave: "recordatorio", titulo: "Recordar la hora", cuando: "Botón Recordar de la cita, el día antes." },
+  { clave: "consentimiento", titulo: "Pedir el consentimiento", cuando: "Con el link para firmar. Tiene que llevar {link}." },
+  { clave: "dia1", titulo: "Cuidados: día siguiente", cuando: "Aparece en Hoy el día después de un tatuaje." },
+  { clave: "dia7", titulo: "Cuidados: una semana", cuando: "Aparece en Hoy a los 7 días." },
+  { clave: "dia30", titulo: "Cuidados: un mes", cuando: "Aparece en Hoy a los 30 días." },
+  { clave: "resena", titulo: "Pedir una reseña", cuando: "En la cita hecha, con tu link de Google. Tiene que llevar {link}." },
+];
+
+/** Lo que se ve en la vista previa: una cita inventada pero creíble. */
+const MUESTRA: Record<string, string> = {
+  nombre: "Camila",
+  estudio: "Matness",
+  fecha: "jueves 20 de noviembre a las 15:00",
+  cuando: "de mañana a las 15:00",
+  duracion: "3 h",
+  direccion: "Av. Manso 529, segundo piso, Melipilla",
+  valor: "$80.000",
+  abono: "$20.000",
+  saldo: "$60.000",
+  cuidados: "tatuajes-azure.vercel.app/#cuidados",
+};
+
+/** *negrita*, _cursiva_ y ~tachado~, como los muestra WhatsApp. */
+function formatoWhatsapp(texto: string): React.ReactNode[] {
+  return texto.split(/(\*[^*\n]+\*|_[^_\n]+_|~[^~\n]+~)/g).map((parte, i) => {
+    const dentro = parte.slice(1, -1);
+    if (/^\*[^*\n]+\*$/.test(parte)) return <strong key={i}>{dentro}</strong>;
+    if (/^_[^_\n]+_$/.test(parte)) return <em key={i}>{dentro}</em>;
+    if (/^~[^~\n]+~$/.test(parte)) return <s key={i}>{dentro}</s>;
+    return parte;
+  });
+}
+
+/** Un globo de WhatsApp: así lo va a leer el cliente. */
+export function GloboWhatsapp({ texto }: { texto: string }) {
+  return (
+    <div className="rounded-2xl bg-[#0b141a] p-3 [background-image:radial-gradient(rgb(255_255_255/0.035)_1px,transparent_1px)] [background-size:14px_14px]">
+      <div className="relative ml-auto max-w-[88%] rounded-xl rounded-tr-sm bg-[#005c4b] px-3 pt-2 pb-5 text-[14.5px] leading-[1.35] whitespace-pre-wrap text-[#e9edef] [overflow-wrap:anywhere]">
+        {texto ? formatoWhatsapp(texto) : <span className="text-[#e9edef]/50">Mensaje vacío</span>}
+        <span className="absolute right-2 bottom-1 flex items-center gap-1 text-[11px] text-[#e9edef]/60">
+          15:02 <DobleVisto className="size-3.5 text-[#53bdeb]" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes; resenas: string; origen: string }) {
+  const e = useEditor("mensajes", inicial);
+  const m = e.valor;
+  // Uno abierto a la vez: así la pantalla no se llena de cuadros de texto.
+  const [abierto, setAbierto] = useState<keyof Mensajes | null>("confirmacion");
+  const valores = (clave: keyof Mensajes) => ({
+    ...MUESTRA,
+    cuidados: `${origen}/#cuidados`,
+    link: clave === "resena" ? resenas || "https://g.page/r/tu-link/review" : `${origen}/consentimiento/8fK2…`,
+  });
+
+  return (
+    <>
+      <p className="mb-4 max-w-2xl text-[13px] leading-relaxed text-ceniza">
+        Las palabras entre llaves, como <code className="rounded bg-tinta px-1 text-stencil-claro">{"{nombre}"}</code>, se cambian por los datos de cada cita. Si una línea lleva un dato que no hay (por ejemplo, sin abono), esa línea no se manda. Para negrita en WhatsApp, entre asteriscos: <code className="rounded bg-tinta px-1 text-stencil-claro">*así*</code>.
+      </p>
+      <ul className="flex flex-col overflow-hidden rounded-3xl border border-linea bg-hollin/70">
+        {MENSAJES.map(({ clave, titulo, cuando }) => {
+          const abiertoEste = abierto === clave;
+          const texto = rellenar(m[clave], valores(clave));
+          return (
+            <li key={clave} className="border-b border-linea/70 last:border-0">
+              <button
+                type="button"
+                aria-expanded={abiertoEste}
+                onClick={() => setAbierto(abiertoEste ? null : clave)}
+                className="flex min-h-16 w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-tinta/40 sm:px-5"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{titulo}</span>
+                  <span className="block truncate text-[13px] text-ceniza">{abiertoEste ? cuando : texto.split("\n")[0]}</span>
+                </span>
+                <Flecha className={`size-4 shrink-0 text-ceniza transition-transform duration-300 ${abiertoEste ? "rotate-90" : ""}`} />
+              </button>
+              {abiertoEste && (
+                <div className="panel-surge grid grid-cols-1 gap-4 px-4 pb-5 sm:px-5 lg:grid-cols-2 lg:gap-6">
+                  <div className="min-w-0">
+                    <Campo etiqueta="Mensaje" valor={m[clave]} cambiar={(v) => e.cambiar({ ...m, [clave]: v })} max={800} lineas={clave === "confirmacion" ? 12 : 5} />
+                    <p className="mt-2 flex flex-wrap gap-1.5 text-[12px] text-ceniza">
+                      {LLAVES[clave].map((k) => (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => e.cambiar({ ...m, [clave]: `${m[clave]}${m[clave].endsWith(" ") || m[clave].endsWith("\n") || !m[clave] ? "" : " "}{${k}}` })}
+                          className="rounded-full border border-linea px-2.5 py-1 font-mono text-stencil-claro transition-colors hover:border-stencil/60"
+                        >
+                          {`{${k}}`}
+                        </button>
+                      ))}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="mb-2 text-[12px] font-semibold tracking-[0.14em] text-ceniza uppercase">Así le llega</p>
+                    <GloboWhatsapp texto={texto} />
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
       <BarraGuardar {...e} />
     </>
   );

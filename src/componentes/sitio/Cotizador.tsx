@@ -126,7 +126,7 @@ export function Cotizador({ precios, fotos }: { precios: Precios; fotos: Fotos }
   return (
     <section id="cotiza" aria-labelledby="titulo-cotiza" className="relative mx-auto max-w-[1400px] px-4 py-24 sm:px-8 lg:py-36">
       <Ornamento tipo="ojo" className="top-10 right-[6%] hidden w-36 lg:block" />
-      <Titulo id="titulo-cotiza" seccion="cotiza" bajada="Toca la zona, elige tamaño y estilo: el rango aparece al instante. El precio final lo vemos con tu diseño.">
+      <Titulo id="titulo-cotiza" bajada="Toca la zona, elige tamaño y estilo: el rango aparece al instante. El precio final lo vemos con tu diseño.">
         Cotiza
       </Titulo>
 

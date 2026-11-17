@@ -619,6 +619,57 @@ body {
   70%, 100% { transform: scale(1.6); opacity: 0; }
 }
 
+/* ---------- Consentimiento: pasos, casillas y "Listo" ----------
+   Solo transform, opacity y clip-path: corre a 60/120 Hz también en un
+   teléfono modesto, sin recalcular el layout. */
+.paso-adelante {
+  animation: paso-adelante 0.5s var(--ease-salida) both;
+}
+.paso-atras {
+  animation: paso-atras 0.5s var(--ease-salida) both;
+}
+@keyframes paso-adelante {
+  from { opacity: 0; transform: translateX(32px); }
+}
+@keyframes paso-atras {
+  from { opacity: 0; transform: translateX(-32px); }
+}
+/* El visto se dibuja al marcar, como un trazo. */
+.visto-trazo {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  transition: stroke-dashoffset 0.32s var(--ease-salida) 0.05s;
+}
+[data-marcada="si"] .visto-trazo {
+  stroke-dashoffset: 0;
+}
+/* "Listo": el visto cae como un sello y el título se entinta detrás de la aguja. */
+.sello {
+  animation: sello 0.7s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes sello {
+  from { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+}
+.sello-onda {
+  animation: sello-onda 1.6s var(--ease-salida) 0.25s both;
+}
+@keyframes sello-onda {
+  from { opacity: 0.8; transform: scale(1); }
+  to { opacity: 0; transform: scale(2.6); }
+}
+.entintar {
+  clip-path: inset(0 100% 0 0);
+  animation: nc-tinta 1.2s var(--ease-aguja) 0.45s forwards;
+}
+.entintar-aguja {
+  animation: entintar-aguja 1.2s var(--ease-aguja) 0.45s both;
+}
+@keyframes entintar-aguja {
+  0% { opacity: 0; transform: translateX(0); }
+  10%, 85% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+
 /* El mapa de Google en claro rompe la página: se invierte a oscuro. */
 .mapa-oscuro {
   filter: invert(0.92) hue-rotate(200deg) saturate(0.6) contrast(0.95);
@@ -655,8 +706,22 @@ body {
   .nc-trazo,
   .nc-aguja,
   .nh-trazo,
-  .nh-aguja {
+  .nh-aguja,
+  .entintar-aguja {
     display: none;
+  }
+  .paso-adelante,
+  .paso-atras,
+  .sello,
+  .sello-onda {
+    animation: none;
+  }
+  .entintar {
+    clip-path: none;
+    animation: none;
+  }
+  .visto-trazo {
+    transition: none;
   }
   .nombre-hero .nh-tinta {
     clip-path: none;

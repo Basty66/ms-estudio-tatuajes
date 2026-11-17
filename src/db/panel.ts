@@ -28,6 +28,10 @@ export type Cita = {
   saldo: number | null;
   notas: string | null;
   creada_por: string;
+  /** Null: nunca se pidió (o el link venció sin firmarse). */
+  consentimiento: "firmado" | "pendiente" | null;
+  /** Las alertas de salud del consentimiento firmado. */
+  alertas: string[];
 };
 
 // Columnas fijas: se escriben una vez y se usan en cada consulta de citas.
@@ -35,14 +39,23 @@ const COLUMNAS = sql.unsafe(`
   c.id, c.cliente_id, cl.nombre AS cliente, cl.telefono, c.tipo, c.estado,
   to_char(c.inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio,
   to_char(c.fin, 'YYYY-MM-DD"T"HH24:MI') AS fin,
-  c.zona, c.lado, c.tamano, c.estilo, c.descripcion, c.precio, c.pagado, c.saldo, c.notas, c.creada_por
+  c.zona, c.lado, c.tamano, c.estilo, c.descripcion, c.precio, c.pagado, c.saldo, c.notas, c.creada_por,
+  k.estado AS consentimiento, COALESCE(k.alertas, '{}') AS alertas
+`);
+
+// El consentimiento de cada cita (hay uno como máximo): va con LEFT JOIN LATERAL en cada consulta.
+const CONSENTIMIENTO = sql.unsafe(`
+  LEFT JOIN LATERAL (
+    SELECT CASE WHEN x.firmado_en IS NOT NULL THEN 'firmado' WHEN x.vence_en > NOW() THEN 'pendiente' END AS estado, x.alertas
+    FROM consentimientos x WHERE x.cita_id = c.id
+  ) k ON TRUE
 `);
 
 /** Citas que tocan el rango de días [desde, hasta], canceladas incluidas si se piden. */
 export async function citasEntre(desde: string, hasta: string, conCanceladas = false): Promise<Cita[]> {
   return (await sql`
     SELECT ${COLUMNAS}
-    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id ${CONSENTIMIENTO}
     WHERE c.inicio < (${hasta}::DATE + 1) AND c.fin > ${desde}::DATE
       AND (${conCanceladas} OR c.estado NOT IN ('cancelada'))
     ORDER BY c.inicio
@@ -52,7 +65,7 @@ export async function citasEntre(desde: string, hasta: string, conCanceladas = f
 export async function cita(id: number): Promise<Cita | null> {
   const [fila] = (await sql`
     SELECT ${COLUMNAS}
-    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id ${CONSENTIMIENTO}
     WHERE c.id = ${id}
   `) as Cita[];
   return fila ?? null;
@@ -61,7 +74,7 @@ export async function cita(id: number): Promise<Cita | null> {
 export async function citasDeCliente(clienteId: number): Promise<Cita[]> {
   return (await sql`
     SELECT ${COLUMNAS}
-    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id ${CONSENTIMIENTO}
     WHERE c.cliente_id = ${clienteId}
     ORDER BY c.inicio DESC
   `) as Cita[];
@@ -74,7 +87,7 @@ export async function citasDeCliente(clienteId: number): Promise<Cita[]> {
 export async function saldosPendientes(): Promise<Cita[]> {
   return (await sql`
     SELECT ${COLUMNAS}
-    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id ${CONSENTIMIENTO}
     WHERE c.estado IN ('confirmada', 'completada') AND c.saldo > 0 AND c.tipo <> 'bloqueo'
       AND c.inicio < (NOW() AT TIME ZONE 'America/Santiago')::DATE + 1
     ORDER BY c.inicio
@@ -94,7 +107,7 @@ export async function saldosPorVenir(): Promise<number> {
 export async function sinCerrar(): Promise<Cita[]> {
   return (await sql`
     SELECT ${COLUMNAS}
-    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id
+    FROM citas_con_saldo c LEFT JOIN clientes cl ON cl.id = c.cliente_id ${CONSENTIMIENTO}
     WHERE c.estado = 'confirmada' AND c.tipo <> 'bloqueo' AND c.fin < NOW() AT TIME ZONE 'America/Santiago'
     ORDER BY c.inicio DESC
     LIMIT 20

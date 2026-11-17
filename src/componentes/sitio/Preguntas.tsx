@@ -5,7 +5,6 @@ import { useState } from "react";
 import type { Par } from "@/lib/contenido";
 import { BotonMagnetico } from "./BotonMagnetico";
 import { useEstudio } from "./DatosEstudio";
-import { Indice } from "./Indice";
 import { Ornamento } from "./Ornamento";
 
 function Contacto({ className = "" }: { className?: string }) {
@@ -36,7 +35,6 @@ export function Preguntas({ preguntas }: { preguntas: Par[] }) {
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
         <div className="lg:col-span-5">
           <div className="lg:sticky lg:top-32">
-            <Indice id="preguntas" className="mb-4 lg:mb-6" />
             <h2 id="titulo-preguntas" className="texto-cromo font-gotica text-[clamp(3.5rem,11vw,6rem)] leading-[0.85]">
               Preguntas
             </h2>

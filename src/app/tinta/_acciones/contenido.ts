@@ -6,10 +6,14 @@ import { bloqueGuardado } from "@/db/contenido";
 import { borrarFoto, guardarFoto, hayGaleria } from "@/lib/admin/almacen";
 import { usuarioActual } from "@/lib/admin/sesion";
 import { normalizarTelefono } from "@/lib/admin/telefono";
+import { normalizarTextosConsentimiento } from "@/lib/consentimiento";
 import {
+  esCorreo,
+  esLinkDeResenas,
   LUGARES_FOTO,
   normalizarCuidados,
   normalizarEstudio,
+  normalizarMensajes,
   normalizarPreguntas,
   normalizarTatuador,
   type ClaveBloque,
@@ -33,6 +37,7 @@ type Respuesta = { ok: true } | { ok: false; error: string };
 const SIN_SESION = { ok: false as const, error: "La sesión se cerró o el panel se bloqueó. Vuelve a entrar." };
 
 type BloqueDeTexto = Exclude<ClaveBloque, "fotos">;
+const DE_TEXTO: BloqueDeTexto[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "consentimiento", "mensajes"];
 
 async function guardar(clave: ClaveBloque, valor: unknown, quien: string) {
   await sql`
@@ -53,8 +58,14 @@ function revisar(clave: BloqueDeTexto, valor: unknown): { valor: unknown } | { e
       const instagram = String(v.instagram ?? "").trim().replace(/^@/, "");
       if (!/^[A-Za-z0-9._]{1,30}$/.test(instagram)) return { error: "El Instagram es solo el usuario, sin espacios: matness_tattoos." };
       if (!String(v.direccion ?? "").trim() || !String(v.comuna ?? "").trim()) return { error: "Falta la dirección o la comuna." };
+      const resenas = String(v.resenas ?? "").trim();
+      if (resenas && !esLinkDeResenas(resenas)) return { error: "El link de reseñas tiene que ser el de Google (empieza con https://g.page/ o https://maps.app.goo.gl/)." };
+      const correo = String(v.correo ?? "").trim();
+      if (correo && !esCorreo(correo)) return { error: "Revisa el correo." };
       const e = normalizarEstudio({ ...v, whatsapp, instagram });
-      return { valor: { whatsapp: e.whatsapp, instagram: e.instagram, direccion: e.direccion, comuna: e.comuna } };
+      return {
+        valor: { whatsapp: e.whatsapp, instagram: e.instagram, direccion: e.direccion, comuna: e.comuna, resenas: e.resenas, responsable: e.responsable, correo: e.correo },
+      };
     }
     case "precios":
       return { valor: normalizarPrecios(valor) };
@@ -67,13 +78,21 @@ function revisar(clave: BloqueDeTexto, valor: unknown): { valor: unknown } | { e
       return { valor: normalizarPreguntas(valor) };
     case "cuidados":
       return { valor: normalizarCuidados(valor) };
+    case "consentimiento":
+      return { valor: normalizarTextosConsentimiento(valor) };
+    case "mensajes": {
+      const m = normalizarMensajes(valor);
+      if (!m.consentimiento.includes("{link}")) return { error: "El mensaje del consentimiento tiene que llevar {link}: sin eso el cliente no tiene dónde firmar." };
+      if (!m.resena.includes("{link}")) return { error: "El mensaje de la reseña tiene que llevar {link}." };
+      return { valor: m };
+    }
   }
 }
 
 export async function guardarContenido(clave: BloqueDeTexto, valor: unknown): Promise<Respuesta> {
   const u = await usuarioActual();
   if (!u) return SIN_SESION;
-  if (!["estudio", "precios", "tatuador", "preguntas", "cuidados"].includes(clave)) return { ok: false, error: "No existe." };
+  if (!DE_TEXTO.includes(clave)) return { ok: false, error: "No existe." };
   const r = revisar(clave, valor);
   if ("error" in r) return { ok: false, error: r.error };
   await guardar(clave, r.valor, u.nombre);
@@ -83,7 +102,7 @@ export async function guardarContenido(clave: BloqueDeTexto, valor: unknown): Pr
 /** Vuelve un bloque de texto a como venía de fábrica. */
 export async function restaurarContenido(clave: BloqueDeTexto): Promise<Respuesta> {
   if (!(await usuarioActual())) return SIN_SESION;
-  if (!["estudio", "precios", "tatuador", "preguntas", "cuidados"].includes(clave)) return { ok: false, error: "No existe." };
+  if (!DE_TEXTO.includes(clave)) return { ok: false, error: "No existe." };
   await sql`DELETE FROM contenido WHERE clave = ${clave}`;
   revalidatePath("/", "layout");
   return { ok: true };

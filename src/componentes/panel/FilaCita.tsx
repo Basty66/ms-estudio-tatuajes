@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Cita } from "@/db/panel";
 import { clp, ESTADO, resumenTatuaje, TIPO } from "@/lib/admin/etiquetas";
-import { fechaCorta, hora } from "@/lib/admin/fecha";
+import { fechaCorta, hora, hoyChile } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { Bloqueo, Flecha } from "./Iconos";
 
@@ -34,6 +34,10 @@ export function FilaCita({ c, conFecha = false, marca, sinNombre = false }: { c:
   }
 
   const apagada = c.estado === "cancelada" || c.estado === "no_vino";
+  // Lo que hay que resolver antes de tatuar: el consentimiento y, si ya está, sus alertas.
+  // Solo en lo que viene: en una sesión que ya pasó no hay nada que pedir.
+  const falta = c.estado === "confirmada" && c.consentimiento !== "firmado" && marca !== "sin-cerrar" && c.inicio.slice(0, 10) >= hoyChile();
+  const alerta = c.estado === "confirmada" && !falta && c.alertas.length > 0 ? (c.alertas.length === 1 ? c.alertas[0].split(":")[0] : `${c.alertas.length} alertas de salud`) : null;
   const detalle = [TIPO[c.tipo], resumenTatuaje(c)].filter(Boolean).join(" · ");
   return (
     <Link
@@ -51,6 +55,8 @@ export function FilaCita({ c, conFecha = false, marca, sinNombre = false }: { c:
         <span className={`block truncate text-[16px] font-semibold ${apagada ? "line-through" : ""}`}>{sinNombre ? (c.descripcion ?? TIPO[c.tipo]) : c.cliente}</span>
         <span className="block truncate text-[13px] text-ceniza">
           {marca && <span className={`font-semibold ${MARCAS[marca].clase}`}>{MARCAS[marca].texto} · </span>}
+          {falta && <span className="font-semibold text-[#fbbf24]">{c.consentimiento === "pendiente" ? "Por firmar" : "Sin firma"} · </span>}
+          {alerta && <span className="font-semibold text-[#ff8a80]">{alerta} · </span>}
           {detalle}
         </span>
       </span>

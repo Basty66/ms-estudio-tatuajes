@@ -17,7 +17,7 @@ export default async function FotosDeLaWeb() {
 
   return (
     <>
-      <Encabezado volver={`${PANEL}/web`} etiqueta="Web" titulo="Fotos de la web" />
+      <Encabezado volver={`${PANEL}/web`} titulo="Fotos de la web" />
       {!hayGaleria && (
         <p className="mb-4 rounded-2xl border border-[#f59e0b]/40 bg-[#f59e0b]/[0.06] p-4 text-[14px] text-[#fbbf24]">
           Para cambiar fotos falta conectar el almacén de fotos en Vercel (BLOB_READ_WRITE_TOKEN).

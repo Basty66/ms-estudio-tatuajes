@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PANEL } from "@/lib/admin/ruta";
-import { Mas } from "./Iconos";
+import { Externo, Mas } from "./Iconos";
 import { PRINCIPALES, SECUNDARIAS } from "./secciones";
 
 function activa(ruta: string, href: string) {
@@ -90,8 +90,8 @@ export function Navegacion({ sinVer }: { sinVer: number }) {
             );
           })}
         </ul>
-        <a href="/" target="_blank" rel="noopener noreferrer" className="mt-auto px-3 text-[13px] text-ceniza hover:text-piel">
-          Ver la web ↗
+        <a href="/" target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 px-3 text-[13px] text-ceniza hover:text-piel">
+          Ver la web <Externo className="size-3.5" />
         </a>
       </nav>
     </>

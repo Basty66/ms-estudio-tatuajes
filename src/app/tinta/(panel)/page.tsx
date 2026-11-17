@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { CerrarRapido } from "@/componentes/panel/AccionesCita";
 import { claseBoton } from "@/componentes/panel/Boton";
+import { BotonSeguimiento } from "@/componentes/panel/Consentimiento";
 import { Cifra, Encabezado, Tarjeta, TituloBloque } from "@/componentes/panel/Encabezado";
 import { FilaCita, type Marca } from "@/componentes/panel/FilaCita";
 import { Calendario, Campana, Cara, Flecha, Mas } from "@/componentes/panel/Iconos";
 import { sql } from "@/db/conexion";
+import { ETAPAS, seguimientosDeHoy } from "@/db/consentimientos";
+import { leerContenido } from "@/db/contenido";
 import { citasEntre, cotizacionesSinVer, saldosPendientes, sinCerrar, type Cita } from "@/db/panel";
 import { credencialDeEsteAparato } from "@/lib/admin/biometria";
 import { clp, clpCorto } from "@/lib/admin/etiquetas";
 import { ahoraChile, fechaLarga, fechaRelativa, hoyChile, sumarDias } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
+import { rellenar } from "@/lib/contenido";
 
 export const dynamic = "force-dynamic";
 
@@ -26,13 +30,15 @@ export default async function PaginaHoy() {
   const yo = await operadorDelPanel();
   const hoy = hoyChile();
   const ahora = ahoraChile();
-  const [semana, saldos, abiertas, sinVer, bio, avisos] = await Promise.all([
+  const [semana, saldos, abiertas, sinVer, bio, avisos, escribir, { mensajes }] = await Promise.all([
     citasEntre(hoy, sumarDias(hoy, 7)),
     saldosPendientes(),
     sinCerrar(),
     cotizacionesSinVer(),
     credencialDeEsteAparato(yo.id),
     sql`SELECT COUNT(*)::INT AS n FROM suscripciones_push WHERE usuario_id = ${yo.id}`.then((f) => (f as Array<{ n: number }>)[0].n),
+    seguimientosDeHoy(hoy),
+    leerContenido(),
   ]);
 
   const deHoy = semana.filter((c) => c.inicio.slice(0, 10) === hoy);
@@ -151,6 +157,33 @@ export default async function PaginaHoy() {
                   Ver las {porResolver.length} en Finanzas
                 </Link>
               )}
+            </Tarjeta>
+          )}
+
+          {escribir.length > 0 && (
+            <Tarjeta className="order-3 lg:order-none">
+              <TituloBloque>Cuidados por WhatsApp</TituloBloque>
+              <ul className="flex flex-col">
+                {escribir.map((e) => (
+                  <li key={`${e.cita_id}-${e.etapa}`} className="flex min-h-14 items-center gap-3 border-b border-linea/60 py-2 last:border-0">
+                    <Link href={`${PANEL}/cita/${e.cita_id}`} className="min-w-0 flex-1 hover:text-stencil-claro">
+                      <span className="block truncate font-semibold">{e.nombre}</span>
+                      <span className="block truncate text-[13px] text-ceniza">
+                        {ETAPAS.find((x) => x.id === e.etapa)?.texto} · {fechaRelativa(e.inicio.slice(0, 10), hoy)}
+                      </span>
+                    </Link>
+                    <BotonSeguimiento
+                      citaId={e.cita_id}
+                      etapa={e.etapa}
+                      href={`https://wa.me/${e.telefono}?text=${encodeURIComponent(rellenar(mensajes[e.etapa], { nombre: e.nombre.split(" ")[0], cuidados: "https://tatuajes-azure.vercel.app/#cuidados" }))}`}
+                      enviado={false}
+                      toca
+                    >
+                      Mandar
+                    </BotonSeguimiento>
+                  </li>
+                ))}
+              </ul>
             </Tarjeta>
           )}
         </div>

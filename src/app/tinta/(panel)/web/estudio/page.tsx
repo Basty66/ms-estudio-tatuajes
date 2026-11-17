@@ -11,7 +11,7 @@ export default async function Estudio() {
   const { estudio } = await leerContenido();
   return (
     <>
-      <Encabezado volver={`${PANEL}/web`} etiqueta="Web" titulo="Contacto y dirección" />
+      <Encabezado volver={`${PANEL}/web`} titulo="Contacto y dirección" />
       <EditarEstudio inicial={estudio} />
     </>
   );

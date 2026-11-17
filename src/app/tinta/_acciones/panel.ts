@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { esChoqueDeHoras, sql } from "@/db/conexion";
-import { borrarComprobante, borrarFoto as borrarArchivoFoto, guardarComprobante, guardarFoto, hayComprobantes, hayGaleria } from "@/lib/admin/almacen";
+import { borrarPrivado, borrarFoto as borrarArchivoFoto, guardarComprobante, guardarFoto, hayPrivado, hayGaleria } from "@/lib/admin/almacen";
 import { esFecha, esHora, sumarMinutos } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { usuarioActual } from "@/lib/admin/sesion";
@@ -304,7 +304,7 @@ export async function registrarPago(formulario: FormData): Promise<Respuesta> {
   const archivo = formulario.get("comprobante");
   let ruta: string | null = null;
   if (archivo instanceof File && archivo.size > 0) {
-    if (!hayComprobantes) return { ok: false, error: "Falta conectar el almacén privado de comprobantes en Vercel." };
+    if (!hayPrivado) return { ok: false, error: "Falta conectar el almacén privado de comprobantes en Vercel." };
     if (archivo.size > 4 * 1024 * 1024) return { ok: false, error: "El archivo pesa más de 4 MB." };
     try {
       ruta = await guardarComprobante(citaId, archivo);
@@ -319,7 +319,7 @@ export async function registrarPago(formulario: FormData): Promise<Respuesta> {
     RETURNING id
   `) as Array<{ id: number }>;
   if (filas.length === 0) {
-    if (ruta) await borrarComprobante(ruta).catch(() => undefined);
+    if (ruta) await borrarPrivado(ruta).catch(() => undefined);
     return { ok: false, error: "Esa cita no existe." };
   }
   refrescar(`${PANEL}/cita/${citaId}`, `${PANEL}/finanzas`);
@@ -335,7 +335,7 @@ export async function borrarPago(id: number): Promise<Respuesta> {
   if (!p) return { ok: true };
   if (p.comprobante) {
     try {
-      await borrarComprobante(p.comprobante);
+      await borrarPrivado(p.comprobante);
     } catch {
       return { ok: false, error: "No se pudo borrar el comprobante. Vuelve a intentarlo." };
     }
@@ -386,6 +386,12 @@ export async function subirFoto(formulario: FormData): Promise<Respuesta> {
   if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: "Elige una foto." };
   if (!alt || !estilo || !zona || !ancho || !alto) return { ok: false, error: "Completa la descripción, el estilo y la zona." };
   if (archivo.size > 4 * 1024 * 1024) return { ok: false, error: "La foto pesa más de 4 MB." };
+  // Desde una cita: si el cliente firmó que NO se publiquen fotos, no se sube.
+  const citaId = formulario.get("cita") ? entero(formulario.get("cita"), 1, 2e9) : null;
+  if (citaId) {
+    const [k] = (await sql`SELECT permite_fotos FROM consentimientos WHERE cita_id = ${citaId} AND firmado_en IS NOT NULL`) as Array<{ permite_fotos: boolean }>;
+    if (k && !k.permite_fotos) return { ok: false, error: "En su consentimiento no autorizó publicar fotos." };
+  }
   let subida: { url: string; ruta: string };
   try {
     subida = await guardarFoto(archivo);
@@ -393,11 +399,11 @@ export async function subirFoto(formulario: FormData): Promise<Respuesta> {
     return { ok: false, error: (e as Error).message };
   }
   await sql`
-    INSERT INTO galeria (url, ruta, alt, estilo, zona, ancho, alto, orden, subida_por)
+    INSERT INTO galeria (url, ruta, alt, estilo, zona, ancho, alto, orden, subida_por, cita_id)
     VALUES (${subida.url}, ${subida.ruta}, ${alt}, ${estilo}, ${zona}, ${ancho}, ${alto},
-            (SELECT COALESCE(MIN(orden), 0) - 1 FROM galeria), ${u.nombre})
+            (SELECT COALESCE(MIN(orden), 0) - 1 FROM galeria), ${u.nombre}, ${citaId})
   `;
-  refrescar(`${PANEL}/galeria`, "/");
+  refrescar(`${PANEL}/galeria`, "/", ...(citaId ? [`${PANEL}/cita/${citaId}`] : []));
   return { ok: true };
 }
 

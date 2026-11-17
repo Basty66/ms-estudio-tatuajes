@@ -1,77 +1,40 @@
 # Plan — próxima sesión
 
-Consentimiento informado digital y lo que más le sirve al tatuador en el panel. Se trabaja en la
-rama `v2` y al terminar se publica en **producción** con `vercel --prod` (nunca con un push a
-`master`: eso vuelve a poner el sitio viejo).
+Se trabaja en la rama `v2` y al terminar se publica en **producción** con `vercel --prod` (nunca con
+un push a `master`: eso vuelve a poner el sitio viejo).
 
-## 0. Antes de escribir código
+## 1. Que el tatuador cambie todo sin pedirle nada a nadie
 
-Verificar, no suponer:
+Ya se cambia desde el panel (Web): fotos, galería, precios del cotizador (montos por tamaño y
+recargos por estilo y zona), contacto, reseñas, textos del tatuador, preguntas, cuidados,
+consentimiento y mensajes de WhatsApp, cada uno con vista previa antes de guardar.
 
-- **Ley 21.719** (protección de datos personales): fecha exacta de entrada en vigor (se recuerda
-  diciembre de 2026) y qué exige para datos de salud, que son datos sensibles: consentimiento
-  expreso, finalidad, plazo de conservación, derechos de acceso y eliminación, medidas de seguridad.
-- **Tatuajes a menores en Chile**: la norma real. La sección de preguntas de la web dice "desde los
-  18; entre 16 y 17 con autorización notarial y ambos padres presentes": confirmarlo antes de
-  usarlo en un texto legal.
+Sigue fijo en el código, en orden de lo que más se pide:
 
-Preguntarle al dueño del estudio, en una sola tanda:
+- **Cotizador**: agregar o quitar estilos (p. ej. Microrrealismo), cambiar el nombre y el rango de
+  cada tamaño ("hasta 8 cm"). Hoy solo se cambian los montos.
+- **Agenda**: las horas y duraciones que sugiere "Nueva cita", y los días de atención.
+- **Equipo**: sumar a Matness como segundo usuario desde Cuenta (hoy es un INSERT a mano).
+- **Textos de cada sección**: bajadas de los títulos, los cuatro pasos de "Una sesión" y la
+  sección del láser.
+- **Google**: título y descripción de la portada.
+- Videos del hero y del láser (pesan: evaluar si vale la pena subirlos desde el teléfono).
 
-1. ¿El consentimiento se manda por WhatsApp antes de la sesión, se firma en el estudio, o ambos?
-2. ¿Cuánto tiempo se guardan los consentimientos firmados?
-3. ¿Qué se hace con los datos de consentimientos del sitio viejo: se migran o se borran?
+Patrón a seguir: un bloque más en la tabla `contenido` (migración que amplía el CHECK de `clave`),
+su `normalizar…` en `src/lib/contenido.ts`, su editor en `EditoresWeb.tsx` y su vista previa en
+`VistaEnVivo.tsx`.
 
-## 1. Consentimiento informado digital
+## 2. Pendiente de la entrega del consentimiento
 
-- Desde la ficha de cita: **"Mandar consentimiento por WhatsApp"** (link con token aleatorio, de un
-  solo uso y con vencimiento, a una página pública no indexada) y **"Firmar aquí"** para hacerlo en
-  el teléfono del estudio.
-- Contenido:
-  - Datos del cliente: nombre, RUT, fecha de nacimiento y teléfono.
-  - Declaración de salud. Base del sitio viejo: alergias (con detalle), coagulación o
-    anticoagulantes, diabetes, enfermedad cardíaca, epilepsia, VIH o hepatitis, embarazo o
-    lactancia, alcohol o drogas el día de la sesión y medicamentos. Evaluar sumar problemas de piel
-    en la zona (queloides, psoriasis) y quitar lo que no haga falta: pedir solo lo necesario.
-  - Riesgos que se aceptan y declaración de que la información es verdadera.
-  - Aceptación del tratamiento de datos, separada del resto.
-  - Permiso **opcional y aparte** para publicar fotos del tatuaje.
-  - Firma en pantalla, fecha y hora, y versión del texto aceptado.
-- Sin foto de carnet. Si para un menor hay que guardar la autorización notarial, va al almacén
-  **privado**.
-- La firma y el PDF van al almacén privado de Blob y solo se ven con sesión del panel (mismo patrón
-  que `/tinta/comprobante`). Cada consentimiento queda ligado a su cliente y a su cita.
-- En el panel:
-  - Aviso **"Falta consentimiento"** en Hoy y en la ficha de la cita.
-  - Las alertas de salud (alergias, anticoagulantes) visibles en la ficha antes de tatuar.
-  - Ver o descargar el PDF.
-  - Borrar los datos de un cliente cuando lo pida.
-- Requisito: el almacén privado de Blob (`BLOB_PRIVADO_READ_WRITE_TOKEN`). El código viejo de
-  referencia está en el historial: `git show c4e1413^:api/consentimiento.ts` (también
-  `sql/consentimientos.sql`, `src/components/Consentimiento.tsx` y `src/lib/pdfConsentimiento.ts`).
-
-## 2. Limpieza del sitio viejo
-
-- Revisar los archivos que dejó el sitio viejo en el almacén de Blob y borrar, con confirmación del
-  dueño, los que tengan datos personales.
-- Averiguar si sigue existiendo la tabla de consentimientos del sitio viejo y aplicar lo que se
-  decida (migrarla al formato nuevo o borrarla).
-- Quitar de Vercel las variables del sitio viejo y rotar sus credenciales.
-
-## 3. Útil para el tatuador
-
-Proponer y que el dueño elija la prioridad; no hacerlo todo sin preguntar.
-
-- Página de privacidad en la web (la ley la pide si se recogen datos).
-- Cuidados por WhatsApp desde una cita hecha: día siguiente, día 7 y día 30. Si se menciona el
-  retoque, se cobra: **el estudio no ofrece retoque gratis**.
-- Foto del trabajo terminado desde la cita, directo a la galería.
-- Registro de tintas y agujas (lote) por sesión, si la autoridad sanitaria lo exige: verificarlo.
-- Pedir reseña de Google al cerrar una cita (nunca inventar reseñas).
-
-## 4. También pendiente
-
+- Probar Face ID, avisos y la firma con el dedo en un iPhone y un Android reales, con la app
+  instalada.
 - Clave definitiva del panel en producción (ver `AGENTS.md`).
-- Probar Face ID y avisos en un iPhone y un Android reales, con la app instalada.
+- Conseguir el link de reseñas de Google (Perfil de Empresa → Pedir reseñas) y pegarlo en
+  Web → Contacto y datos.
+- Ley 21.719: el Congreso aprobó postergarla a 2027 (noviembre 2026); confirmar la fecha cuando
+  se publique.
+- Menores: no se encontró el texto oficial del reglamento. El formulario pide representante,
+  su firma y que acompañe toda la sesión.
 
 ## Al terminar
 

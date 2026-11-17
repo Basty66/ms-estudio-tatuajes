@@ -2,16 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EstadoCita, FilaPago, NuevoPago } from "@/componentes/panel/AccionesCita";
 import { claseBoton } from "@/componentes/panel/Boton";
+import { BotonSeguimiento, ConsentimientoCita } from "@/componentes/panel/Consentimiento";
 import { Encabezado, Tarjeta, TituloBloque } from "@/componentes/panel/Encabezado";
-import { Telefono } from "@/componentes/panel/Iconos";
+import { FotoDeCita } from "@/componentes/panel/Galeria";
+import { Check, Telefono } from "@/componentes/panel/Iconos";
 import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
 import { leerContenido } from "@/db/contenido";
+import { consentimientoDeCita, ETAPAS, fotosDeCita, seguimientosDeCita } from "@/db/consentimientos";
 import { cita as leerCita, pagosDeCita } from "@/db/panel";
-import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, TIPO } from "@/lib/admin/etiquetas";
-import { ahoraChile, duracionTexto, fechaLarga, fechaRelativa, hora, minutosEntre } from "@/lib/admin/fecha";
+import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, nombreZona, TIPO } from "@/lib/admin/etiquetas";
+import { ahoraChile, duracionTexto, fechaCorta, fechaLarga, fechaRelativa, hora, hoyChile, minutosEntre, sumarDias } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
 import { formatearTelefono } from "@/lib/admin/telefono";
+import { esUrgente } from "@/lib/consentimiento";
+import { rellenar } from "@/lib/contenido";
+import { ESTILOS } from "@/lib/estudio";
 
 export const dynamic = "force-dynamic";
 
@@ -21,39 +27,48 @@ function whatsapp(telefono: string, mensaje: string) {
   return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
 }
 
+/**
+ * La ficha de una cita, en el orden en que se usa: lo que hay que saber antes
+ * de empezar (alertas de salud), cuándo, el consentimiento y los pagos; a la
+ * derecha qué se hace y, cuando ya se hizo, el seguimiento y la foto.
+ */
 export default async function FichaCita({ params }: { params: Promise<{ id: string }> }) {
   await operadorDelPanel();
   const c = await leerCita(Number((await params).id) || 0);
   if (!c || c.tipo === "bloqueo") notFound();
-  const [pagos, { estudio }] = await Promise.all([pagosDeCita(c.id), leerContenido()]);
+  const [pagos, { estudio, mensajes }, consentimiento, enviados, fotos] = await Promise.all([
+    pagosDeCita(c.id),
+    leerContenido(),
+    consentimientoDeCita(c.id),
+    seguimientosDeCita(c.id),
+    fotosDeCita(c.id),
+  ]);
   const nombre = (c.cliente ?? "").split(" ")[0];
   const cuando = `${fechaLarga(c.inicio)} a las ${hora(c.inicio)}`;
   const duracion = duracionTexto(minutosEntre(c.inicio, c.fin));
   const empezo = c.inicio <= ahoraChile();
+  const hecha = c.estado === "completada";
+  const activa = c.estado === "confirmada" || hecha;
+  const manana = fechaRelativa(c.inicio).toLowerCase() === "mañana";
 
-  const confirmacion = [
-    `Hola ${nombre} 👋 Te confirmo tu hora en ${estudio.nombre}:`,
-    "",
-    `📅 ${cuando.charAt(0).toUpperCase() + cuando.slice(1)}`,
-    `⏱️ Aprox. ${duracion}`,
-    `📍 ${estudio.direccion}, ${estudio.comuna}`,
-    c.precio != null ? `💰 Valor: ${clp(c.precio)}` : null,
-    c.pagado > 0 ? `✅ Abono recibido: ${clp(c.pagado)}` : null,
-    c.saldo != null && c.saldo > 0 ? `💵 Saldo el día de la sesión: ${clp(c.saldo)}` : null,
-    "",
-    "Antes de venir: come bien, toma agua y evita el alcohol 24 h antes.",
-    `Cuidados después de la sesión: ${SITIO}/#cuidados`,
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
+  const valores = {
+    nombre,
+    estudio: estudio.nombre,
+    fecha: cuando,
+    cuando: manana ? `de mañana a las ${hora(c.inicio)}` : `del ${cuando}`,
+    duracion,
+    direccion: `${estudio.direccion}, ${estudio.comuna}`,
+    valor: c.precio != null ? clp(c.precio) : "",
+    abono: c.pagado > 0 ? clp(c.pagado) : "",
+    saldo: c.saldo != null && c.saldo > 0 ? clp(c.saldo) : "",
+    cuidados: `${SITIO}/#cuidados`,
+    link: estudio.resenas,
+  };
 
-  const recordatorio = [
-    `Hola ${nombre}, te recuerdo tu sesión ${fechaRelativa(c.inicio).toLowerCase() === "mañana" ? "de mañana" : `del ${cuando}`}${fechaRelativa(c.inicio).toLowerCase() === "mañana" ? ` a las ${hora(c.inicio)}` : ""} en ${estudio.direccion}, ${estudio.comuna}.`,
-    c.saldo != null && c.saldo > 0 ? `El saldo es ${clp(c.saldo)} (efectivo o transferencia).` : null,
-    "Si necesitas cambiar algo, avísame por acá 🙌",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const conSeguimiento = hecha && c.telefono && (c.tipo === "tatuaje" || c.tipo === "retoque");
+  const diasDesde = Math.round((Date.parse(hoyChile()) - Date.parse(c.inicio.slice(0, 10))) / 86_400_000);
+  // Las alertas importan hasta que la sesión se hace; después quedan en el PDF.
+  const alertas = activa && !hecha ? c.alertas : [];
 
   return (
     <>
@@ -68,6 +83,19 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
         }
       />
 
+      {alertas.length > 0 && (
+        <section aria-label="Antes de empezar" className="mb-4 rounded-3xl border border-sangre/50 bg-sangre/[0.08] p-4 sm:p-5 lg:mb-5">
+          <h2 className="text-[15px] font-semibold text-[#ff8a80]">Antes de empezar</h2>
+          <ul className="mt-2 flex flex-col gap-1">
+            {alertas.map((a) => (
+              <li key={a} className={`text-[16px] leading-snug ${esUrgente(a) ? "font-semibold text-piel" : "text-piel/85"}`}>
+                {a}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
         <div className="flex flex-col gap-4 lg:gap-5">
           <Tarjeta>
@@ -80,10 +108,10 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
             {c.telefono &&
               (!empezo && c.estado === "confirmada" ? (
                 <div className="mt-5 grid grid-cols-2 gap-2">
-                  <a href={whatsapp(c.telefono, confirmacion)} target="_blank" rel="noopener noreferrer" className={claseBoton("cromo", "min-h-11 px-3 text-[14px]")}>
+                  <a href={whatsapp(c.telefono, rellenar(mensajes.confirmacion, valores))} target="_blank" rel="noopener noreferrer" className={claseBoton("cromo", "min-h-11 px-3 text-[14px]")}>
                     <IconoWhatsapp className="size-5 shrink-0" /> Confirmar
                   </a>
-                  <a href={whatsapp(c.telefono, recordatorio)} target="_blank" rel="noopener noreferrer" className={claseBoton("linea", "min-h-11 px-3 text-[14px]")}>
+                  <a href={whatsapp(c.telefono, rellenar(mensajes.recordatorio, valores))} target="_blank" rel="noopener noreferrer" className={claseBoton("linea", "min-h-11 px-3 text-[14px]")}>
                     <IconoWhatsapp className="size-5 shrink-0" /> Recordar
                   </a>
                 </div>
@@ -95,6 +123,11 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
             <div className="mt-5 border-t border-linea pt-4">
               <EstadoCita id={c.id} estado={c.estado} empezo={empezo} />
             </div>
+          </Tarjeta>
+
+          <Tarjeta>
+            <TituloBloque>Consentimiento</TituloBloque>
+            <ConsentimientoCita citaId={c.id} resumen={consentimiento} telefono={c.telefono} activa={activa} hecha={hecha} />
           </Tarjeta>
 
           <Tarjeta>
@@ -150,6 +183,72 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
               {c.notas && <Dato t="Notas" v={c.notas} ancho />}
             </dl>
           </Tarjeta>
+
+          {hecha && (
+            <Tarjeta>
+              <TituloBloque>Después de la sesión</TituloBloque>
+              <ul className="flex flex-col divide-y divide-linea/60">
+                {conSeguimiento &&
+                  c.telefono &&
+                  ETAPAS.map((e) => {
+                    const enviado = enviados[e.id];
+                    const toca = diasDesde >= e.dia && diasDesde <= e.hasta;
+                    const fecha = sumarDias(c.inicio.slice(0, 10), e.dia);
+                    return (
+                      <li key={e.id} className="flex min-h-14 items-center gap-3 py-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-semibold">{e.texto}</span>
+                          <span className={`block text-[13px] ${toca && !enviado ? "text-stencil-claro" : "text-ceniza"}`}>
+                            {enviado ? `Mandado el ${fechaCorta(enviado)}` : toca ? "Toca hoy" : diasDesde < e.dia ? `El ${fechaCorta(fecha)}` : "Ya pasó el momento"}
+                          </span>
+                        </span>
+                        {enviado ? (
+                          <Check className="size-5 text-[#6ee7b7]" />
+                        ) : (
+                          <BotonSeguimiento citaId={c.id} etapa={e.id} href={whatsapp(c.telefono!, rellenar(mensajes[e.id], valores))} enviado={false} toca={toca}>
+                            Mandar
+                          </BotonSeguimiento>
+                        )}
+                      </li>
+                    );
+                  })}
+                {c.telefono && (
+                  <li className="flex min-h-14 items-center gap-3 py-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">Reseña en Google</span>
+                      <span className="block text-[13px] text-ceniza">
+                        {enviados.resena ? `Pedida el ${fechaCorta(enviados.resena)}` : estudio.resenas ? "Si quedó contento, pídele una." : "Falta tu link de reseñas."}
+                      </span>
+                    </span>
+                    {enviados.resena ? (
+                      <Check className="size-5 text-[#6ee7b7]" />
+                    ) : estudio.resenas ? (
+                      <BotonSeguimiento citaId={c.id} etapa="resena" href={whatsapp(c.telefono, rellenar(mensajes.resena, valores))} enviado={false} toca={false}>
+                        Pedir
+                      </BotonSeguimiento>
+                    ) : (
+                      <Link href={`${PANEL}/web/estudio`} className={claseBoton("linea", "min-h-10 shrink-0 px-4 text-[13px]")}>
+                        Agregarlo
+                      </Link>
+                    )}
+                  </li>
+                )}
+                <li>
+                  <FotoDeCita
+                    cita={c.id}
+                    fotos={fotos}
+                    bloqueada={consentimiento?.estado === "firmado" && consentimiento.permite_fotos === false}
+                    sinConsentimiento={consentimiento?.estado !== "firmado"}
+                    inicial={{
+                      alt: c.descripcion ?? "",
+                      estilo: ESTILOS.find((e) => e.toLowerCase() === (nombreEstilo(c.estilo) ?? "").toLowerCase()) ?? (c.tipo === "laser" ? "Borrado láser" : undefined),
+                      zona: nombreZona(c.zona) ?? undefined,
+                    }}
+                  />
+                </li>
+              </ul>
+            </Tarjeta>
+          )}
 
           <div className="flex items-center gap-2 rounded-3xl border border-linea bg-hollin/70 p-3 pl-4 sm:p-4 sm:pl-5">
             <Link href={`${PANEL}/cliente/${c.cliente_id}`} className="group flex min-w-0 flex-1 items-center gap-3">

@@ -11,14 +11,18 @@ import { Boton } from "./Boton";
 import { campo, Chip, Etiqueta } from "./FormularioCita";
 import { Atras, Flecha, Lapiz, Ojo, Papelera, Subir } from "./Iconos";
 
-/** Subir un trabajo: se reduce en el teléfono, se describe y queda primero en la web. */
-export function SubirFoto() {
+/**
+ * Subir un trabajo: se reduce en el teléfono, se describe y queda primero en
+ * la web. Desde la ficha de una cita llega con la cita y lo que ya se sabe
+ * (estilo, zona y diseño), para que sea elegir la foto y publicar.
+ */
+export function SubirFoto({ cita, inicial }: { cita?: number; inicial?: { alt?: string; estilo?: string; zona?: string } } = {}) {
   const router = useRouter();
   const [archivo, setArchivo] = useState<File | null>(null);
   const [vista, setVista] = useState<string | null>(null);
-  const [alt, setAlt] = useState("");
-  const [estilo, setEstilo] = useState<string>("Lettering");
-  const [zona, setZona] = useState("Antebrazo");
+  const [alt, setAlt] = useState(inicial?.alt ?? "");
+  const [estilo, setEstilo] = useState<string>(inicial?.estilo ?? "Lettering");
+  const [zona, setZona] = useState(inicial?.zona ?? "Antebrazo");
   const [error, setError] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState(false);
 
@@ -37,12 +41,13 @@ export function SubirFoto() {
       f.set("zona", zona);
       f.set("ancho", String(bitmap.width));
       f.set("alto", String(bitmap.height));
+      if (cita) f.set("cita", String(cita));
       bitmap.close();
       const r = await subirFoto(f);
       if (!r.ok) return setError(r.error);
       setArchivo(null);
       setVista(null);
-      setAlt("");
+      setAlt(inicial?.alt ?? "");
       router.refresh();
     } catch (e) {
       setError((e as Error).message || "No se pudo subir.");
@@ -52,15 +57,15 @@ export function SubirFoto() {
   }
 
   return (
-    <form onSubmit={enviar} className="flex flex-col gap-4 rounded-3xl border border-linea bg-hollin/70 p-4 sm:p-5">
-      <label className="relative flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-linea text-ceniza hover:border-stencil/60 hover:text-piel">
+    <form onSubmit={enviar} className={`flex flex-col gap-4 ${cita ? "" : "rounded-3xl border border-linea bg-hollin/70 p-4 sm:p-5"}`}>
+      <label className={`relative flex ${cita && !vista ? "min-h-28" : "aspect-[4/3]"} cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-linea text-ceniza hover:border-stencil/60 hover:text-piel`}>
         {vista ? (
           // eslint-disable-next-line @next/next/no-img-element -- vista previa local (blob:), no pasa por el optimizador
           <img src={vista} alt="" className="absolute inset-0 size-full object-cover" />
         ) : (
           <>
             <Subir className="size-7" />
-            <span className="text-[14px]">Elegir foto del trabajo</span>
+            <span className="text-[14px]">{cita ? "Subir foto del trabajo terminado" : "Elegir foto del trabajo"}</span>
           </>
         )}
         <input
@@ -105,6 +110,61 @@ export function SubirFoto() {
         </>
       )}
     </form>
+  );
+}
+
+/** En la ficha de una cita hecha: las fotos ya subidas y, al tocar, el formulario para subir otra. */
+export function FotoDeCita({
+  cita,
+  inicial,
+  fotos,
+  bloqueada,
+  sinConsentimiento,
+}: {
+  cita: number;
+  inicial: { alt?: string; estilo?: string; zona?: string };
+  fotos: Array<{ id: number; url: string; alt: string; visible: boolean }>;
+  bloqueada: boolean;
+  sinConsentimiento: boolean;
+}) {
+  const [abierta, setAbierta] = useState(false);
+  return (
+    <div className="py-2">
+      <div className="flex min-h-12 items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">Foto del trabajo</span>
+          <span className={`block text-[13px] ${bloqueada ? "text-[#fbbf24]" : "text-ceniza"}`}>
+            {bloqueada
+              ? "No autorizó publicar fotos."
+              : fotos.length > 0
+                ? `${fotos.length} en la galería`
+                : sinConsentimiento
+                  ? "Sin consentimiento: pregúntale antes."
+                  : "Directo a la galería de la web."}
+          </span>
+        </span>
+        {!bloqueada && (
+          <Boton variante={abierta ? "fantasma" : "linea"} onClick={() => setAbierta(!abierta)} className="min-h-10 shrink-0 px-4 text-[13px]">
+            {abierta ? "Cerrar" : <><Subir className="size-4" /> Subir</>}
+          </Boton>
+        )}
+      </div>
+      {fotos.length > 0 && (
+        <ul className="mt-2 flex gap-2 overflow-x-auto">
+          {fotos.map((f) => (
+            <li key={f.id} className={`relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-xl border border-linea ${f.visible ? "" : "opacity-50"}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- miniatura chica, no vale la pena optimizarla */}
+              <img src={f.url} alt={f.alt} className="size-full object-cover" />
+            </li>
+          ))}
+        </ul>
+      )}
+      {abierta && (
+        <div className="panel-surge mt-3">
+          <SubirFoto cita={cita} inicial={inicial} />
+        </div>
+      )}
+    </div>
   );
 }
 

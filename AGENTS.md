@@ -31,20 +31,28 @@ PIN de 4 dígitos, candado por inactividad, biometría por aparato, PWA solo en 
 ```
 src/app/(sitio)/        Portada pública (orden de secciones en src/lib/estudio.ts → SECCIONES)
 src/app/not-found.tsx   404 del láser. También es lo que ve quien prueba /admin.
+src/app/consentimiento/[token]  Consentimiento que firma el cliente (link de un solo uso, no indexado)
+src/app/privacidad/     Política de privacidad (Ley 21.719); responsable y contacto salen del panel
 src/app/tinta/          Panel (ruta "secreta"; constante PANEL en src/lib/admin/ruta.ts)
   entrar/               Nombre → clave del panel → PIN; o desbloqueo con PIN / Face ID
   (panel)/              Hoy, agenda, nueva, cita/[id], clientes, cliente/[id], finanzas,
                         cotizaciones, galeria, web/*, cuenta, mas
-  (panel)/web/          Lo que se cambia de la web: fotos fijas, precios, contacto,
-                        tatuador, preguntas y cuidados
+  (panel)/web/          Lo que ven los clientes: fotos fijas, precios, contacto y reseñas,
+                        tatuador, preguntas, cuidados, consentimiento y mensajes de WhatsApp
+  vista/                Vista previa de los editores: la sección real con el borrador (postMessage)
+  consentimiento/[id]   PDF de un consentimiento firmado, solo con sesión
   _acciones/            Server Actions (entrar, avisos, panel, contenido). CADA una comprueba la sesión.
   cambios/              "¿Cambió algo?" + versión publicada (el panel se refresca solo)
   comprobante/[...]     Entrega comprobantes del almacén privado, solo con sesión
 src/app/api/cotizacion  POST público del cotizador → guarda y avisa por push (10/h por origen)
-src/app/api/mantencion/avisos  Cron diario (vercel.json): sesiones de hoy y mañana
+src/app/api/consentimiento  POST público de la firma: lo autoriza el token del link, responde el PDF
+src/app/api/mantencion/avisos  Cron diario (vercel.json): sesiones de hoy y mañana, y borra
+                        consentimientos vencidos (5 años) y links abandonados
 src/proxy.ts            Barrera barata del panel (en Next 16 se llama proxy, no middleware)
 src/db/                 conexion.ts, lecturas del panel (panel.ts) y contenido de la web (contenido.ts)
 src/lib/contenido.ts    Contenido editable: tipos, valores de fábrica y revisión de lo guardado
+src/lib/consentimiento.ts  Preguntas de salud, textos que se aceptan, RUT y edad (cliente y servidor)
+src/lib/admin/pdf.ts    PDF del consentimiento (pdf-lib), con la gótica incrustada en fuente-gotica.ts
 src/lib/admin/          sesion, pin, biometria, apertura (candado), avisos, almacen, fecha (hora de Chile)
 src/lib/cuerpo.ts       Siluetas del mapa del cotizador (generado; trazos MIT de react-native-body-highlighter)
 public/tinta/           manifest.webmanifest, sw.js e íconos de la PWA del panel
@@ -65,6 +73,15 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
   falte o venga mal vuelve al valor de fábrica. La portada nunca lee la tabla directo.
 - WhatsApp, Instagram y dirección llegan a los componentes de cliente por `useEstudio()`
   (layout del sitio); no importar `ESTUDIO` para mostrarlos, son solo los de fábrica.
+- Consentimiento (datos de salud, Ley 21.719): del link se guarda solo el hash del token, sirve una
+  vez y vence (7 días; 1 hora con "Firmar aquí"). La firma va al almacén privado. Se guarda una copia
+  exacta del texto aceptado (`texto`) y el PDF se arma con ella, nunca con los textos de hoy. Se pide
+  lo mínimo: no se pregunta por VIH ni hepatitis.
+- Los mensajes de WhatsApp salen de plantillas editables (`mensajes`) con `rellenar()`: una línea
+  cuya llave queda sin valor no se manda.
+- Sin emojis en la web, el panel ni los mensajes: íconos SVG de `componentes/panel/Iconos.tsx`.
+- Animaciones solo con transform, opacity o clip-path, y siempre con su versión para
+  `prefers-reduced-motion`.
 
 ## Base de datos
 
@@ -101,8 +118,12 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
 - [x] Variables del panel en Vercel para **Production** (2026-11-14) y v2 con panel publicada en producción.
 - [ ] Clave definitiva del panel en producción: cambiar `ADMIN_CLAVE` en `.env.local`, volver a correr
       `node scripts/variables-vercel.mjs production` y redesplegar.
-- [ ] Almacén privado de comprobantes (`BLOB_PRIVADO_READ_WRITE_TOKEN`).
-- [ ] Consentimiento informado digital y limpieza de lo que dejó el sitio viejo (ver `PLAN.md`).
+- [x] Almacén privado `matness-privado` (São Paulo) conectado con prefijo `BLOB_PRIVADO` en los tres
+      entornos (2026-11-17).
+- [x] Consentimiento informado digital, seguimiento por WhatsApp, reseñas, foto desde la cita,
+      privacidad y vista previa en los editores (2026-11-17). `db/003` aplicado en `dev`.
+- [ ] `db/003_consentimientos.sql` en la rama `production` antes de publicar.
+- [ ] Borrar el proyecto viejo de Neon (con los consentimientos de prueba del sitio viejo).
 - [ ] Quitar de Vercel las variables del sitio viejo y rotar sus credenciales.
 - [ ] Probar Face ID y avisos en un iPhone y un Android reales, con la app instalada.
 

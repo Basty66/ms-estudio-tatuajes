@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { claseBoton } from "@/componentes/panel/Boton";
+import { BorrarDatosCliente } from "@/componentes/panel/Consentimiento";
 import { EditarCliente } from "@/componentes/panel/EditarCliente";
 import { Cifra, Encabezado, Tarjeta, TituloBloque } from "@/componentes/panel/Encabezado";
 import { FilaCita } from "@/componentes/panel/FilaCita";
-import { Mas, Telefono } from "@/componentes/panel/Iconos";
+import { Documento, Mas, Telefono } from "@/componentes/panel/Iconos";
 import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
+import { consentimientosDeCliente } from "@/db/consentimientos";
 import { citasDeCliente, cliente as leerCliente } from "@/db/panel";
-import { clp } from "@/lib/admin/etiquetas";
+import { clp, TIPO } from "@/lib/admin/etiquetas";
+import { fechaCorta } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
 import { formatearTelefono } from "@/lib/admin/telefono";
@@ -19,14 +22,15 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
   await operadorDelPanel();
   const c = await leerCliente(Number((await params).id) || 0);
   if (!c) notFound();
-  const citas = await citasDeCliente(c.id);
+  const [citas, consentimientos] = await Promise.all([citasDeCliente(c.id), consentimientosDeCliente(c.id)]);
+  const borrado = c.nombre === "Datos borrados" && !c.telefono;
   const hechas = citas.filter((x) => x.estado === "completada");
   const pagado = citas.reduce((t, x) => t + x.pagado, 0);
   const debe = citas.filter((x) => x.estado !== "cancelada").reduce((t, x) => t + (x.saldo ?? 0), 0);
 
   return (
     <>
-      <Encabezado volver={`${PANEL}/clientes`} etiqueta="Cliente" titulo={c.nombre} accion={<EditarCliente c={c} />} />
+      <Encabezado volver={`${PANEL}/clientes`} titulo={c.nombre} accion={<EditarCliente c={c} />} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-5">
         <div className="flex flex-col gap-4">
@@ -79,6 +83,30 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
               </div>
             </dl>
           </Tarjeta>
+
+          {consentimientos.length > 0 && (
+            <Tarjeta>
+              <TituloBloque>Consentimientos</TituloBloque>
+              <ul className="flex flex-col">
+                {consentimientos.map((k) => (
+                  <li key={k.id} className="flex min-h-14 items-center gap-3 border-b border-linea/60 py-2 last:border-0">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold first-letter:uppercase">
+                        {TIPO[k.tipo]} · {fechaCorta(k.inicio)}
+                      </span>
+                      <span className={`block truncate text-[13px] ${k.alertas.length ? "text-[#ff8a80]" : "text-ceniza"}`}>
+                        {k.alertas.length ? k.alertas.join(" · ") : "Sin alertas de salud"}
+                      </span>
+                    </span>
+                    <a href={`${PANEL}/consentimiento/${k.id}`} target="_blank" rel="noopener noreferrer" aria-label="Ver PDF" className="grid size-10 shrink-0 place-items-center rounded-full border border-linea text-stencil-claro hover:border-stencil">
+                      <Documento className="size-5" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Tarjeta>
+          )}
+
         </div>
 
         <Tarjeta>
@@ -95,6 +123,14 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
             </ul>
           )}
         </Tarjeta>
+      </div>
+
+      <div className="mt-8 lg:max-w-md">
+        {borrado ? (
+          <p className="text-[13px] text-ceniza">Sus datos personales ya se borraron. Quedan solo sus citas y pagos.</p>
+        ) : (
+          <BorrarDatosCliente clienteId={c.id} nombre={c.nombre.split(" ")[0]} />
+        )}
       </div>
     </>
   );

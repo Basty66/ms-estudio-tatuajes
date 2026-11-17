@@ -97,6 +97,18 @@ export const Flecha = (p: P) => (
     <path d="M5 12h14M13 6l6 6-6 6" />
   </Icono>
 );
+/** Sale a otra página o a otra app. */
+export const Externo = (p: P) => (
+  <Icono {...p}>
+    <path d="M8 16 16 8M9.5 8H16v6.5" />
+  </Icono>
+);
+/** El doble visto de un mensaje leído. */
+export const DobleVisto = (p: P) => (
+  <Icono {...p}>
+    <path d="m2.5 12.5 4 4 8-9M11 16l1 1 8-9" />
+  </Icono>
+);
 export const Atras = (p: P) => (
   <Icono {...p}>
     <path d="M15 5l-7 7 7 7" />

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { BotonMagnetico } from "./BotonMagnetico";
 import { useEstudio } from "./DatosEstudio";
-import { Indice } from "./Indice";
 
 const DATOS = [
   { dato: "4 a 8 semanas", detalle: "entre sesiones, para que la piel se recupere" },
@@ -111,7 +110,6 @@ export function Laser() {
       <div className="relative mx-auto grid max-w-[1400px] gap-x-10 gap-y-8 px-4 py-24 sm:px-8 lg:grid-cols-12 lg:gap-y-12 lg:py-36">
         {/* Fila 1: qué es y qué esperar */}
         <div className="lg:col-span-7">
-          <Indice id="laser" className="mb-4 lg:mb-6" />
           <h2 id="titulo-laser" className="texto-cromo font-gotica text-[clamp(3.25rem,9vw,6.5rem)] leading-[0.85]">
             Borrado láser
           </h2>

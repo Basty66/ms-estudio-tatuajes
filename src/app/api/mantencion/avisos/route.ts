@@ -1,4 +1,6 @@
+import { sql } from "@/db/conexion";
 import { citasEntre, sinCerrar } from "@/db/panel";
+import { borrarPrivado } from "@/lib/admin/almacen";
 import { avisar } from "@/lib/admin/avisos";
 import { clp, nombreDonde, TIPO } from "@/lib/admin/etiquetas";
 import { hora, hoyChile, sumarDias } from "@/lib/admin/fecha";
@@ -6,8 +8,12 @@ import { PANEL } from "@/lib/admin/ruta";
 
 /**
  * Aviso de cada mañana (cron de Vercel, ver vercel.json): las sesiones de hoy
- * y de mañana, con el saldo que hay que cobrar, y las citas que quedaron sin
- * cerrar.
+ * y de mañana, con el saldo que hay que cobrar y si falta el consentimiento,
+ * y las citas que quedaron sin cerrar.
+ *
+ * De paso hace la limpieza que pide la ley de datos: borra los
+ * consentimientos que cumplieron su plazo (primero la firma, después la fila)
+ * y los links que vencieron hace más de un mes sin firmarse.
  *
  * Exige CRON_SECRET siempre (Vercel lo manda solo como Bearer). Con
  * ?simular=1 devuelve lo que mandaría, sin mandarlo.
@@ -20,12 +26,15 @@ export async function GET(request: Request) {
     return new Response("No autorizado", { status: 401 });
   }
 
+  const simular = new URL(request.url).searchParams.has("simular");
+  const limpieza = simular ? null : await limpiarConsentimientos();
+
   const hoy = hoyChile();
   const manana = sumarDias(hoy, 1);
   const [citas, abiertas] = await Promise.all([citasEntre(hoy, manana), sinCerrar()]);
   const sesiones = citas.filter((c) => c.tipo !== "bloqueo" && c.estado === "confirmada");
   const linea = (c: (typeof sesiones)[number]) =>
-    `${hora(c.inicio)} ${c.cliente} · ${nombreDonde(c.zona, c.lado) ?? TIPO[c.tipo]}${c.saldo ? ` · cobrar ${clp(c.saldo)}` : ""}`;
+    `${hora(c.inicio)} ${c.cliente} · ${nombreDonde(c.zona, c.lado) ?? TIPO[c.tipo]}${c.saldo ? ` · cobrar ${clp(c.saldo)}` : ""}${c.consentimiento === "firmado" ? "" : " · sin consentimiento"}`;
   const deHoy = sesiones.filter((c) => c.inicio.startsWith(hoy));
   const deManana = sesiones.filter((c) => c.inicio.startsWith(manana));
 
@@ -35,7 +44,7 @@ export async function GET(request: Request) {
     abiertas.length ? `${abiertas.length} ${abiertas.length === 1 ? "cita pasada sin cerrar" : "citas pasadas sin cerrar"}.` : null,
   ].filter(Boolean);
 
-  if (partes.length === 0) return Response.json({ enviado: false, motivo: "nada que avisar" });
+  if (partes.length === 0) return Response.json({ enviado: false, motivo: "nada que avisar", limpieza });
 
   const aviso = {
     titulo: deHoy.length ? `Hoy: ${deHoy.length} ${deHoy.length === 1 ? "sesión" : "sesiones"}` : deManana.length ? `Mañana: ${deManana.length} ${deManana.length === 1 ? "sesión" : "sesiones"}` : "Citas sin cerrar",
@@ -43,6 +52,28 @@ export async function GET(request: Request) {
     url: PANEL,
     tag: "resumen-diario",
   };
-  if (new URL(request.url).searchParams.has("simular")) return Response.json({ simulado: aviso });
-  return Response.json({ enviado: true, ...(await avisar(aviso)) });
+  if (simular) return Response.json({ simulado: aviso });
+  return Response.json({ enviado: true, ...(await avisar(aviso)), limpieza });
+}
+
+async function limpiarConsentimientos(): Promise<{ vencidos: number; links: number }> {
+  const vencidos = (await sql`
+    SELECT id, firma FROM consentimientos
+    WHERE conservar_hasta < (NOW() AT TIME ZONE 'America/Santiago')::DATE
+  `) as Array<{ id: number; firma: string | null }>;
+  let borrados = 0;
+  for (const k of vencidos) {
+    try {
+      if (k.firma) await borrarPrivado(k.firma);
+      await sql`DELETE FROM consentimientos WHERE id = ${k.id}`;
+      borrados++;
+    } catch (error) {
+      // Si el archivo no se pudo borrar, la fila se queda para intentarlo mañana.
+      console.error("limpieza consentimiento", k.id, error);
+    }
+  }
+  const links = (await sql`
+    DELETE FROM consentimientos WHERE firmado_en IS NULL AND vence_en < NOW() - INTERVAL '30 days' RETURNING id
+  `) as Array<{ id: number }>;
+  return { vencidos: borrados, links: links.length };
 }

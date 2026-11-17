@@ -6,9 +6,10 @@ import { del, get, put } from "@vercel/blob";
  *
  *   - PÚBLICO: las fotos de la galería y las fijas de la portada (retratos,
  *     proceso…). Se muestran en la web, es su función.
- *   - PRIVADO: los comprobantes de pago. Llevan nombre, RUT, banco y cuenta de
- *     un tercero; nunca se sirven directo, solo por /tinta/comprobante, que
- *     exige sesión del panel.
+ *   - PRIVADO: los comprobantes de pago (nombre, RUT, banco y cuenta de un
+ *     tercero) y las firmas de los consentimientos (datos de salud). Nunca se
+ *     sirven directo: solo por /tinta/comprobante y /tinta/consentimiento,
+ *     que exigen sesión del panel.
  *
  * Cada almacén tiene su token. Al conectar el segundo almacén al proyecto en
  * Vercel, se le pone el prefijo BLOB_PRIVADO para que no pise al primero.
@@ -17,7 +18,7 @@ const TOKEN_PUBLICO = process.env.BLOB_READ_WRITE_TOKEN ?? "";
 const TOKEN_PRIVADO = process.env.BLOB_PRIVADO_READ_WRITE_TOKEN ?? "";
 
 export const hayGaleria = Boolean(TOKEN_PUBLICO);
-export const hayComprobantes = Boolean(TOKEN_PRIVADO);
+export const hayPrivado = Boolean(TOKEN_PRIVADO);
 
 /**
  * Los bytes mandan, no la extensión: los iPhone entregan ".PNG" que en
@@ -47,11 +48,28 @@ export async function guardarComprobante(citaId: number, archivo: File): Promise
   return r.pathname;
 }
 
-export async function leerComprobante(ruta: string) {
+/** La firma de un consentimiento: un PNG chico, que ya se revisó que sea PNG. */
+export async function guardarFirma(citaId: number, png: Uint8Array): Promise<string> {
+  const r = await put(`consentimientos/cita-${citaId}/firma.png`, Buffer.from(png), {
+    access: "private",
+    contentType: "image/png",
+    addRandomSuffix: true,
+    token: TOKEN_PRIVADO,
+  });
+  return r.pathname;
+}
+
+export async function leerPrivado(ruta: string) {
   return get(ruta, { access: "private", token: TOKEN_PRIVADO });
 }
 
-export async function borrarComprobante(ruta: string): Promise<void> {
+export async function leerPrivadoEntero(ruta: string): Promise<Uint8Array | null> {
+  const r = await leerPrivado(ruta).catch(() => null);
+  if (!r || r.statusCode !== 200 || !r.stream) return null;
+  return new Uint8Array(await new Response(r.stream).arrayBuffer());
+}
+
+export async function borrarPrivado(ruta: string): Promise<void> {
   await del(ruta, { token: TOKEN_PRIVADO });
 }
 

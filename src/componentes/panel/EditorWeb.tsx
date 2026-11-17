@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { guardarContenido, restaurarContenido } from "@/app/tinta/_acciones/contenido";
 import type { ClaveBloque, Par } from "@/lib/contenido";
 import { Boton } from "./Boton";
 import { campo, Etiqueta } from "./FormularioCita";
-import { Atras, Cerrar, Flecha, Mas } from "./Iconos";
+import { Atras, Cerrar, Flecha, Mas, Ojo } from "./Iconos";
+import { VistaPrevia } from "./VistaPrevia";
 
 type Mensaje = { texto: string; malo: boolean };
 
@@ -37,6 +38,7 @@ export function useEditor<T>(clave: Exclude<ClaveBloque, "fotos">, inicial: T) {
   }
 
   return {
+    clave,
     valor,
     cambiar: (v: T) => {
       setValor(v);
@@ -63,20 +65,30 @@ export function useEditor<T>(clave: Exclude<ClaveBloque, "fotos">, inicial: T) {
   };
 }
 
-/** Guardar siempre a la vista, sobre la barra de abajo del teléfono. */
+/** Los bloques que tienen una sección de la web para mostrar en la vista previa. */
+const CON_VISTA = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "consentimiento"];
+
+/** Guardar siempre a la vista, sobre la barra de abajo del teléfono, y al lado ver cómo queda. */
 export function BarraGuardar({
+  clave,
+  valor,
   cambiado,
   guardando,
   mensaje,
   guardar,
   restaurar,
 }: {
+  clave?: string;
+  valor?: unknown;
   cambiado: boolean;
   guardando: boolean;
   mensaje: Mensaje | null;
   guardar: () => void;
   restaurar?: () => void;
 }) {
+  const [viendo, setViendo] = useState(false);
+  const cerrar = useCallback(() => setViendo(false), []);
+  const conVista = clave && CON_VISTA.includes(clave);
   return (
     <div
       className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 -mx-4 mt-4 border-t border-linea/80 bg-tinta/[0.94] px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:bottom-4 lg:mx-0 lg:rounded-3xl lg:border lg:px-5"
@@ -90,10 +102,17 @@ export function BarraGuardar({
             De fábrica
           </Boton>
         )}
+        {conVista && (
+          <Boton variante="linea" onClick={() => setViendo(true)} className="min-h-11 shrink-0 px-4 text-[14px]">
+            <Ojo className="size-4" /> <span className="hidden sm:inline">Vista previa</span>
+            <span className="sm:hidden">Ver</span>
+          </Boton>
+        )}
         <Boton disabled={guardando || !cambiado} onClick={guardar} className="min-h-11 shrink-0 px-5">
           {guardando ? "Guardando…" : "Guardar"}
         </Boton>
       </div>
+      {viendo && clave && <VistaPrevia bloque={clave} valor={valor} cerrar={cerrar} />}
     </div>
   );
 }

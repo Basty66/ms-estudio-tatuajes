@@ -1,22 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useScroll } from "motion/react";
-import { useRef } from "react";
 import type { Foto, TextosTatuador } from "@/lib/contenido";
-import { Carrusel } from "./Carrusel";
 import { useEstudio } from "./DatosEstudio";
 import { FotoStencil } from "./FotoStencil";
-import { Indice } from "./Indice";
 import { Ornamento } from "./Ornamento";
 import { TextoRevelado } from "./TextoRevelado";
 
 /** Los textos y los dos retratos se cambian desde el panel (Web → El tatuador y Fotos). */
 export function Tatuador({ textos, grande, chica }: { textos: TextosTatuador; grande: Foto; chica: Foto }) {
   const { direccion } = useEstudio();
-  const linea = useRef<HTMLDivElement>(null);
-  // La trayectoria se va encendiendo al bajar y se apaga al subir.
-  const { scrollYProgress } = useScroll({ target: linea, offset: ["start 0.8", "end 0.55"] });
 
   return (
     <section id="tatuador" aria-labelledby="titulo-tatuador" className="relative overflow-hidden border-t border-linea/70 bg-hollin/40">
@@ -45,7 +38,6 @@ export function Tatuador({ textos, grande, chica }: { textos: TextosTatuador; gr
 
           {/* Quién es */}
           <div className="flex flex-col lg:col-span-8">
-            <Indice id="tatuador" className="mb-4 lg:mb-6" />
             <h2 id="titulo-tatuador" className="texto-cromo font-gotica text-[clamp(3.25rem,9vw,7rem)] leading-[0.85]">
               El tatuador
             </h2>
@@ -75,45 +67,6 @@ export function Tatuador({ textos, grande, chica }: { textos: TextosTatuador; gr
                 ))}
               </ul>
             </div>
-          </div>
-        </div>
-
-        {/* Trayectoria: en el teléfono se desliza de lado; en escritorio, una línea que se enciende con el scroll. */}
-        <div className="mt-20 lg:mt-28">
-          <div className="flex items-end justify-between gap-4">
-            <h3 className="font-gotica text-5xl leading-none sm:text-6xl">Trayectoria</h3>
-            <p className="pb-1 text-[13px] text-ceniza lg:hidden">Desliza →</p>
-          </div>
-          <div ref={linea} className="relative -mx-4 mt-8 sm:-mx-8 lg:mx-0 lg:mt-10 lg:pt-10">
-            <span aria-hidden className="absolute top-[7px] right-0 left-0 hidden h-px bg-linea lg:block" />
-            <motion.span
-              aria-hidden
-              style={{ scaleX: scrollYProgress }}
-              className="absolute top-[7px] right-0 left-0 hidden h-px origin-left bg-stencil shadow-[0_0_10px_1px_rgba(47,107,255,0.9)] lg:block"
-            />
-            <Carrusel etiqueta="Trayectoria" className="sm:px-8 lg:grid lg:grid-cols-5 lg:gap-6 lg:overflow-visible lg:px-0">
-              {textos.trayectoria.map((t, i) => {
-                const hoy = i === textos.trayectoria.length - 1;
-                return (
-                  <li
-                    key={`${t.titulo}${t.texto}`}
-                    className={`relative w-[72%] shrink-0 snap-center rounded-3xl border p-5 sm:w-[42%] lg:w-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 ${
-                      hoy ? "border-stencil/60 bg-stencil/10" : "border-linea bg-tinta/60"
-                    }`}
-                  >
-                    <span
-                      aria-hidden
-                      className={`absolute -top-10 left-0 hidden h-[15px] w-[15px] rounded-full border-2 lg:block ${
-                        hoy ? "border-stencil bg-stencil shadow-[0_0_14px_3px_rgba(47,107,255,0.9)]" : "border-stencil bg-tinta"
-                      }`}
-                    />
-                    <p className="mb-3 text-[12px] font-semibold text-stencil-claro tabular-nums lg:hidden">{String(i + 1).padStart(2, "0")}</p>
-                    <p className="font-gotica text-3xl leading-none">{t.titulo}</p>
-                    <p className="mt-2 text-[15px] leading-relaxed text-ceniza">{t.texto}</p>
-                  </li>
-                );
-              })}
-            </Carrusel>
           </div>
         </div>
 

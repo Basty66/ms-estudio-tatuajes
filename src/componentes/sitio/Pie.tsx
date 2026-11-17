@@ -57,10 +57,9 @@ export function Pie({ estudio }: { estudio: DatosEstudio }) {
 
       <nav aria-label="Secciones" className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <ul className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-linea pt-8 text-[15px] sm:flex sm:flex-wrap sm:gap-x-8">
-          {SECCIONES.map((s, i) => (
+          {SECCIONES.map((s) => (
             <li key={s.id}>
-              <a href={`#${s.id}`} className="group inline-flex items-baseline gap-2 text-ceniza transition-colors hover:text-piel">
-                <span className="text-[11px] text-stencil-claro tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+              <a href={`#${s.id}`} className="text-ceniza transition-colors hover:text-piel">
                 {s.texto}
               </a>
             </li>
@@ -76,7 +75,12 @@ export function Pie({ estudio }: { estudio: DatosEstudio }) {
         <span>
           © {new Date().getFullYear()} {estudio.nombreLargo}
         </span>
-        <span>Hecho en {estudio.comuna}</span>
+        <span className="flex gap-5">
+          <a href="/privacidad" className="hover:text-piel">
+            Privacidad
+          </a>
+          <span>Hecho en {estudio.comuna}</span>
+        </span>
       </div>
     </footer>
   );

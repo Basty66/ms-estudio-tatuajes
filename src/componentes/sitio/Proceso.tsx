@@ -5,7 +5,6 @@ import { motion, useScroll } from "motion/react";
 import { useRef } from "react";
 import type { Foto } from "@/lib/contenido";
 import { Carrusel } from "./Carrusel";
-import { Indice } from "./Indice";
 
 /**
  * Las cuatro etapas de una sesión con cuadros reales.
@@ -23,7 +22,6 @@ export function Proceso({ pasos }: { pasos: Array<{ paso: string; texto: string;
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <Indice id="proceso" className="mb-4 lg:mb-6" />
             <h2 id="titulo-proceso" className="texto-cromo font-gotica text-[clamp(3.25rem,9vw,6rem)] leading-[0.85]">
               Una sesión
             </h2>

@@ -11,7 +11,7 @@ export default async function Tatuador() {
   const { tatuador } = await leerContenido();
   return (
     <>
-      <Encabezado volver={`${PANEL}/web`} etiqueta="Web" titulo="El tatuador" />
+      <Encabezado volver={`${PANEL}/web`} titulo="El tatuador" />
       <p className="-mt-2 mb-5 text-[14px] text-ceniza">Las fotos de esta sección se cambian en Fotos de la web.</p>
       <EditarTatuador inicial={tatuador} />
     </>

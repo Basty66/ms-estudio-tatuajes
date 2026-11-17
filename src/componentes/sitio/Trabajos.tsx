@@ -98,7 +98,7 @@ export function Trabajos({ trabajos = TRABAJOS, antes, despues }: { trabajos?: T
       <Ornamento tipo="telarana" className="bottom-0 left-0 w-32 opacity-30 sm:-bottom-6 sm:-left-6 sm:w-56" flotar={0} brillo={false} />
 
       <div className="relative mx-auto max-w-[1400px] px-4 pt-28 pb-24 sm:px-8 lg:pt-40 lg:pb-36">
-        <Titulo id="titulo-trabajos" seccion="trabajos" bajada="Lo último que salió del estudio. Toca una foto para verla en grande.">
+        <Titulo id="titulo-trabajos" bajada="Lo último que salió del estudio. Toca una foto para verla en grande.">
           Trabajos
         </Titulo>
 

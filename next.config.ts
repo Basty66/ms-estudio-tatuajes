@@ -2,6 +2,9 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // El ícono de Next en desarrollo tapa la barra de abajo del teléfono.
+  devIndicators: false,
+
   // Sin esto, Turbopack sube buscando un lockfile y puede tomar la carpeta
   // personal entera como raíz del proyecto.
   turbopack: {
@@ -29,6 +32,16 @@ const nextConfig: NextConfig = {
           { key: "Service-Worker-Allowed", value: "/tinta" },
           // Que el navegador pregunte siempre si hay versión nueva.
           { key: "Cache-Control", value: "no-cache" },
+        ],
+      },
+      {
+        // El link del consentimiento lleva el token: no se indexa, no se
+        // guarda en cachés y no viaja como referencia a otros sitios.
+        source: "/consentimiento/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "private, no-store" },
         ],
       },
       {

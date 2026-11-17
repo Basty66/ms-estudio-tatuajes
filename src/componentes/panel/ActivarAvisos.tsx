@@ -226,7 +226,7 @@ export function ActivarAvisos({ llave }: { llave: string }) {
     <Caja encendido={estado === "encendido"} Icono={Campana} titulo={estado === "encendido" ? "Avisos activados en este aparato" : "Avisos en este aparato"}>
       {estado === "necesita-instalar" ? (
         <p className="text-[14px] text-ceniza">
-          En iPhone los avisos solo funcionan con el panel instalado. Toca <b className="text-piel">Compartir → Agregar a inicio</b>, abre el panel
+          En iPhone los avisos solo funcionan con el panel instalado. Toca <b className="text-piel">Compartir</b> y después <b className="text-piel">Agregar a inicio</b>, abre el panel
           desde ese ícono y vuelve acá.
         </p>
       ) : estado === "bloqueado" ? (

@@ -47,7 +47,7 @@ export function Cuidados({ cuidados }: { cuidados: TextosCuidados }) {
     <section id="cuidados" aria-labelledby="titulo-cuidados" className="relative overflow-hidden border-t border-linea/70 bg-hollin/40">
       <Ornamento tipo="corazon" className="top-24 left-[44%] hidden w-36 lg:block" flotar={14} />
       <div className="relative mx-auto max-w-[1400px] px-4 py-24 sm:px-8 lg:py-36">
-        <Titulo id="titulo-cuidados" seccion="cuidados" bajada="Lo que hagas el primer mes decide cómo se va a ver tu tatuaje los próximos veinte años.">
+        <Titulo id="titulo-cuidados" bajada="Lo que hagas el primer mes decide cómo se va a ver tu tatuaje los próximos veinte años.">
           Cuidados
         </Titulo>
 
@@ -121,16 +121,22 @@ export function Cuidados({ cuidados }: { cuidados: TextosCuidados }) {
                   type="button"
                   onClick={() => ir(etapa - 1)}
                   disabled={etapa === 0}
-                  className="min-h-11 rounded-full px-3 text-[14px] font-semibold text-ceniza transition-colors hover:text-piel disabled:opacity-30"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-ceniza transition-colors hover:text-piel disabled:opacity-30"
                 >
-                  ← Anterior
+                  <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M15 5l-7 7 7 7" />
+                  </svg>
+                  Anterior
                 </button>
                 <button
                   type="button"
                   onClick={() => ir(etapa === ultima ? 0 : etapa + 1)}
-                  className="min-h-11 rounded-full px-3 text-[14px] font-semibold text-stencil-claro transition-colors hover:text-piel"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-stencil-claro transition-colors hover:text-piel"
                 >
-                  {etapa === ultima ? "Volver al día 1" : "Siguiente etapa →"}
+                  {etapa === ultima ? "Volver al día 1" : "Siguiente etapa"}
+                  {etapa !== ultima && <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>}
                 </button>
               </div>
             </div>

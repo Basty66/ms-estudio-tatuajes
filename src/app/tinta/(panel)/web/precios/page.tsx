@@ -11,7 +11,7 @@ export default async function Precios() {
   const { precios } = await leerContenido();
   return (
     <>
-      <Encabezado volver={`${PANEL}/web`} etiqueta="Web" titulo="Precios del cotizador" />
+      <Encabezado volver={`${PANEL}/web`} titulo="Precios del cotizador" />
       <p className="-mt-2 mb-5 text-[14px] text-ceniza">Los rangos que calcula el cotizador de la web. El precio final lo pones tú al ver el diseño.</p>
       <EditarPrecios inicial={precios} />
     </>

@@ -11,7 +11,7 @@ export default async function Cuidados() {
   const { cuidados } = await leerContenido();
   return (
     <>
-      <Encabezado volver={`${PANEL}/web`} etiqueta="Web" titulo="Cuidados" />
+      <Encabezado volver={`${PANEL}/web`} titulo="Cuidados" />
       <p className="-mt-2 mb-5 text-[14px] text-ceniza">Es lo que la gente se guarda en su WhatsApp con el botón de la web.</p>
       <EditarCuidados inicial={cuidados} />
     </>

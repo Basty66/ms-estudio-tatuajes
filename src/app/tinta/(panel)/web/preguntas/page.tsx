@@ -11,7 +11,7 @@ export default async function Preguntas() {
   const { preguntas } = await leerContenido();
   return (
     <>
-      <Encabezado volver={`${PANEL}/web`} etiqueta="Web" titulo="Preguntas frecuentes" />
+      <Encabezado volver={`${PANEL}/web`} titulo="Preguntas frecuentes" />
       <p className="-mt-2 mb-5 text-[14px] text-ceniza">También las lee Google para mostrarlas en los resultados.</p>
       <EditarPreguntas inicial={preguntas} />
     </>

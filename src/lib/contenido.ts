@@ -1,3 +1,4 @@
+import { normalizarTextosConsentimiento, TEXTOS_CONSENTIMIENTO_BASE, type TextosConsentimiento } from "./consentimiento";
 import { ALERTAS, CUIDADOS, ESTUDIO, EVITAR, PREGUNTAS, PROCESO } from "./estudio";
 import { ESTILOS_PRECIO, normalizarPrecios, PRECIOS_BASE, type EstiloPrecio, type Precios } from "./precios";
 
@@ -23,6 +24,11 @@ export type DatosEstudio = {
   comuna: string;
   mapa: string;
   comoLlegar: string;
+  /** Link de Google para dejar una reseña. Vacío: no se ofrece pedirla. */
+  resenas: string;
+  /** Quién responde por los datos personales (consentimiento y privacidad). */
+  responsable: string;
+  correo: string;
 };
 
 export type TextosTatuador = {
@@ -37,6 +43,21 @@ export type TextosCuidados = {
   etapas: Array<{ cuando: string; corto: string; pasos: string[] }>;
   evitar: string[];
   alertas: string[];
+};
+
+/**
+ * Los mensajes de WhatsApp que arma el panel. Las palabras entre llaves se
+ * reemplazan al mandarlos ({nombre}, {fecha}…). Una línea cuya llave queda
+ * sin valor no se manda: "Abono recibido: {abono}" desaparece si no hay abono.
+ */
+export type Mensajes = {
+  confirmacion: string;
+  recordatorio: string;
+  consentimiento: string;
+  dia1: string;
+  dia7: string;
+  dia30: string;
+  resena: string;
 };
 
 export type Foto = { src: string; ancho: number; alto: number; alt: string };
@@ -80,13 +101,15 @@ export type Contenido = {
   preguntas: Par[];
   cuidados: TextosCuidados;
   fotos: Fotos;
+  consentimiento: TextosConsentimiento;
+  mensajes: Mensajes;
 };
 
 export type ClaveBloque = keyof Contenido;
-export const BLOQUES: ClaveBloque[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "fotos"];
+export const BLOQUES: ClaveBloque[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "fotos", "consentimiento", "mensajes"];
 
 export const CONTENIDO_BASE: Contenido = {
-  estudio: { ...ESTUDIO },
+  estudio: { ...ESTUDIO, resenas: "", responsable: ESTUDIO.nombreLargo, correo: "" },
   precios: PRECIOS_BASE,
   tatuador: {
     frase: "Transformo ideas en arte sobre la piel. Cada tatuaje es una pieza única, diseñada para ti y hecha con los estándares más altos de calidad e higiene.",
@@ -117,6 +140,28 @@ export const CONTENIDO_BASE: Contenido = {
     alertas: [...ALERTAS],
   },
   fotos: Object.fromEntries(LUGARES_FOTO.map((l) => [l.clave, l.foto])),
+  consentimiento: TEXTOS_CONSENTIMIENTO_BASE,
+  mensajes: {
+    confirmacion: [
+      "Hola {nombre}, te confirmo tu hora en {estudio}.",
+      "",
+      "*Cuándo:* {fecha}",
+      "*Duración:* aprox. {duracion}",
+      "*Dónde:* {direccion}",
+      "*Valor:* {valor}",
+      "*Abono recibido:* {abono}",
+      "*Saldo el día de la sesión:* {saldo}",
+      "",
+      "Antes de venir: come bien, toma agua y evita el alcohol 24 h antes.",
+      "Cuidados después de la sesión: {cuidados}",
+    ].join("\n"),
+    recordatorio: "Hola {nombre}, te recuerdo tu sesión {cuando} en {direccion}.\nEl saldo es {saldo} (efectivo o transferencia).\nSi necesitas cambiar algo, avísame por acá.",
+    consentimiento: "Hola {nombre}. Antes de tu sesión del {fecha}, llena y firma tu consentimiento acá. Toma dos minutos:\n{link}",
+    dia1: "Hola {nombre}, ¿cómo amaneció el tatuaje? Lávalo con jabón neutro 2 o 3 veces al día y ponle una capa delgada de crema. Los cuidados, paso a paso: {cuidados}\nCualquier duda, escríbeme.",
+    dia7: "Hola {nombre}, ya va una semana. Es normal que pique y se pele: no lo rasques y sigue hidratando. Nada de sol, piscina ni mar hasta que sane del todo.",
+    dia30: "Hola {nombre}, a esta altura ya debería estar sano. Desde ahora, protector solar cada vez que le dé el sol para que se mantenga nítido. ¿Me mandas una foto de cómo quedó?",
+    resena: "Hola {nombre}, gracias por confiar en mí. Si te gustó el resultado, me ayudas mucho dejando una reseña en Google:\n{link}",
+  },
 };
 
 /** Cuánto cabe en cada cosa: lo que se escribe en el panel se recorta a esto. */
@@ -148,6 +193,12 @@ function mapas(direccion: string, comuna: string): Pick<DatosEstudio, "mapa" | "
   return { mapa: `https://maps.google.com/maps?q=${q}&output=embed`, comoLlegar: `https://www.google.com/maps/search/?api=1&query=${q}` };
 }
 
+/** Solo links de Google: el botón de reseñas no puede mandar a cualquier parte. */
+export const esLinkDeResenas = (v: string) =>
+  /^https:\/\/(g\.page|maps\.app\.goo\.gl|goo\.gl|search\.google\.com|www\.google\.com|google\.com|maps\.google\.com|www\.google\.cl|google\.cl)\/\S+$/i.test(v);
+
+export const esCorreo = (v: string) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v);
+
 export function normalizarEstudio(v: unknown): DatosEstudio {
   const g = (v ?? {}) as Record<string, unknown>;
   const base = CONTENIDO_BASE.estudio;
@@ -155,6 +206,8 @@ export function normalizarEstudio(v: unknown): DatosEstudio {
   const instagram = texto(g.instagram, 40).replace(/^@/, "");
   const direccion = texto(g.direccion, 80) || base.direccion;
   const comuna = texto(g.comuna, 40) || base.comuna;
+  const resenas = texto(g.resenas, 300);
+  const correo = texto(g.correo, 120);
   return {
     ...base,
     whatsapp: /^56\d{9}$/.test(whatsapp) ? whatsapp : base.whatsapp,
@@ -162,6 +215,9 @@ export function normalizarEstudio(v: unknown): DatosEstudio {
     direccion,
     comuna,
     ...mapas(direccion, comuna),
+    resenas: esLinkDeResenas(resenas) ? resenas : "",
+    responsable: texto(g.responsable, 80) || base.responsable,
+    correo: esCorreo(correo) ? correo : "",
   };
 }
 
@@ -216,6 +272,46 @@ export function normalizarFotos(v: unknown): Fotos {
   return fotos;
 }
 
+export function normalizarMensajes(v: unknown): Mensajes {
+  const g = (v ?? {}) as Record<string, unknown>;
+  const base = CONTENIDO_BASE.mensajes;
+  const m = (k: keyof Mensajes) => texto(g[k], 800) || base[k];
+  return {
+    confirmacion: m("confirmacion"),
+    recordatorio: m("recordatorio"),
+    consentimiento: m("consentimiento"),
+    dia1: m("dia1"),
+    dia7: m("dia7"),
+    dia30: m("dia30"),
+    resena: m("resena"),
+  };
+}
+
+/** Las palabras entre llaves que entiende cada mensaje, para el editor del panel. */
+export const LLAVES: Record<keyof Mensajes, string[]> = {
+  confirmacion: ["nombre", "estudio", "fecha", "duracion", "direccion", "valor", "abono", "saldo", "cuidados"],
+  recordatorio: ["nombre", "cuando", "direccion", "saldo"],
+  consentimiento: ["nombre", "fecha", "link"],
+  dia1: ["nombre", "cuidados"],
+  dia7: ["nombre", "cuidados"],
+  dia30: ["nombre", "cuidados"],
+  resena: ["nombre", "link"],
+};
+
+/**
+ * Reemplaza {nombre}, {fecha}… La línea que lleva una llave sin valor no se
+ * manda entera: así "Abono recibido: {abono}" no aparece si no hubo abono.
+ */
+export function rellenar(plantilla: string, valores: Record<string, string>): string {
+  return plantilla
+    .split("\n")
+    .filter((l) => !/\{(\w+)\}/.test(l) || [...l.matchAll(/\{(\w+)\}/g)].every((m) => valores[m[1]]))
+    .map((l) => l.replace(/\{(\w+)\}/g, (_, k: string) => valores[k]).trimEnd())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /** Junta lo guardado con lo de fábrica, bloque por bloque. */
 export function mezclar(guardado: Partial<Record<ClaveBloque, unknown>>): Contenido {
   return {
@@ -225,6 +321,8 @@ export function mezclar(guardado: Partial<Record<ClaveBloque, unknown>>): Conten
     preguntas: normalizarPreguntas(guardado.preguntas),
     cuidados: normalizarCuidados(guardado.cuidados),
     fotos: normalizarFotos(guardado.fotos),
+    consentimiento: normalizarTextosConsentimiento(guardado.consentimiento),
+    mensajes: normalizarMensajes(guardado.mensajes),
   };
 }
 
