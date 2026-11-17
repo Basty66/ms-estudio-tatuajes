@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatearTelefono } from "@/lib/admin/telefono";
 import type { TextosConsentimiento } from "@/lib/consentimiento";
+import { DIAS_SEMANA, horasLibres, textoDuracion, type Reservas } from "@/lib/reservas";
 import { LARGO, LLAVES, rellenar, type DatosEstudio, type Mensajes, type Par, type TextosCuidados, type TextosTatuador } from "@/lib/contenido";
 import { ESTILOS_PRECIO, estimar, OBJETIVOS_LASER, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Tarjeta, TituloBloque } from "./Encabezado";
@@ -473,6 +474,9 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
           <div className="flex min-w-0 flex-col gap-4">
             <Campo etiqueta="Título" valor={m.graciasTitulo} cambiar={(v) => e.cambiar({ ...m, graciasTitulo: v })} max={60} />
             <Campo etiqueta="Nota" valor={m.graciasNota} cambiar={(v) => e.cambiar({ ...m, graciasNota: v })} max={160} lineas={3} />
+            <p className="pt-2 text-[13px] font-semibold text-ceniza">Después de pedir hora en el calendario</p>
+            <Campo etiqueta="Título" valor={m.reservaTitulo} cambiar={(v) => e.cambiar({ ...m, reservaTitulo: v })} max={60} />
+            <Campo etiqueta="Nota" valor={m.reservaNota} cambiar={(v) => e.cambiar({ ...m, reservaNota: v })} max={160} lineas={2} />
           </div>
           <div className="flex flex-col items-center gap-4 overflow-hidden py-8">
             <TarjetaGracias
@@ -485,6 +489,131 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
           </div>
         </div>
       </section>
+      <BarraGuardar {...e} />
+    </>
+  );
+}
+
+// ------------------------------------------------------------ reservas --
+
+/** Un número con su unidad al lado ("h", "min", "sem."). */
+function Numero({ etiqueta, valor, cambiar, unidad, min, max }: { etiqueta: string; valor: number; cambiar: (n: number) => void; unidad: string; min: number; max: number }) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-2 block text-[13px] text-ceniza">{etiqueta}</span>
+      <span className="relative block">
+        <input
+          inputMode="numeric"
+          value={String(valor)}
+          onChange={(e) => cambiar(Math.min(max, Math.max(min, Number(e.target.value.replace(/\D/g, "").slice(0, 4)) || min)))}
+          className={`${campo} min-h-11 pr-14 tabular-nums`}
+        />
+        <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[13px] text-ceniza">{unidad}</span>
+      </span>
+    </label>
+  );
+}
+
+export function EditarReservas({ inicial, hoy }: { inicial: Reservas; hoy: string }) {
+  const e = useEditor("reservas", inicial);
+  const r = e.valor;
+  const poner = (p: Partial<Reservas>) => e.cambiar({ ...r, ...p });
+  const dia = (i: number, p: Partial<Reservas["dias"][number]>) => poner({ dias: r.dias.map((d, j) => (j === i ? { ...d, ...p } : d)) });
+  const hora = "min-h-11 rounded-2xl border border-linea bg-tinta/70 px-3 text-[15px] text-piel tabular-nums [color-scheme:dark] focus:border-stencil focus:outline-none disabled:opacity-30";
+
+  // Vista previa: las horas que ofrecería la web la próxima semana para una sesión mediana, con la agenda vacía.
+  const muestra = Array.from({ length: 7 }, (_, i) => {
+    const [a, m, d] = hoy.split("-").map(Number);
+    const f = new Date(a, m - 1, d + 7 + i);
+    const fecha = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+    return { fecha, horas: horasLibres(r, fecha, r.duraciones.mediano, [], `${hoy}T00:00`) };
+  });
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
+        <div className="flex flex-col gap-4 xl:gap-5">
+          <Tarjeta>
+            <label className="flex cursor-pointer items-center justify-between gap-4">
+              <span>
+                <span className="block font-semibold">Reservas en la web</span>
+                <span className="block text-[13px] text-ceniza">{r.activas ? "La gente elige día y hora después de cotizar." : "Apagadas: solo se puede pedir hora por WhatsApp."}</span>
+              </span>
+              <input type="checkbox" checked={r.activas} onChange={(ev) => poner({ activas: ev.target.checked })} className="size-6 shrink-0 accent-[#2f6bff]" />
+            </label>
+          </Tarjeta>
+          <Tarjeta>
+            <TituloBloque>Días y horas de atención</TituloBloque>
+            <ul className="flex flex-col gap-2">
+              {r.dias.map((d, i) => (
+                <li key={DIAS_SEMANA[i]} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <input type="checkbox" checked={d.abierto} onChange={(ev) => dia(i, { abierto: ev.target.checked })} className="size-5 shrink-0 accent-[#2f6bff]" />
+                    <span className={`text-[15px] font-semibold ${d.abierto ? "" : "text-ceniza"}`}>{DIAS_SEMANA[i]}</span>
+                  </label>
+                  {d.abierto ? (
+                    <span className="flex min-w-0 items-center gap-2">
+                      <input type="time" step={1800} value={d.desde} aria-label={`${DIAS_SEMANA[i]} desde`} onChange={(ev) => dia(i, { desde: ev.target.value })} className={`${hora} min-w-0 flex-1`} />
+                      <span className="text-ceniza">a</span>
+                      <input type="time" step={1800} value={d.hasta} aria-label={`${DIAS_SEMANA[i]} hasta`} onChange={(ev) => dia(i, { hasta: ev.target.value })} className={`${hora} min-w-0 flex-1`} />
+                    </span>
+                  ) : (
+                    <span className="text-[14px] text-ceniza">Cerrado</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Tarjeta>
+        </div>
+        <div className="flex flex-col gap-4 xl:gap-5">
+          <Tarjeta>
+            <TituloBloque>Cuánto dura cada sesión</TituloBloque>
+            <div className="grid grid-cols-2 gap-3">
+              {TAMANOS.map((t) => (
+                <Numero key={t.id} etiqueta={t.nombre} unidad="min" min={30} max={720} valor={r.duraciones[t.id]} cambiar={(n) => poner({ duraciones: { ...r.duraciones, [t.id]: n } })} />
+              ))}
+              <Numero etiqueta="Láser" unidad="min" min={15} max={480} valor={r.laser} cambiar={(laser) => poner({ laser })} />
+            </div>
+          </Tarjeta>
+          <Tarjeta>
+            <TituloBloque>Reglas</TituloBloque>
+            <div className="grid grid-cols-2 gap-3">
+              <Numero etiqueta="Anticipación mínima" unidad="h" min={0} max={168} valor={r.anticipacion} cambiar={(anticipacion) => poner({ anticipacion })} />
+              <Numero etiqueta="Se ve hacia adelante" unidad="sem." min={1} max={12} valor={r.semanas} cambiar={(semanas) => poner({ semanas })} />
+              <Numero etiqueta="Plazo para confirmar" unidad="h" min={6} max={168} valor={r.vence} cambiar={(vence) => poner({ vence })} />
+              <label className="block min-w-0">
+                <span className="mb-2 block text-[13px] text-ceniza">Horas de inicio cada</span>
+                <span className="flex gap-2">
+                  {([30, 60] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      aria-pressed={r.intervalo === m}
+                      onClick={() => poner({ intervalo: m })}
+                      className={`min-h-11 flex-1 rounded-full border text-[14px] font-semibold ${r.intervalo === m ? "border-stencil bg-stencil/20 text-piel" : "border-linea text-ceniza"}`}
+                    >
+                      {m} min
+                    </button>
+                  ))}
+                </span>
+              </label>
+            </div>
+            <p className="mt-3 text-[13px] leading-snug text-ceniza">Una hora pedida queda apartada {r.vence} h. Si no la confirmas con el abono, se libera sola.</p>
+          </Tarjeta>
+          <Tarjeta>
+            <TituloBloque>Así se ve la próxima semana</TituloBloque>
+            <p className="-mt-1 mb-3 text-[13px] text-ceniza">Para una sesión mediana ({textoDuracion(r.duraciones.mediano)}), con la agenda vacía.</p>
+            <ul className="flex flex-col gap-1.5 text-[14px]">
+              {muestra.map((m) => (
+                <li key={m.fecha} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
+                  <span className="text-ceniza">{DIAS_SEMANA[(new Date(m.fecha + "T12:00").getDay() + 6) % 7]}</span>
+                  <span className={`truncate tabular-nums ${m.horas.length ? "" : "text-ceniza/60"}`}>{m.horas.length ? m.horas.join(" · ") : "Sin horas"}</span>
+                </li>
+              ))}
+            </ul>
+          </Tarjeta>
+        </div>
+      </div>
       <BarraGuardar {...e} />
     </>
   );

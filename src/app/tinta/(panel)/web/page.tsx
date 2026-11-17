@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Encabezado } from "@/componentes/panel/Encabezado";
-import { Burbuja, Documento, Externo, Flecha, Gota, Imagen, Personas, Precio, Pregunta, Telefono } from "@/componentes/panel/Iconos";
+import { Burbuja, Calendario, Documento, Externo, Flecha, Gota, Imagen, Personas, Precio, Pregunta, Telefono } from "@/componentes/panel/Iconos";
 import { cambiosDelContenido } from "@/db/contenido";
 import { galeria } from "@/db/panel";
 import { hayGaleria } from "@/lib/admin/almacen";
@@ -30,6 +30,7 @@ const GRUPOS: Array<{ titulo: string; partes: Parte[] }> = [
   {
     titulo: "Con tus clientes",
     partes: [
+      { href: `${PANEL}/web/reservas`, clave: "reservas", texto: "Horario y reservas", detalle: "Días y horas que se pueden pedir en la web", Icono: Calendario },
       { href: `${PANEL}/web/consentimiento`, clave: "consentimiento", texto: "Consentimiento", detalle: "Riesgos y compromisos que aceptan al firmar", Icono: Documento },
       { href: `${PANEL}/web/mensajes`, clave: "mensajes", texto: "Mensajes de WhatsApp", detalle: "Confirmar, recordar, pedir firma, cuidados y reseña", Icono: Burbuja },
     ],
