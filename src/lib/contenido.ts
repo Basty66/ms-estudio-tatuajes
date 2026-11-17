@@ -57,6 +57,8 @@ export type Mensajes = {
   dia1: string;
   dia7: string;
   dia30: string;
+  laser1: string;
+  laserProxima: string;
   resena: string;
 };
 
@@ -160,6 +162,8 @@ export const CONTENIDO_BASE: Contenido = {
     dia1: "Hola {nombre}, ¿cómo amaneció el tatuaje? Lávalo con jabón neutro 2 o 3 veces al día y ponle una capa delgada de crema. Los cuidados, paso a paso: {cuidados}\nCualquier duda, escríbeme.",
     dia7: "Hola {nombre}, ya va una semana. Es normal que pique y se pele: no lo rasques y sigue hidratando. Nada de sol, piscina ni mar hasta que sane del todo.",
     dia30: "Hola {nombre}, a esta altura ya debería estar sano. Desde ahora, protector solar cada vez que le dé el sol para que se mantenga nítido. ¿Me mandas una foto de cómo quedó?",
+    laser1: "Hola {nombre}, ¿cómo amaneció la zona del láser? Es normal que esté roja, hinchada o con pequeñas ampollas. No las revientes, mantén la zona limpia y seca, y protégela del sol. Cualquier duda, escríbeme.",
+    laserProxima: "Hola {nombre}, ya pasaron seis semanas desde tu sesión de láser: la piel está lista para la siguiente. ¿Te agendo una hora?",
     resena: "Hola {nombre}, gracias por confiar en mí. Si te gustó el resultado, me ayudas mucho dejando una reseña en Google:\n{link}",
   },
 };
@@ -283,6 +287,8 @@ export function normalizarMensajes(v: unknown): Mensajes {
     dia1: m("dia1"),
     dia7: m("dia7"),
     dia30: m("dia30"),
+    laser1: m("laser1"),
+    laserProxima: m("laserProxima"),
     resena: m("resena"),
   };
 }
@@ -295,6 +301,8 @@ export const LLAVES: Record<keyof Mensajes, string[]> = {
   dia1: ["nombre", "cuidados"],
   dia7: ["nombre", "cuidados"],
   dia30: ["nombre", "cuidados"],
+  laser1: ["nombre"],
+  laserProxima: ["nombre"],
   resena: ["nombre", "link"],
 };
 

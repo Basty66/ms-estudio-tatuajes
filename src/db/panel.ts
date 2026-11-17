@@ -217,6 +217,9 @@ export async function galeria(soloVisibles = false): Promise<Foto[]> {
 
 export type Cotizacion = {
   id: number;
+  tipo: "tatuaje" | "laser";
+  sesiones_min: number | null;
+  sesiones_max: number | null;
   zona: string;
   lado: "izq" | "der" | null;
   tamano: string;
@@ -230,7 +233,7 @@ export type Cotizacion = {
 
 export async function cotizaciones(limite = 60): Promise<Cotizacion[]> {
   return (await sql`
-    SELECT id, zona, lado, tamano, estilo, idea, minimo, maximo, vista,
+    SELECT id, tipo, sesiones_min, sesiones_max, zona, lado, tamano, estilo, idea, minimo, maximo, vista,
            to_char(creada_en AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD"T"HH24:MI') AS creada
     FROM cotizaciones ORDER BY creada_en DESC LIMIT ${limite}
   `) as Cotizacion[];

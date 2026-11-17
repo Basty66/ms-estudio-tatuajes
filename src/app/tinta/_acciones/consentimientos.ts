@@ -149,7 +149,7 @@ export async function marcarSeguimiento(citaId: number, etapa: string): Promise<
   const u = await usuarioActual();
   if (!u) return SIN_SESION;
   const cita = id(citaId);
-  if (!cita || !["dia1", "dia7", "dia30", "resena"].includes(etapa)) return { ok: false, error: "No existe." };
+  if (!cita || !["dia1", "dia7", "dia30", "laser1", "laserProxima", "resena"].includes(etapa)) return { ok: false, error: "No existe." };
   await sql`
     INSERT INTO seguimientos (cita_id, etapa, enviado_por)
     SELECT id, ${etapa}, ${u.nombre} FROM citas WHERE id = ${cita} AND tipo <> 'bloqueo'

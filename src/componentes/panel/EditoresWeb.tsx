@@ -4,7 +4,7 @@ import { useState } from "react";
 import { formatearTelefono } from "@/lib/admin/telefono";
 import type { TextosConsentimiento } from "@/lib/consentimiento";
 import { LARGO, LLAVES, rellenar, type DatosEstudio, type Mensajes, type Par, type TextosCuidados, type TextosTatuador } from "@/lib/contenido";
-import { ESTILOS_PRECIO, estimar, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
+import { ESTILOS_PRECIO, estimar, OBJETIVOS_LASER, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Tarjeta, TituloBloque } from "./Encabezado";
 import { BarraGuardar, Campo, Lineas, ListaPares, useEditor } from "./EditorWeb";
 import { campo } from "./FormularioCita";
@@ -161,6 +161,33 @@ export function EditarPrecios({ inicial }: { inicial: Precios }) {
                 <li key={x.id} className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-2">
                   <span className="font-semibold">{x.nombre}</span>
                   <Monto etiqueta={`Recargo ${x.nombre}`} valor={p.estilos[x.id]} cambiar={(n) => e.cambiar({ ...p, estilos: { ...p.estilos, [x.id]: n } })} />
+                </li>
+              ))}
+            </ul>
+          </Tarjeta>
+
+          <Tarjeta>
+            <TituloBloque>Borrado láser</TituloBloque>
+            <p className="-mt-1 mb-3 text-[13px] text-ceniza">Precio de una sesión según el tamaño del tatuaje. La zona no lo cambia.</p>
+            <ul className="flex flex-col gap-3">
+              {TAMANOS.map((t) => (
+                <li key={t.id} className="grid grid-cols-2 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem]">
+                  <span className="col-span-2 min-w-0 leading-tight sm:col-span-1">
+                    <span className="block truncate font-semibold">{t.nombre}</span>
+                    <span className="block text-[12px] text-ceniza">{t.detalle}</span>
+                  </span>
+                  <Monto etiqueta={`Láser ${t.nombre} desde`} valor={p.laser.tamanos[t.id].min} cambiar={(n) => e.cambiar({ ...p, laser: { ...p.laser, tamanos: { ...p.laser.tamanos, [t.id]: { ...p.laser.tamanos[t.id], min: n } } } })} />
+                  <Monto etiqueta={`Láser ${t.nombre} hasta`} valor={p.laser.tamanos[t.id].max} cambiar={(n) => e.cambiar({ ...p, laser: { ...p.laser, tamanos: { ...p.laser.tamanos, [t.id]: { ...p.laser.tamanos[t.id], max: n } } } })} />
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 mb-3 text-[13px] text-ceniza">Cuántas sesiones calcula la web:</p>
+            <ul className="flex flex-col gap-3">
+              {OBJETIVOS_LASER.map((o) => (
+                <li key={o.id} className="grid grid-cols-2 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_6rem_6rem]">
+                  <span className="col-span-2 min-w-0 truncate font-semibold sm:col-span-1">{o.nombre}</span>
+                  <Monto etiqueta={`${o.nombre}: sesiones desde`} sufijo="ses." valor={p.laser.sesiones[o.id].min} cambiar={(n) => e.cambiar({ ...p, laser: { ...p.laser, sesiones: { ...p.laser.sesiones, [o.id]: { ...p.laser.sesiones[o.id], min: Math.min(30, n) } } } })} />
+                  <Monto etiqueta={`${o.nombre}: sesiones hasta`} sufijo="ses." valor={p.laser.sesiones[o.id].max} cambiar={(n) => e.cambiar({ ...p, laser: { ...p.laser, sesiones: { ...p.laser.sesiones, [o.id]: { ...p.laser.sesiones[o.id], max: Math.min(30, n) } } } })} />
                 </li>
               ))}
             </ul>
@@ -325,6 +352,8 @@ const MENSAJES: Array<{ clave: keyof Mensajes; titulo: string; cuando: string }>
   { clave: "dia1", titulo: "Cuidados: día siguiente", cuando: "Aparece en Hoy el día después de un tatuaje." },
   { clave: "dia7", titulo: "Cuidados: una semana", cuando: "Aparece en Hoy a los 7 días." },
   { clave: "dia30", titulo: "Cuidados: un mes", cuando: "Aparece en Hoy a los 30 días." },
+  { clave: "laser1", titulo: "Láser: día siguiente", cuando: "Aparece en Hoy el día después de una sesión de láser." },
+  { clave: "laserProxima", titulo: "Láser: próxima sesión", cuando: "Aparece en Hoy a las seis semanas, para volver a agendar." },
   { clave: "resena", titulo: "Pedir una reseña", cuando: "En la cita hecha, con tu link de Google. Tiene que llevar {link}." },
 ];
 

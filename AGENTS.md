@@ -79,6 +79,9 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
   lo mínimo: no se pregunta por VIH ni hepatitis.
 - Los mensajes de WhatsApp salen de plantillas editables (`mensajes`) con `rellenar()`: una línea
   cuya llave queda sin valor no se manda.
+- Cada función cubre todos los servicios: tatuaje, retoque y borrado láser (cotizador, consentimiento,
+  seguimiento por WhatsApp). Los mensajes salen del WhatsApp del estudio con un enlace `wa.me`: no hay
+  API de WhatsApp ni costo por mensaje.
 - Sin emojis en la web, el panel ni los mensajes: íconos SVG de `componentes/panel/Iconos.tsx`.
 - Animaciones solo con transform, opacity o clip-path, y siempre con su versión para
   `prefers-reduced-motion`.
@@ -122,7 +125,10 @@ necesitan HTTPS: en el teléfono se prueban en un despliegue de Vercel, no por l
       entornos (2026-11-17).
 - [x] Consentimiento informado digital, seguimiento por WhatsApp, reseñas, foto desde la cita,
       privacidad y vista previa en los editores (2026-11-17). `db/003` aplicado en `dev`.
-- [ ] `db/003_consentimientos.sql` en la rama `production` antes de publicar.
+- [x] `db/003_consentimientos.sql` en `production` (2026-11-17) y publicado.
+- [ ] `db/004_cotizaciones_laser.sql` y `db/005_seguimiento_laser.sql` en `production` antes de publicar
+      el cotizador con láser.
+- [ ] Revisar los precios del láser (vienen con valores de partida) en Web → Precios del cotizador.
 - [ ] Borrar el proyecto viejo de Neon (con los consentimientos de prueba del sitio viejo).
 - [ ] Quitar de Vercel las variables del sitio viejo y rotar sus credenciales.
 - [ ] Probar Face ID y avisos en un iPhone y un Android reales, con la app instalada.

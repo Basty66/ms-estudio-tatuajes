@@ -106,14 +106,23 @@ export async function consentimientoFirmado(id: number): Promise<ConsentimientoF
 
 // --------------------------------------------------------- seguimiento --
 
-export type Etapa = "dia1" | "dia7" | "dia30" | "resena";
+export type Etapa = "dia1" | "dia7" | "dia30" | "resena" | "laser1" | "laserProxima";
+type EtapaConFecha = Exclude<Etapa, "resena">;
 
-/** Cuándo toca cada mensaje, en días desde la sesión. Pasado el margen ya no se ofrece en "Hoy". */
-export const ETAPAS: Array<{ id: Exclude<Etapa, "resena">; texto: string; dia: number; hasta: number }> = [
-  { id: "dia1", texto: "Día siguiente", dia: 1, hasta: 3 },
-  { id: "dia7", texto: "Una semana", dia: 7, hasta: 10 },
-  { id: "dia30", texto: "Un mes", dia: 30, hasta: 35 },
+/**
+ * Cuándo toca cada mensaje, en días desde la sesión. Pasado el margen ya no
+ * se ofrece en "Hoy". El láser se cuida distinto y se repite: cuidados al día
+ * siguiente y, a las seis semanas, ofrecer la próxima sesión.
+ */
+export const ETAPAS: Array<{ id: EtapaConFecha; texto: string; dia: number; hasta: number; laser: boolean }> = [
+  { id: "dia1", texto: "Día siguiente", dia: 1, hasta: 3, laser: false },
+  { id: "dia7", texto: "Una semana", dia: 7, hasta: 10, laser: false },
+  { id: "dia30", texto: "Un mes", dia: 30, hasta: 35, laser: false },
+  { id: "laser1", texto: "Día siguiente", dia: 1, hasta: 3, laser: true },
+  { id: "laserProxima", texto: "Próxima sesión", dia: 42, hasta: 56, laser: true },
 ];
+
+export const etapasPara = (tipo: string) => ETAPAS.filter((e) => e.laser === (tipo === "laser"));
 
 export async function seguimientosDeCita(citaId: number): Promise<Partial<Record<Etapa, string>>> {
   const filas = (await sql`
@@ -123,16 +132,18 @@ export async function seguimientosDeCita(citaId: number): Promise<Partial<Record
   return Object.fromEntries(filas.map((f) => [f.etapa, f.cuando]));
 }
 
-export type Pendiente = { cita_id: number; nombre: string; telefono: string; inicio: string; etapa: Exclude<Etapa, "resena"> };
+export type Pendiente = { cita_id: number; nombre: string; telefono: string; inicio: string; etapa: EtapaConFecha };
 
-/** Los mensajes de cuidados que tocan hoy y no se han mandado. Solo tatuajes y retoques: el láser se cuida distinto. */
+/** Los mensajes de después de la sesión que tocan hoy y no se han mandado: los del tatuaje y los del láser. */
 export async function seguimientosDeHoy(hoy: string): Promise<Pendiente[]> {
+  const etapas = JSON.stringify(ETAPAS.map((e) => ({ etapa: e.id, laser: e.laser, desde: e.dia, hasta: e.hasta })));
   return (await sql`
     SELECT c.id AS cita_id, cl.nombre, cl.telefono, to_char(c.inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio, e.etapa
     FROM citas c
     JOIN clientes cl ON cl.id = c.cliente_id
-    CROSS JOIN (VALUES ('dia1', 1, 3), ('dia7', 7, 10), ('dia30', 30, 35)) AS e(etapa, desde, hasta)
-    WHERE c.estado = 'completada' AND c.tipo IN ('tatuaje', 'retoque') AND cl.telefono IS NOT NULL
+    CROSS JOIN jsonb_to_recordset(${etapas}::JSONB) AS e(etapa TEXT, laser BOOLEAN, desde INT, hasta INT)
+    WHERE c.estado = 'completada' AND cl.telefono IS NOT NULL
+      AND (c.tipo = 'laser') = e.laser AND c.tipo <> 'bloqueo'
       AND (${hoy}::DATE - c.inicio::DATE) BETWEEN e.desde AND e.hasta
       AND NOT EXISTS (SELECT 1 FROM seguimientos s WHERE s.cita_id = c.id AND s.etapa = e.etapa)
     ORDER BY e.desde, c.inicio

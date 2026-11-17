@@ -46,6 +46,18 @@ export const ZONAS = [
   { id: "pie", nombre: "Pie", factor: 1.3 },
 ] as const;
 
+/**
+ * Borrado láser: se cobra por sesión según el tamaño del tatuaje, y cuántas
+ * sesiones hacen falta depende de si se quiere borrar del todo o solo aclarar
+ * para tatuar encima (cover).
+ */
+export const OBJETIVOS_LASER = [
+  { id: "borrar", nombre: "Borrar del todo", detalle: "hasta que deje de verse" },
+  { id: "aclarar", nombre: "Aclarar para un cover", detalle: "para tatuar encima" },
+] as const;
+
+export type ObjetivoLaser = (typeof OBJETIVOS_LASER)[number]["id"];
+
 export type Tamano = (typeof TAMANOS)[number]["id"];
 export type EstiloPrecio = (typeof ESTILOS_PRECIO)[number]["id"];
 export type Zona = (typeof ZONAS)[number]["id"];
@@ -55,12 +67,27 @@ export type Precios = {
   tamanos: Record<Tamano, { min: number; max: number }>;
   estilos: Record<EstiloPrecio, number>;
   zonas: Record<Zona, number>;
+  laser: {
+    /** Precio de UNA sesión según el tamaño del tatuaje a borrar. */
+    tamanos: Record<Tamano, { min: number; max: number }>;
+    sesiones: Record<ObjetivoLaser, { min: number; max: number }>;
+  };
 };
 
 export const PRECIOS_BASE: Precios = {
   tamanos: Object.fromEntries(TAMANOS.map((t) => [t.id, { min: t.min, max: t.max }])) as Precios["tamanos"],
   estilos: Object.fromEntries(ESTILOS_PRECIO.map((e) => [e.id, e.extra])) as Precios["estilos"],
   zonas: Object.fromEntries(ZONAS.map((z) => [z.id, Math.round((z.factor - 1) * 100)])) as Precios["zonas"],
+  // Valores de partida: el estudio los ajusta en Web → Precios del cotizador.
+  laser: {
+    tamanos: {
+      pequeno: { min: 30_000, max: 45_000 },
+      mediano: { min: 45_000, max: 70_000 },
+      grande: { min: 70_000, max: 110_000 },
+      manga: { min: 110_000, max: 180_000 },
+    },
+    sesiones: { borrar: { min: 6, max: 10 }, aclarar: { min: 2, max: 4 } },
+  },
 };
 
 const monto = (v: unknown, base: number) => {
@@ -70,7 +97,8 @@ const monto = (v: unknown, base: number) => {
 
 /** Lo guardado, revisado monto por monto; lo que falte o no sea un número queda como de fábrica. */
 export function normalizarPrecios(v: unknown): Precios {
-  const g = (v ?? {}) as { tamanos?: Record<string, { min?: unknown; max?: unknown }>; estilos?: Record<string, unknown>; zonas?: Record<string, unknown> };
+  type Par = Record<string, { min?: unknown; max?: unknown }>;
+  const g = (v ?? {}) as { tamanos?: Par; estilos?: Record<string, unknown>; zonas?: Record<string, unknown>; laser?: { tamanos?: Par; sesiones?: Par } };
   const tamanos = { ...PRECIOS_BASE.tamanos };
   for (const t of TAMANOS) {
     const min = monto(g.tamanos?.[t.id]?.min, tamanos[t.id].min);
@@ -81,7 +109,28 @@ export function normalizarPrecios(v: unknown): Precios {
   for (const e of ESTILOS_PRECIO) estilos[e.id] = monto(g.estilos?.[e.id], estilos[e.id]);
   const zonas = { ...PRECIOS_BASE.zonas };
   for (const z of ZONAS) zonas[z.id] = Math.min(300, monto(g.zonas?.[z.id], zonas[z.id]));
-  return { tamanos, estilos, zonas };
+
+  const base = PRECIOS_BASE.laser;
+  const laser: Precios["laser"] = { tamanos: { ...base.tamanos }, sesiones: { ...base.sesiones } };
+  for (const t of TAMANOS) {
+    const min = monto(g.laser?.tamanos?.[t.id]?.min, base.tamanos[t.id].min);
+    const max = monto(g.laser?.tamanos?.[t.id]?.max, base.tamanos[t.id].max);
+    laser.tamanos[t.id] = { min: Math.min(min, max), max: Math.max(min, max) };
+  }
+  // Entre 1 y 30 sesiones: más que eso es un error de tipeo.
+  const sesiones = (x: unknown, b: number) => Math.min(30, Math.max(1, monto(x, b)));
+  for (const o of OBJETIVOS_LASER) {
+    const min = sesiones(g.laser?.sesiones?.[o.id]?.min, base.sesiones[o.id].min);
+    const max = sesiones(g.laser?.sesiones?.[o.id]?.max, base.sesiones[o.id].max);
+    laser.sesiones[o.id] = { min: Math.min(min, max), max: Math.max(min, max) };
+  }
+  return { tamanos, estilos, zonas, laser };
+}
+
+/** Lo que cuesta una sesión de láser y cuántas se calculan. La zona no cambia el precio. */
+export function estimarLaser(precios: Precios, tamano: Tamano, objetivo: ObjetivoLaser): { min: number; max: number; sesiones: { min: number; max: number } } {
+  const t = precios.laser.tamanos[tamano] ?? PRECIOS_BASE.laser.tamanos.pequeno;
+  return { min: t.min, max: t.max, sesiones: precios.laser.sesiones[objetivo] ?? PRECIOS_BASE.laser.sesiones.borrar };
 }
 
 export function estimar(precios: Precios, tamano: Tamano, estilo: EstiloPrecio, zona: Zona): { min: number; max: number } {

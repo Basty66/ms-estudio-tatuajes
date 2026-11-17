@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { BotonMagnetico } from "./BotonMagnetico";
+import { ANCLA_LASER } from "./Cotizador";
 import { useEstudio } from "./DatosEstudio";
 
 const DATOS = [
@@ -90,17 +91,17 @@ export function Laser() {
   }, []);
 
   const evaluar = (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-      <BotonMagnetico
-        href={whatsappCon("Hola, quiero evaluar un tatuaje para borrado láser. Te mando una foto.")}
-        externo
-        className="shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]"
-      >
-        Evaluar mi tatuaje
-      </BotonMagnetico>
-      <span className="max-w-xs text-[14px] leading-snug text-ceniza">
-        Mándame una foto por WhatsApp y te digo cuántas sesiones calculo.
-      </span>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-3">
+        {/* Al cotizador, ya en borrado láser: precio por sesión y cuántas sesiones. */}
+        <BotonMagnetico href={`#${ANCLA_LASER}`} className="shadow-[0_0_40px_-8px_rgba(47,107,255,0.9)]">
+          Cotizar el borrado
+        </BotonMagnetico>
+        <BotonMagnetico href={whatsappCon("Hola, quiero evaluar un tatuaje para borrado láser. Te mando una foto.")} externo variante="linea">
+          Mandar una foto
+        </BotonMagnetico>
+      </div>
+      <span className="max-w-sm text-[14px] leading-snug text-ceniza">El precio es por sesión y depende del tamaño. Con una foto te digo cuántas sesiones calculo.</span>
     </div>
   );
 

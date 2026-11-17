@@ -4,6 +4,7 @@ import { cotizaciones } from "@/db/panel";
 import { clp, nombreDonde, nombreEstilo, nombreTamano, nombreZona } from "@/lib/admin/etiquetas";
 import { fechaCorta, hora, hoyChile, sumarDias } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
+import { OBJETIVOS_LASER } from "@/lib/precios";
 import { PANEL } from "@/lib/admin/ruta";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,8 @@ export default async function Cotizaciones() {
     return [...m].sort((a, b) => b[1] - a[1]).slice(0, 3);
   };
   const zonas = cuenta((c) => nombreZona(c.zona));
-  const estilos = cuenta((c) => nombreEstilo(c.estilo));
+  // Lo que se pide: el estilo de los tatuajes y el borrado láser como uno más.
+  const estilos = cuenta((c) => (c.tipo === "laser" ? "Borrado láser" : nombreEstilo(c.estilo)));
   const cuando = (instante: string) => {
     const dia = instante.slice(0, 10);
     return `${dia === hoy ? "hoy" : dia === sumarDias(hoy, -1) ? "ayer" : fechaCorta(dia)} · ${hora(instante)}`;
@@ -67,12 +69,25 @@ export default async function Cotizaciones() {
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="min-w-0 font-semibold">
                     {!c.vista && <span className="mr-2 inline-block size-2 rounded-full bg-stencil align-middle shadow-[0_0_8px_2px_rgba(47,107,255,0.8)]" />}
+                    {c.tipo === "laser" && <span className="mr-2 text-[#a78bfa]">Láser ·</span>}
                     {nombreDonde(c.zona, c.lado)}
                   </p>
                   <p className="shrink-0 text-[12px] text-ceniza first-letter:uppercase">{cuando(c.creada)}</p>
                 </div>
                 <p className="mt-0.5 text-[14px] text-ceniza">
-                  {nombreTamano(c.tamano)} · {nombreEstilo(c.estilo)} · <span className="text-piel tabular-nums">{clp(c.minimo)} a {clp(c.maximo)}</span>
+                  {c.tipo === "laser" ? (
+                    <>
+                      {nombreTamano(c.tamano)} · {OBJETIVOS_LASER.find((o) => o.id === c.estilo)?.nombre ?? c.estilo} ·{" "}
+                      <span className="text-piel tabular-nums">
+                        {clp(c.minimo)} a {clp(c.maximo)} por sesión
+                      </span>
+                      {c.sesiones_min && ` · ${c.sesiones_min} a ${c.sesiones_max} sesiones`}
+                    </>
+                  ) : (
+                    <>
+                      {nombreTamano(c.tamano)} · {nombreEstilo(c.estilo)} · <span className="text-piel tabular-nums">{clp(c.minimo)} a {clp(c.maximo)}</span>
+                    </>
+                  )}
                 </p>
                 {c.idea && <p className="mt-2 text-[15px] whitespace-pre-line">“{c.idea}”</p>}
               </li>

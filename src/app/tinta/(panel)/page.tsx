@@ -162,13 +162,14 @@ export default async function PaginaHoy() {
 
           {escribir.length > 0 && (
             <Tarjeta className="order-3 xl:order-none">
-              <TituloBloque>Cuidados por WhatsApp</TituloBloque>
+              <TituloBloque>Mensajes de hoy</TituloBloque>
               <ul className="flex flex-col">
                 {escribir.map((e) => (
                   <li key={`${e.cita_id}-${e.etapa}`} className="flex min-h-14 items-center gap-3 border-b border-linea/60 py-2 last:border-0">
                     <Link href={`${PANEL}/cita/${e.cita_id}`} className="min-w-0 flex-1 hover:text-stencil-claro">
                       <span className="block truncate font-semibold">{e.nombre}</span>
                       <span className="block truncate text-[13px] text-ceniza">
+                        {ETAPAS.find((x) => x.id === e.etapa)?.laser ? "Láser · " : ""}
                         {ETAPAS.find((x) => x.id === e.etapa)?.texto} · {fechaRelativa(e.inicio.slice(0, 10), hoy)}
                       </span>
                     </Link>

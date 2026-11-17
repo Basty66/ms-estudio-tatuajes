@@ -8,7 +8,7 @@ import { FotoDeCita } from "@/componentes/panel/Galeria";
 import { Check, Telefono } from "@/componentes/panel/Iconos";
 import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
 import { leerContenido } from "@/db/contenido";
-import { consentimientoDeCita, ETAPAS, fotosDeCita, seguimientosDeCita } from "@/db/consentimientos";
+import { consentimientoDeCita, etapasPara, fotosDeCita, seguimientosDeCita } from "@/db/consentimientos";
 import { cita as leerCita, pagosDeCita } from "@/db/panel";
 import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, nombreZona, TIPO } from "@/lib/admin/etiquetas";
 import { ahoraChile, duracionTexto, fechaCorta, fechaLarga, fechaRelativa, hora, hoyChile, minutosEntre, sumarDias } from "@/lib/admin/fecha";
@@ -65,7 +65,7 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
     link: estudio.resenas,
   };
 
-  const conSeguimiento = hecha && c.telefono && (c.tipo === "tatuaje" || c.tipo === "retoque");
+  const conSeguimiento = hecha && Boolean(c.telefono);
   const diasDesde = Math.round((Date.parse(hoyChile()) - Date.parse(c.inicio.slice(0, 10))) / 86_400_000);
   // Las alertas importan hasta que la sesión se hace; después quedan en el PDF.
   const alertas = activa && !hecha ? c.alertas : [];
@@ -190,7 +190,7 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
               <ul className="flex flex-col divide-y divide-linea/60">
                 {conSeguimiento &&
                   c.telefono &&
-                  ETAPAS.map((e) => {
+                  etapasPara(c.tipo).map((e) => {
                     const enviado = enviados[e.id];
                     const toca = diasDesde >= e.dia && diasDesde <= e.hasta;
                     const fecha = sumarDias(c.inicio.slice(0, 10), e.dia);
