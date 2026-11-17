@@ -358,6 +358,7 @@ const MENSAJES: Array<{ clave: keyof Mensajes; titulo: string; cuando: string }>
   { clave: "laser1", titulo: "Láser: día siguiente", cuando: "Aparece en Hoy el día después de una sesión de láser." },
   { clave: "laserProxima", titulo: "Láser: próxima sesión", cuando: "Aparece en Hoy a las seis semanas, para volver a agendar." },
   { clave: "resena", titulo: "Pedir una reseña", cuando: "En la cita hecha, con tu link de Google. Tiene que llevar {link}." },
+  { clave: "reservaRechazada", titulo: "No puedo esa hora", cuando: "Al rechazar una hora pedida desde la web. {link} lleva al calendario." },
 ];
 
 /** Lo que se ve en la vista previa: una cita inventada pero creíble. */
@@ -411,7 +412,7 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
   const valores = (clave: keyof Mensajes) => ({
     ...MUESTRA,
     cuidados: `${origen}/#cuidados`,
-    link: clave === "resena" ? resenas || "https://g.page/r/tu-link/review" : `${origen}/consentimiento/8fK2…`,
+    link: clave === "resena" ? resenas || "https://g.page/r/tu-link/review" : clave === "reservaRechazada" ? `${origen}/#cotiza` : `${origen}/consentimiento/8fK2…`,
   });
 
   return (

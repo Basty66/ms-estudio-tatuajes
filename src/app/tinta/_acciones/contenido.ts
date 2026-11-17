@@ -7,6 +7,7 @@ import { borrarFoto, guardarFoto, hayGaleria } from "@/lib/admin/almacen";
 import { usuarioActual } from "@/lib/admin/sesion";
 import { normalizarTelefono } from "@/lib/admin/telefono";
 import { normalizarTextosConsentimiento } from "@/lib/consentimiento";
+import { normalizarReservas } from "@/lib/reservas";
 import {
   esCorreo,
   esLinkDeResenas,
@@ -37,7 +38,7 @@ type Respuesta = { ok: true } | { ok: false; error: string };
 const SIN_SESION = { ok: false as const, error: "La sesión se cerró o el panel se bloqueó. Vuelve a entrar." };
 
 type BloqueDeTexto = Exclude<ClaveBloque, "fotos">;
-const DE_TEXTO: BloqueDeTexto[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "consentimiento", "mensajes"];
+const DE_TEXTO: BloqueDeTexto[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "consentimiento", "mensajes", "reservas"];
 
 async function guardar(clave: ClaveBloque, valor: unknown, quien: string) {
   await sql`
@@ -80,6 +81,8 @@ function revisar(clave: BloqueDeTexto, valor: unknown): { valor: unknown } | { e
       return { valor: normalizarCuidados(valor) };
     case "consentimiento":
       return { valor: normalizarTextosConsentimiento(valor) };
+    case "reservas":
+      return { valor: normalizarReservas(valor) };
     case "mensajes": {
       const m = normalizarMensajes(valor);
       if (!m.consentimiento.includes("{link}")) return { error: "El mensaje del consentimiento tiene que llevar {link}: sin eso el cliente no tiene dónde firmar." };

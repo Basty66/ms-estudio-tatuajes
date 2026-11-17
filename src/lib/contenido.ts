@@ -1,5 +1,6 @@
 import { normalizarTextosConsentimiento, TEXTOS_CONSENTIMIENTO_BASE, type TextosConsentimiento } from "./consentimiento";
 import { ALERTAS, CUIDADOS, ESTUDIO, EVITAR, PREGUNTAS, PROCESO } from "./estudio";
+import { normalizarReservas, RESERVAS_BASE, type Reservas } from "./reservas";
 import { ESTILOS_PRECIO, normalizarPrecios, PRECIOS_BASE, type EstiloPrecio, type Precios } from "./precios";
 
 /**
@@ -65,6 +66,11 @@ export type Mensajes = {
   /** La tarjeta que aparece en la web después de cotizar (no es un WhatsApp). */
   graciasTitulo: string;
   graciasNota: string;
+  /** La tarjeta después de pedir hora en la web. */
+  reservaTitulo: string;
+  reservaNota: string;
+  /** Si no se puede la hora pedida: se manda al rechazarla. */
+  reservaRechazada: string;
 };
 
 export type Foto = { src: string; ancho: number; alto: number; alt: string };
@@ -110,10 +116,11 @@ export type Contenido = {
   fotos: Fotos;
   consentimiento: TextosConsentimiento;
   mensajes: Mensajes;
+  reservas: Reservas;
 };
 
 export type ClaveBloque = keyof Contenido;
-export const BLOQUES: ClaveBloque[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "fotos", "consentimiento", "mensajes"];
+export const BLOQUES: ClaveBloque[] = ["estudio", "precios", "tatuador", "preguntas", "cuidados", "fotos", "consentimiento", "mensajes", "reservas"];
 
 export const CONTENIDO_BASE: Contenido = {
   estudio: { ...ESTUDIO, resenas: "", responsable: ESTUDIO.nombreLargo, correo: "" },
@@ -148,6 +155,7 @@ export const CONTENIDO_BASE: Contenido = {
   },
   fotos: Object.fromEntries(LUGARES_FOTO.map((l) => [l.clave, l.foto])),
   consentimiento: TEXTOS_CONSENTIMIENTO_BASE,
+  reservas: RESERVAS_BASE,
   mensajes: {
     confirmacion: [
       "Hola {nombre}, te confirmo tu hora en {estudio}.",
@@ -171,6 +179,9 @@ export const CONTENIDO_BASE: Contenido = {
     laser1: "Hola {nombre}, ¿cómo amaneció la zona del láser? Es normal que esté roja, hinchada o con pequeñas ampollas. No las revientes, mantén la zona limpia y seca, y protégela del sol. Cualquier duda, escríbeme.",
     graciasTitulo: "Gracias por tu cotización",
     graciasNota: "Te respondo por WhatsApp. Con tu código encuentro al tiro lo que cotizaste.",
+    reservaTitulo: "Pediste tu hora",
+    reservaNota: "Queda apartada mientras te confirmo por WhatsApp con el abono.",
+    reservaRechazada: "Hola {nombre}, la hora que pediste ({fecha}) no me va a alcanzar. ¿Te acomoda otra? Puedes elegirla acá: {link}",
     laserProxima: "Hola {nombre}, ya pasaron seis semanas desde tu sesión de láser: la piel está lista para la siguiente. ¿Te agendo una hora?",
     resena: "Hola {nombre}, gracias por confiar en mí. Si te gustó el resultado, me ayudas mucho dejando una reseña en Google:\n{link}",
   },
@@ -301,6 +312,9 @@ export function normalizarMensajes(v: unknown): Mensajes {
     resena: m("resena"),
     graciasTitulo: texto(g.graciasTitulo, 60) || base.graciasTitulo,
     graciasNota: texto(g.graciasNota, 160) || base.graciasNota,
+    reservaTitulo: texto(g.reservaTitulo, 60) || base.reservaTitulo,
+    reservaNota: texto(g.reservaNota, 160) || base.reservaNota,
+    reservaRechazada: m("reservaRechazada"),
   };
 }
 
@@ -318,6 +332,9 @@ export const LLAVES: Record<keyof Mensajes, string[]> = {
   resena: ["nombre", "link"],
   graciasTitulo: [],
   graciasNota: [],
+  reservaTitulo: [],
+  reservaNota: [],
+  reservaRechazada: ["nombre", "fecha", "link"],
 };
 
 /**
@@ -345,6 +362,7 @@ export function mezclar(guardado: Partial<Record<ClaveBloque, unknown>>): Conten
     fotos: normalizarFotos(guardado.fotos),
     consentimiento: normalizarTextosConsentimiento(guardado.consentimiento),
     mensajes: normalizarMensajes(guardado.mensajes),
+    reservas: normalizarReservas(guardado.reservas),
   };
 }
 
