@@ -1,4 +1,5 @@
 import path from "node:path";
+import { withBotId } from "botid/next/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -56,4 +57,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// BotID necesita sus rutas de verificación (ver src/instrumentation-client.ts).
+export default withBotId(nextConfig);

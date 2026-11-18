@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { checkBotId } from "botid/server";
 import { esChoqueDeHoras, sql } from "@/db/conexion";
 import { leerContenido } from "@/db/contenido";
 import { liberarVencidas, ocupadosEntre } from "@/db/reservas";
@@ -18,12 +19,22 @@ import { cuposLibres, diaSemana, finDeCupo } from "@/lib/reservas";
  * hay un tope de 3 por hora por conexión. La cita nace "solicitada": aparta el
  * cupo hasta que el tatuador la confirma (con cuánto dura y el valor final) o
  * hasta que vence. La doble reserva la sigue impidiendo Postgres.
+ *
+ * Antes de todo, BotID (invisible) confirma que lo pide una persona: un bot
+ * podría apartar todos los cupos de la semana desde muchas conexiones.
  */
 export const dynamic = "force-dynamic";
 
 const error = (mensaje: string, status = 400) => Response.json({ error: mensaje }, { status });
 
 export async function POST(request: Request) {
+  // Si BotID mismo falla, se deja pasar: el tope por conexión sigue y no se pierde una reserva real.
+  const verificacion = await checkBotId().catch((e) => {
+    console.error("botid:", e);
+    return null;
+  });
+  if (verificacion?.isBot) return error("No pudimos verificar tu navegador. Escríbenos por WhatsApp y te agendamos.", 403);
+
   let d: Record<string, unknown>;
   try {
     d = await request.json();

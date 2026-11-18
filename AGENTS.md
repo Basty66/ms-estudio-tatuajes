@@ -66,6 +66,14 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
 
 - La doble reserva la impide Postgres (`citas_sin_choque`, EXCLUDE sobre el rango, también para las
   horas "solicitadas"). El error `23P01` se traduce a "choca con la cita de X".
+- La dirección pública vive en `src/lib/sitio.ts` (`NEXT_PUBLIC_SITIO`): nunca escribir la URL a mano.
+  Robots, sitemap y la imagen para compartir salen de `src/app/robots.ts`, `sitemap.ts` y
+  `(sitio)/opengraph-image.tsx` (la foto va en JPEG baseline: el progresivo rompe el renderizador).
+- Feriados de Chile (`src/lib/feriados.ts`): calculados con las reglas de la ley para cualquier año. Con
+  "Cerrar los feriados" (Web → Horario y reservas) no se ofrecen cupos esos días. Elecciones y
+  feriados regionales se bloquean a mano (Bloquear → Varios días).
+- `/api/reserva` está protegido con Vercel BotID (`src/instrumentation-client.ts` + `checkBotId()`). La
+  cotización no, porque sale con `sendBeacon`. En desarrollo BotID siempre responde "humano".
 - Reservas desde la web (`src/lib/reservas.ts`): el tatuador define los cupos de cada día (horas de
   inicio) y a qué hora termina la jornada. Un cupo aparta hasta el cupo siguiente; cuánto dura de
   verdad y el valor final los pone el tatuador al confirmar, y si se alarga y pisa otro cupo, ese se

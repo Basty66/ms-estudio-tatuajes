@@ -20,7 +20,10 @@ cómo transferir).
 
 ## 1. Para entregar al cliente
 
-- Dominio (nic.cl) y conectarlo en Vercel; cambiar las URLs `tatuajes-azure.vercel.app` del código.
+- Dominio (nic.cl) y conectarlo en Vercel; definir `NEXT_PUBLIC_SITIO` con la URL nueva (todo el
+  sitio la toma de `src/lib/sitio.ts`) y redesplegar. Después, dar de alta el dominio en Google
+  Search Console y mandar el sitemap.
+- Opcional: activar "BotID Deep Analysis" en Vercel → Firewall si llegan reservas falsas.
 - Que configure en el panel: precios reales (tatuaje y láser), link de reseñas, fotos (retrato en
   alta, ejemplo de Realismo, galería), horario y textos.
 - Clave definitiva del panel. Probar en su iPhone: firma, Face ID y avisos.
