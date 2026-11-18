@@ -546,10 +546,14 @@ export function EditarReservas({ inicial, hoy }: { inicial: Reservas; hoy: strin
             <TituloBloque>Días y horas de atención</TituloBloque>
             <ul className="flex flex-col gap-2">
               {r.dias.map((d, i) => (
-                <li key={DIAS_SEMANA[i]} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
+                // En el teléfono el día va abreviado: con el nombre entero no cabían las dos horas.
+                <li key={DIAS_SEMANA[i]} className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
                   <label className="flex cursor-pointer items-center gap-2.5">
                     <input type="checkbox" checked={d.abierto} onChange={(ev) => dia(i, { abierto: ev.target.checked })} className="size-5 shrink-0 accent-[#2f6bff]" />
-                    <span className={`text-[15px] font-semibold ${d.abierto ? "" : "text-ceniza"}`}>{DIAS_SEMANA[i]}</span>
+                    <span className={`text-[15px] font-semibold ${d.abierto ? "" : "text-ceniza"}`}>
+                      <span aria-hidden className="sm:hidden">{DIAS_SEMANA[i].slice(0, 3)}</span>
+                      <span className="max-sm:sr-only">{DIAS_SEMANA[i]}</span>
+                    </span>
                   </label>
                   {d.abierto ? (
                     <span className="flex min-w-0 items-center gap-2">

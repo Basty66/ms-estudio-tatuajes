@@ -21,7 +21,8 @@ export const dynamic = "force-dynamic";
 /**
  * Lo primero que se ve al abrir la app: lo de hoy, lo que quedó pendiente y
  * lo que viene. Cada cita aparece una sola vez: lo de hoy se cierra en "Hoy",
- * y en "Por resolver" queda solo lo de días anteriores.
+ * en "Por resolver" queda solo lo de días anteriores y las horas pedidas desde
+ * la web esperan en "Por confirmar".
  *
  * En el teléfono va todo en una columna (Hoy → Por resolver → Próximos días);
  * en el escritorio, lo pendiente pasa a la derecha.
@@ -42,7 +43,9 @@ export default async function PaginaHoy() {
     porConfirmar(),
   ]);
 
-  const deHoy = semana.filter((c) => c.inicio.slice(0, 10) === hoy);
+  // Las horas pedidas desde la web van solo en "Por confirmar".
+  const agendadas = semana.filter((c) => c.estado !== "solicitada");
+  const deHoy = agendadas.filter((c) => c.inicio.slice(0, 10) === hoy);
   const vivas = deHoy.filter((c) => c.tipo !== "bloqueo" && c.estado === "confirmada");
   const enCurso = vivas.find((c) => c.inicio <= ahora && ahora < c.fin);
   const siguiente = vivas.find((c) => c.inicio > ahora);
@@ -50,7 +53,7 @@ export default async function PaginaHoy() {
     c === enCurso ? "en-curso" : c === siguiente ? "siguiente" : c.estado === "confirmada" && c.tipo !== "bloqueo" && c.fin <= ahora ? "sin-cerrar" : undefined;
 
   const porDia = new Map<string, Cita[]>();
-  for (const c of semana.filter((c) => c.inicio.slice(0, 10) > hoy)) {
+  for (const c of agendadas.filter((c) => c.inicio.slice(0, 10) > hoy)) {
     const k = c.inicio.slice(0, 10);
     porDia.set(k, [...(porDia.get(k) ?? []), c]);
   }

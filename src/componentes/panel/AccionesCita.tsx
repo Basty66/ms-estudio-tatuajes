@@ -270,8 +270,8 @@ export function ConfirmarReserva({ citaId, sugerido, rechazo }: { citaId: number
     <form onSubmit={confirmar} className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
         <label className="min-w-0">
-          <Etiqueta nota={sugerido ? "cotizó" : undefined}>Precio final</Etiqueta>
-          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder={sugerido ?? "$"} className={`${campo} tabular-nums`} />
+          <Etiqueta>Precio final</Etiqueta>
+          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
         </label>
         <label className="min-w-0">
           <Etiqueta>Abono</Etiqueta>
