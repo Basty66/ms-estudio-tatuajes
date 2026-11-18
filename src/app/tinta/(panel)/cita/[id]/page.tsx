@@ -19,10 +19,10 @@ import { esUrgente } from "@/lib/consentimiento";
 import { rellenar } from "@/lib/contenido";
 import { ESTILOS } from "@/lib/estudio";
 import { textoSesiones } from "@/lib/sesiones";
+import { SITIO } from "@/lib/sitio";
 
 export const dynamic = "force-dynamic";
 
-const SITIO = "https://tatuajes-azure.vercel.app";
 
 function whatsapp(telefono: string, mensaje: string) {
   return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;

@@ -1,6 +1,7 @@
 import "server-only";
 import webpush from "web-push";
 import { sql } from "@/db/conexion";
+import { SITIO } from "@/lib/sitio";
 
 /**
  * Notificaciones push al panel.
@@ -21,7 +22,7 @@ import { sql } from "@/db/conexion";
  */
 export const LLAVE_PUBLICA = process.env.NEXT_PUBLIC_VAPID_PUBLICA ?? "";
 const PRIVADA = process.env.VAPID_PRIVADA ?? "";
-const CONTACTO = process.env.VAPID_CONTACTO ?? "https://tatuajes-azure.vercel.app";
+const CONTACTO = process.env.VAPID_CONTACTO ?? SITIO;
 
 export const HAY_AVISOS = Boolean(LLAVE_PUBLICA && PRIVADA);
 

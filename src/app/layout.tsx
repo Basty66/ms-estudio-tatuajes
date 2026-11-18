@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk, UnifrakturMaguntia } from "next/font/google";
 import "./globals.css";
+import { SITIO } from "@/lib/sitio";
 
 // Letra del nombre y los titulares: Old English de tatuaje. Para cambiarla,
 // basta con reemplazar esta fuente (la variable CSS sigue siendo la misma).
@@ -18,17 +19,20 @@ const texto = Schibsted_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tatuajes-azure.vercel.app"),
-  title: "Matness · Estudio de tatuajes en Melipilla",
+  metadataBase: new URL(SITIO),
+  // Lo que se busca: "tatuajes Melipilla", "borrado láser Melipilla", "estudio de tatuajes".
+  title: { default: "Matness Studio · Tatuajes y borrado láser en Melipilla", template: "%s · Matness Studio" },
   description:
-    "Lettering, fineline, blackwork y borrado con láser en Av. Manso 529, Melipilla. Cotiza tu tatuaje al instante y reserva tu hora.",
+    "Estudio de tatuajes en Melipilla: lettering, fineline, blackwork y borrado con láser en Av. Manso 529. Cotiza tu tatuaje al instante y reserva tu hora en línea.",
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Matness · Estudio de tatuajes en Melipilla",
-    description: "Lettering, fineline, blackwork y borrado con láser. Cotiza y reserva en línea.",
-    images: ["/images/tatuaje3.jpg"],
+    title: "Matness Studio · Tatuajes y borrado láser en Melipilla",
+    description: "Lettering, fineline, blackwork y borrado con láser. Cotiza al instante y reserva tu hora en línea.",
+    siteName: "Matness Studio",
     locale: "es_CL",
     type: "website",
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

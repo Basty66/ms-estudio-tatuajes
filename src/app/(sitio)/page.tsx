@@ -11,6 +11,7 @@ import { Trabajos } from "@/componentes/sitio/Trabajos";
 import { leerContenido } from "@/db/contenido";
 import type { Contenido, Foto } from "@/lib/contenido";
 import { PARED, PROCESO, type Trabajo } from "@/lib/estudio";
+import { SITIO } from "@/lib/sitio";
 
 /** La portada se rehace cada hora, y al instante cuando se cambia algo de la web en el panel. */
 export const revalidate = 3600;
@@ -36,8 +37,9 @@ async function trabajosDeLaGaleria(): Promise<Trabajo[] | undefined> {
  * Melipilla" y el mapa) y las preguntas frecuentes. Todo sale de los mismos
  * datos que se ven en la página.
  */
-const SITIO = "https://tatuajes-azure.vercel.app";
-const datosEstructurados = ({ estudio, preguntas }: Contenido) => [
+const DIAS_SCHEMA = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const datosEstructurados = ({ estudio, preguntas, reservas }: Contenido) => [
   {
     "@context": "https://schema.org",
     "@type": "TattooParlor",
@@ -46,6 +48,15 @@ const datosEstructurados = ({ estudio, preguntas }: Contenido) => [
     url: SITIO,
     image: `${SITIO}/images/tatuaje3.jpg`,
     telephone: `+${estudio.whatsapp}`,
+    ...(estudio.correo ? { email: estudio.correo } : {}),
+    priceRange: "$$",
+    areaServed: estudio.comuna,
+    hasMap: estudio.comoLlegar,
+    // El horario sale de los cupos del panel: desde el primer cupo hasta que termina la jornada.
+    openingHoursSpecification: reservas.dias.flatMap((d, i) =>
+      d.abierto && d.cupos.length ? [{ "@type": "OpeningHoursSpecification", dayOfWeek: DIAS_SCHEMA[i], opens: d.cupos[0], closes: d.hasta }] : [],
+    ),
+    makesOffer: ["Tatuajes", "Borrado de tatuajes con láser", "Retoques"].map((name) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name } })),
     address: {
       "@type": "PostalAddress",
       streetAddress: estudio.direccion,

@@ -13,7 +13,8 @@ import { enlaceWhatsapp } from "@/lib/contenido";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Privacidad · Matness",
+  title: "Privacidad",
+  alternates: { canonical: "/privacidad" },
   description: "Qué datos guarda el estudio, para qué, cuánto tiempo y cómo pedir verlos o borrarlos.",
 };
 

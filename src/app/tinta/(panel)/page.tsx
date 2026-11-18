@@ -15,6 +15,7 @@ import { ahoraChile, fechaLarga, fechaRelativa, hoyChile, sumarDias } from "@/li
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
 import { rellenar } from "@/lib/contenido";
+import { SITIO } from "@/lib/sitio";
 
 export const dynamic = "force-dynamic";
 
@@ -194,7 +195,7 @@ export default async function PaginaHoy() {
                     <BotonSeguimiento
                       citaId={e.cita_id}
                       etapa={e.etapa}
-                      href={`https://wa.me/${e.telefono}?text=${encodeURIComponent(rellenar(mensajes[e.etapa], { nombre: e.nombre.split(" ")[0], cuidados: "https://tatuajes-azure.vercel.app/#cuidados", sesion: e.proxima ?? "" }))}`}
+                      href={`https://wa.me/${e.telefono}?text=${encodeURIComponent(rellenar(mensajes[e.etapa], { nombre: e.nombre.split(" ")[0], cuidados: `${SITIO}/#cuidados`, sesion: e.proxima ?? "" }))}`}
                       enviado={false}
                       toca
                     >

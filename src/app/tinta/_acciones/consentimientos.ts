@@ -11,6 +11,7 @@ import { PANEL } from "@/lib/admin/ruta";
 import { usuarioActual } from "@/lib/admin/sesion";
 import { DIAS_QUE_DURA_EL_LINK } from "@/lib/consentimiento";
 import { rellenar } from "@/lib/contenido";
+import { DOMINIO } from "@/lib/sitio";
 
 /**
  * Consentimiento informado y seguimiento, del lado del panel.
@@ -36,7 +37,7 @@ function refrescar(...rutas: string[]) {
 /** El dominio desde el que se usa el panel: el link tiene que abrir en esta misma web. */
 async function origen(): Promise<string> {
   const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "tatuajes-azure.vercel.app";
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? DOMINIO;
   const protocolo = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${protocolo}://${host}`;
 }
