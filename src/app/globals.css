@@ -262,6 +262,11 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.82; }
 }
+/* Dentro de un modal el neón se enciende y queda fijo: un pulso eterno
+   obligaría a redibujar el modal (y su desenfoque) en cada cuadro. */
+[role="dialog"] .neon[data-prendido="si"] {
+  animation: neon-encender 1.1s steps(1, end) forwards;
+}
 
 /* ---------- Cursor de aguja (solo con mouse) ---------- */
 .cursor-punto,

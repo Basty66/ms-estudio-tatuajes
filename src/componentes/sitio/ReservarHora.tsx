@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fechaCorta, fechaLarga } from "@/lib/admin/fecha";
 import { diaSemana, type Cupo, type EstadoDia } from "@/lib/reservas";
+import { useModalAbierto } from "./Efectos";
 import { Ornamento } from "./Ornamento";
 import { TarjetaGracias } from "./TarjetaGracias";
 
@@ -116,6 +117,7 @@ export function ReservarHora({
   const datosRef = useRef<HTMLElement>(null);
   // Después de tocar un día o un cupo, lo que sigue se trae a la vista.
   const seguir = useRef<"horas" | "datos" | null>(null);
+  useModalAbierto();
 
   const cargar = () =>
     fetch("/api/disponibilidad", { cache: "no-store" })
@@ -135,12 +137,7 @@ export function ReservarHora({
     void cargar();
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
     window.addEventListener("keydown", tecla);
-    const antes = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", tecla);
-      document.body.style.overflow = antes;
-    };
+    return () => window.removeEventListener("keydown", tecla);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -231,7 +228,8 @@ export function ReservarHora({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-tinta/[0.9] backdrop-blur-xl sm:items-center sm:p-6"
+      data-lenis-prevent
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-tinta/[0.94] sm:items-center sm:p-6"
       onClick={(e) => e.target === e.currentTarget && cerrar()}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -278,7 +276,7 @@ export function ReservarHora({
             {/* Luz de lámpara y filo cromado arriba, como en la portada. */}
             <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(70%_100%_at_30%_0%,rgba(47,107,255,0.2),transparent_70%)]" />
             <div aria-hidden className="pointer-events-none absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(207,220,255,0.8),transparent)]" />
-            <Ornamento tipo="estrella" className="top-7 right-[4.75rem] w-8 opacity-40 sm:right-24 sm:w-10" flotar={6} ritmo={7} />
+            <Ornamento tipo="estrella" className="top-7 right-[4.75rem] w-8 opacity-40 sm:right-24 sm:w-10" flotar={0} />
 
             <header className="relative px-5 pt-3 pb-4 sm:pt-7 sm:pb-5 lg:px-8">
               <span aria-hidden className="mx-auto mb-3 block h-1 w-10 rounded-full bg-linea sm:hidden" />

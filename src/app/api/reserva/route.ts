@@ -71,7 +71,9 @@ export async function POST(request: Request) {
 
   try {
     // Una sola sentencia: el cliente (si el teléfono ya existe, es el mismo),
-    // la cita apartada y la cotización unida a ella.
+    // la cita apartada y la cotización unida a ella. Si la persona ya había
+    // cotizado por WhatsApp con ese código, se une esa; si no, se anota acá:
+    // abrir el calendario no anota nada, solo pedir la hora.
     const [fila] = (await sql`
       WITH quien AS (
         INSERT INTO clientes (nombre, telefono, creado_por) VALUES (${nombre}, ${telefono}, 'Web')
@@ -90,6 +92,14 @@ export async function POST(request: Request) {
         UPDATE cotizaciones SET estado = 'agendada', cita_id = cita.id, vista = TRUE
         FROM cita
         WHERE cotizaciones.id = (SELECT id FROM cotizaciones WHERE codigo = ${codigo} AND cita_id IS NULL ORDER BY creada_en DESC LIMIT 1)
+        RETURNING cotizaciones.id
+      ),
+      anotada AS (
+        INSERT INTO cotizaciones (tipo, zona, lado, tamano, estilo, idea, minimo, maximo, sesiones_min, sesiones_max, codigo, origen, estado, cita_id, vista)
+        SELECT ${laser ? "laser" : "tatuaje"}, ${zona}, ${lado}, ${tamano}, ${estilo}, ${idea}, ${rango.min}, ${rango.max},
+               ${rango.sesiones?.min ?? null}, ${rango.sesiones?.max ?? null}, ${codigo}, ${red}, 'agendada', cita.id, TRUE
+        FROM cita
+        WHERE NOT EXISTS (SELECT 1 FROM cotizada)
       )
       SELECT id FROM cita
     `) as Array<{ id: number }>;

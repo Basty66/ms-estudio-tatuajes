@@ -7,6 +7,7 @@ import { codigoCotizacion, type Fotos } from "@/lib/contenido";
 import { ESTILOS_PRECIO, estimar, estimarLaser, OBJETIVOS_LASER, pesos, TAMANOS, type EstiloPrecio, type ObjetivoLaser, type Precios, type Tamano } from "@/lib/precios";
 import { BotonMagnetico } from "./BotonMagnetico";
 import { useEstudio } from "./DatosEstudio";
+import { useModalAbierto } from "./Efectos";
 import { clave, MapaCuerpo, nombreZona, textoLado, type Eleccion } from "./MapaCuerpo";
 import { Ornamento } from "./Ornamento";
 import { ReservarHora, type Pedido } from "./ReservarHora";
@@ -117,6 +118,7 @@ function Lectura({ eleccion, previa: bajoCursor, recargos, laser }: { eleccion: 
  * tarjeta de gracias, para cuando la persona vuelve a la web.
  */
 function Gracias({ datos, whatsapp, cerrar }: { datos: DatosGracias; whatsapp: string; cerrar: () => void }) {
+  useModalAbierto();
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
     window.addEventListener("keydown", tecla);
@@ -131,7 +133,8 @@ function Gracias({ datos, whatsapp, cerrar }: { datos: DatosGracias; whatsapp: s
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-[70] flex flex-col items-center justify-center overflow-y-auto bg-tinta/[0.88] px-4 py-10 backdrop-blur-xl"
+      data-lenis-prevent
+      className="fixed inset-0 z-[70] flex flex-col items-center justify-center overflow-y-auto bg-tinta/[0.94] px-4 py-10"
       onClick={(e) => e.target === e.currentTarget && cerrar()}
     >
       <TarjetaGracias datos={datos} />
@@ -261,9 +264,8 @@ export function Cotizador({
     ? `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(OBJETIVOS_LASER, objetivo).toLowerCase()}`
     : `${nombre(TAMANOS, tamano)} · ${zonaTexto.toLowerCase()} · ${nombre(ESTILOS_PRECIO, estilo).toLowerCase()}`;
 
-  /** Elegir día y hora: anota la cotización y abre el calendario. */
+  /** Elegir día y hora: abre el calendario. La cotización se anota recién al pedir la hora (/api/reserva). */
   const abrirReserva = () => {
-    registrar();
     setReservando({
       tipo: modo,
       zona: eleccion.zona,

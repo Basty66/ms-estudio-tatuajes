@@ -3,6 +3,34 @@
 import Lenis from "lenis";
 import { useEffect, useRef } from "react";
 
+let modalesAbiertos = 0;
+
+/**
+ * Mientras un modal está abierto, la página de atrás se queda quieta: sin
+ * scroll y con Lenis detenido. El modal lleva `data-lenis-prevent`: Lenis
+ * bloquea la rueda en todo lo demás, y sin eso la rueda movía la página de
+ * atrás en vez del modal.
+ *
+ * Los modales van sin backdrop-filter: con el fondo al 94 % casi no se nota,
+ * y medido con el calendario abierto subía cada cuadro de 17 a 64 ms.
+ */
+export function useModalAbierto(activo = true) {
+  useEffect(() => {
+    if (!activo) return;
+    const lenis = (window as unknown as { __lenis?: Lenis }).__lenis;
+    const antes = document.body.style.overflow;
+    modalesAbiertos++;
+    document.body.style.overflow = "hidden";
+    lenis?.stop();
+    return () => {
+      modalesAbiertos--;
+      if (modalesAbiertos > 0) return;
+      document.body.style.overflow = antes;
+      lenis?.start();
+    };
+  }, [activo]);
+}
+
 /**
  * Scroll suave y cursor de aguja. Los dos se apagan solos con "reducir
  * movimiento", y el cursor solo existe con mouse: en el teléfono no hay

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { Foto } from "@/lib/contenido";
 import { TRABAJOS, type Trabajo } from "@/lib/estudio";
 import { useEstudio } from "./DatosEstudio";
+import { useModalAbierto } from "./Efectos";
 import { FotoStencil } from "./FotoStencil";
 import { Ornamento } from "./Ornamento";
 import { Titulo } from "./Titulo";
@@ -83,6 +84,7 @@ export function Trabajos({ trabajos = TRABAJOS, antes, despues }: { trabajos?: T
   const [filtro, setFiltro] = useState("Todos");
   const [abierto, setAbierto] = useState<Trabajo | null>(null);
   const visibles = trabajos.filter((t) => filtro === "Todos" || t.estilo === filtro);
+  useModalAbierto(Boolean(abierto));
 
   useEffect(() => {
     if (!abierto) return;
@@ -196,7 +198,8 @@ export function Trabajos({ trabajos = TRABAJOS, antes, despues }: { trabajos?: T
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setAbierto(null)}
-            className="fixed inset-0 z-[80] flex flex-col items-center justify-center overscroll-contain bg-tinta/90 p-4 backdrop-blur-xl"
+            data-lenis-prevent
+            className="fixed inset-0 z-[80] flex flex-col items-center justify-center overscroll-contain bg-tinta/[0.94] p-4"
           >
             <motion.div
               layoutId={`foto-${abierto.src}`}
