@@ -8,6 +8,8 @@ import { PANEL } from "@/lib/admin/ruta";
 import { usuarioActual } from "@/lib/admin/sesion";
 import { normalizarTelefono } from "@/lib/admin/telefono";
 import { ESTILOS_PRECIO, TAMANOS, ZONAS } from "@/lib/precios";
+import { trabajoAbiertoDe, type TrabajoAbierto } from "@/db/panel";
+import { MAX_SESIONES } from "@/lib/sesiones";
 
 /**
  * Lo que se escribe desde el panel.
@@ -136,6 +138,12 @@ export type DatosCita = {
   medioAbono?: string;
   /** Si se agenda desde una cotización de la web: queda unida a esta cita. */
   cotizacion?: number | null;
+  /** Cuántas sesiones se acordaron para el trabajo (1 o nada: una sola). */
+  sesiones?: number | null;
+  /** El valor final del trabajo completo cuando son varias sesiones; `precio` es lo de esta sesión. */
+  valorFinal?: number | null;
+  /** Una cita del trabajo que esta sesión continúa. */
+  trabajo?: number | null;
 };
 
 function validarCita(d: DatosCita) {
@@ -147,6 +155,10 @@ function validarCita(d: DatosCita) {
   const inicio = `${d.fecha}T${d.hora}`;
   const precio = d.precio == null || (d.precio as unknown) === "" ? null : entero(d.precio, 0, 50_000_000);
   if (d.precio != null && (d.precio as unknown) !== "" && precio === null) return { error: "El precio no es un número válido." };
+  const sesiones = d.sesiones == null ? 1 : entero(d.sesiones, 1, MAX_SESIONES);
+  if (!sesiones) return { error: `Las sesiones van de 1 a ${MAX_SESIONES}.` };
+  const valorFinal = d.valorFinal == null || (d.valorFinal as unknown) === "" ? null : entero(d.valorFinal, 0, 50_000_000);
+  if (d.valorFinal != null && (d.valorFinal as unknown) !== "" && valorFinal === null) return { error: "El valor final no es un número válido." };
   return {
     valores: {
       tipo,
@@ -159,8 +171,31 @@ function validarCita(d: DatosCita) {
       descripcion: texto(d.descripcion, 600),
       precio,
       notas: texto(d.notas, 2000),
+      sesiones,
+      valorFinal,
     },
   };
+}
+
+/** Lo acordado para un trabajo, como se guarda: una sola sesión no lleva plan ni valor final aparte. */
+const plan = (sesiones: number, valorFinal: number | null) => (sesiones > 1 ? { sesiones, valorFinal } : { sesiones: null, valorFinal: null });
+
+/** La primera cita del trabajo de `citaId` (o ella misma) y cuántas sesiones vivas tiene. */
+async function raizDe(citaId: number): Promise<{ id: number; cliente_id: number | null; vivas: number } | null> {
+  const [f] = (await sql`
+    SELECT r.id, r.cliente_id,
+           (SELECT COUNT(*)::INT FROM citas s WHERE (s.id = r.id OR s.trabajo_id = r.id) AND s.estado IN ('solicitada', 'confirmada', 'completada')) AS vivas
+    FROM citas r
+    WHERE r.id = (SELECT COALESCE(trabajo_id, id) FROM citas WHERE id = ${citaId}) AND r.tipo <> 'bloqueo'
+  `) as Array<{ id: number; cliente_id: number | null; vivas: number }>;
+  return f ?? null;
+}
+
+/** El trabajo de un cliente al que le faltan sesiones: el formulario ofrece "es la siguiente sesión". */
+export async function trabajoAbierto(clienteId: number): Promise<TrabajoAbierto | null> {
+  if (!(await operador())) return null;
+  const id = entero(clienteId, 1, 2e9);
+  return id ? trabajoAbiertoDe(id) : null;
 }
 
 /**
@@ -189,25 +224,36 @@ export async function crearCita(d: DatosCita): Promise<Respuesta<{ id: number }>
   if (d.abono && !abono) return { ok: false, error: "El abono no es un número válido." };
   const medio = d.medioAbono === "efectivo" ? "efectivo" : "transferencia";
 
+  // Otra sesión de un trabajo: va con el mismo cliente, y lo acordado (sesiones y valor final)
+  // se pone igual en todas. Si ya se pasó de las sesiones acordadas, el plan crece.
+  const raiz = d.trabajo ? await raizDe(entero(d.trabajo, 1, 2e9) ?? 0) : null;
+  if (d.trabajo && !raiz) return { ok: false, error: "No se encontró el trabajo de esta sesión." };
+  const acordado = plan(raiz ? Math.max(c.sesiones, raiz.vivas + 1) : c.sesiones, c.valorFinal);
+  const quienId = raiz?.cliente_id ?? clienteId;
+
   try {
     const [fila] = (await sql`
       WITH nuevo AS (
         INSERT INTO clientes (nombre, telefono, creado_por)
         SELECT ${nombre}, ${telefono}, ${u.nombre}
-        WHERE ${clienteId}::INT IS NULL
+        WHERE ${quienId}::INT IS NULL
         ON CONFLICT (telefono) WHERE telefono IS NOT NULL DO UPDATE SET telefono = EXCLUDED.telefono
         RETURNING id
       ),
       quien AS (
-        SELECT ${clienteId}::INT AS id WHERE ${clienteId}::INT IS NOT NULL
+        SELECT ${quienId}::INT AS id WHERE ${quienId}::INT IS NOT NULL
         UNION ALL SELECT id FROM nuevo
       ),
       cita AS (
-        INSERT INTO citas (cliente_id, tipo, inicio, fin, zona, lado, tamano, estilo, descripcion, precio, notas, creada_por)
+        INSERT INTO citas (cliente_id, tipo, inicio, fin, zona, lado, tamano, estilo, descripcion, precio, notas, creada_por, trabajo_id, sesiones, valor_final)
         SELECT id, ${c.tipo}, ${c.inicio}::TIMESTAMP, ${c.fin}::TIMESTAMP, ${c.zona}, ${c.lado}, ${c.tamano}, ${c.estilo},
-               ${c.descripcion}, ${c.precio}, ${c.notas}, ${u.nombre}
+               ${c.descripcion}, ${c.precio}, ${c.notas}, ${u.nombre}, ${raiz?.id ?? null}::INT, ${acordado.sesiones}::INT, ${acordado.valorFinal}::INT
         FROM quien
         RETURNING id
+      ),
+      acordado AS (
+        UPDATE citas SET sesiones = ${acordado.sesiones}::INT, valor_final = ${acordado.valorFinal}::INT
+        WHERE ${raiz?.id ?? null}::INT IS NOT NULL AND (id = ${raiz?.id ?? null}::INT OR trabajo_id = ${raiz?.id ?? null}::INT)
       ),
       pago AS (
         INSERT INTO pagos (cita_id, monto, tipo, medio, anotado_por)
@@ -236,12 +282,22 @@ export async function editarCita(id: number, d: DatosCita): Promise<Respuesta> {
   const v = validarCita(d);
   if ("error" in v) return { ok: false, error: v.error ?? "Revisa los datos." };
   const c = v.valores;
+  // Lo acordado vale para todo el trabajo, y no puede ser menos que las sesiones que ya tiene.
+  const raiz = await raizDe(citaId);
+  if (!raiz) return { ok: false, error: "Esa cita no existe." };
+  const acordado = plan(Math.max(c.sesiones, raiz.vivas), c.valorFinal);
   try {
     await sql`
-      UPDATE citas SET tipo = ${c.tipo}, inicio = ${c.inicio}::TIMESTAMP, fin = ${c.fin}::TIMESTAMP, zona = ${c.zona},
-             lado = ${c.lado}, tamano = ${c.tamano}, estilo = ${c.estilo}, descripcion = ${c.descripcion},
-             precio = ${c.precio}, notas = ${c.notas}
-      WHERE id = ${citaId} AND tipo <> 'bloqueo'
+      WITH esta AS (
+        UPDATE citas SET tipo = ${c.tipo}, inicio = ${c.inicio}::TIMESTAMP, fin = ${c.fin}::TIMESTAMP, zona = ${c.zona},
+               lado = ${c.lado}, tamano = ${c.tamano}, estilo = ${c.estilo}, descripcion = ${c.descripcion},
+               precio = ${c.precio}, notas = ${c.notas}, sesiones = ${acordado.sesiones}::INT, valor_final = ${acordado.valorFinal}::INT
+        WHERE id = ${citaId} AND tipo <> 'bloqueo'
+        RETURNING id
+      )
+      UPDATE citas SET sesiones = ${acordado.sesiones}::INT, valor_final = ${acordado.valorFinal}::INT
+      FROM esta
+      WHERE citas.id <> esta.id AND (citas.id = ${raiz.id} OR citas.trabajo_id = ${raiz.id})
     `;
   } catch (e) {
     if (esChoqueDeHoras(e)) return { ok: false, error: await conQuienChoca(c.inicio, c.fin, citaId) };
@@ -370,18 +426,28 @@ export async function confirmarReserva(formulario: FormData): Promise<Respuesta>
   const abono = abonoTexto ? entero(abonoTexto, 1, 50_000_000) : null;
   const medio = formulario.get("medio") === "efectivo" ? "efectivo" : "transferencia";
   const hasta = formulario.get("hasta");
+  const sesiones = entero(formulario.get("sesiones") || 1, 1, MAX_SESIONES);
+  const valorFinalTexto = String(formulario.get("valorFinal") ?? "").replace(/\D/g, "");
+  const valorFinal = valorFinalTexto ? entero(valorFinalTexto, 0, 50_000_000) : null;
+  const trabajo = formulario.get("trabajo") ? entero(formulario.get("trabajo"), 1, 2e9) : null;
   if (!citaId) return { ok: false, error: "Esa cita no existe." };
+  if (!sesiones) return { ok: false, error: `Las sesiones van de 1 a ${MAX_SESIONES}.` };
   if (precioTexto && precio === null) return { ok: false, error: "El valor no es un número válido." };
   if (abonoTexto && !abono) return { ok: false, error: "El abono no es un número válido." };
   if (!esHora(hasta)) return { ok: false, error: "Anota a qué hora termina la sesión." };
 
   // Cuánto dura lo decide el tatuador: la cita va de su cupo hasta la hora que anota.
   const [pedida] = (await sql`
-    SELECT to_char(inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio FROM citas WHERE id = ${citaId} AND estado = 'solicitada'
-  `) as Array<{ inicio: string }>;
+    SELECT to_char(inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio, cliente_id FROM citas WHERE id = ${citaId} AND estado = 'solicitada'
+  `) as Array<{ inicio: string; cliente_id: number }>;
   if (!pedida) return { ok: false, error: "Esta hora ya no está por confirmar: quizás venció o ya se confirmó." };
   if (hasta <= pedida.inicio.slice(11)) return { ok: false, error: `La sesión tiene que terminar después de las ${pedida.inicio.slice(11)}.` };
   const fin = `${pedida.inicio.slice(0, 10)}T${hasta}`;
+
+  // ¿Es la siguiente sesión de un trabajo que ya tiene? Solo de este mismo cliente.
+  const raiz = trabajo ? await raizDe(trabajo) : null;
+  if (trabajo && (!raiz || raiz.cliente_id !== pedida.cliente_id)) return { ok: false, error: "Ese trabajo no es de esta persona." };
+  const acordado = plan(raiz ? Math.max(sesiones, raiz.vivas + 1) : sesiones, valorFinal);
 
   const archivo = formulario.get("comprobante");
   let ruta: string | null = null;
@@ -400,9 +466,14 @@ export async function confirmarReserva(formulario: FormData): Promise<Respuesta>
   try {
     filas = (await sql`
       WITH cita AS (
-        UPDATE citas SET estado = 'confirmada', precio = COALESCE(${precio}::INT, precio), fin = ${fin}::TIMESTAMP
+        UPDATE citas SET estado = 'confirmada', precio = COALESCE(${precio}::INT, precio), fin = ${fin}::TIMESTAMP,
+               trabajo_id = ${raiz?.id ?? null}::INT, sesiones = ${acordado.sesiones}::INT, valor_final = ${acordado.valorFinal}::INT
         WHERE id = ${citaId} AND estado = 'solicitada'
         RETURNING id
+      ),
+      acordado AS (
+        UPDATE citas SET sesiones = ${acordado.sesiones}::INT, valor_final = ${acordado.valorFinal}::INT
+        WHERE ${raiz?.id ?? null}::INT IS NOT NULL AND id <> ${citaId} AND (id = ${raiz?.id ?? null}::INT OR trabajo_id = ${raiz?.id ?? null}::INT)
       ),
       pago AS (
         INSERT INTO pagos (cita_id, monto, tipo, medio, comprobante, anotado_por)

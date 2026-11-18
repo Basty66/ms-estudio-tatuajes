@@ -10,6 +10,7 @@ import { fechaCorta, hora, hoyChile, sumarDias } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
 import { PANEL } from "@/lib/admin/ruta";
 import { rellenar } from "@/lib/contenido";
+import { sinNombre } from "@/lib/sesiones";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +118,8 @@ export default async function Cotizaciones({ searchParams }: { searchParams: Pro
             <ul className="flex flex-col gap-2">
               {lista.map((c) => {
                 const t = textoCotizacion(c);
-                const respuesta = rellenar(mensajes.respuestaCotizacion, { codigo: c.codigo ?? "", detalle: t.detalle, rango: t.rango });
+                // Sin código, "de la web": si quedara vacío, la línea entera no se mandaría.
+                const respuesta = rellenar(sinNombre(mensajes.respuestaCotizacion), { codigo: c.codigo ?? "de la web", detalle: t.detalle, rango: t.rango });
                 return (
                   <li
                     key={c.id}
@@ -137,7 +139,7 @@ export default async function Cotizaciones({ searchParams }: { searchParams: Pro
                     </p>
                     {c.idea && <p className="mt-2 text-[15px] whitespace-pre-line">“{c.idea}”</p>}
                     <div className="mt-3 border-t border-linea/70 pt-3">
-                      <AccionesCotizacion id={c.id} estado={c.estado} respuesta={respuesta} citaId={c.cita_id} />
+                      <AccionesCotizacion id={c.id} estado={c.estado} respuesta={respuesta} citaId={c.cita_id} propuesta={mensajes.propuesta} datosAbono={mensajes.datosAbono} />
                     </div>
                   </li>
                 );

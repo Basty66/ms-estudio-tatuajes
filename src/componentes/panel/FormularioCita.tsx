@@ -2,12 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buscarClientes, crearCita, editarCita, ocupado, type DatosCita } from "@/app/tinta/_acciones/panel";
-import { clp } from "@/lib/admin/etiquetas";
+import { buscarClientes, crearCita, editarCita, ocupado, trabajoAbierto, type DatosCita } from "@/app/tinta/_acciones/panel";
+import type { TrabajoAbierto } from "@/db/panel";
+import { clp, nombreDonde } from "@/lib/admin/etiquetas";
 import { duracionTexto, fechaCorta, hora, sumarDias, sumarMinutos } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { formatearTelefono } from "@/lib/admin/telefono";
 import { ESTILOS_PRECIO, estimar, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
+import { MAX_SESIONES, textoCadaSesion, textoSesiones, valorDeSesion } from "@/lib/sesiones";
 import { Boton } from "./Boton";
 import { Buscar, Cerrar } from "./Iconos";
 
@@ -68,6 +70,21 @@ function Deslizable({ children }: { children: React.ReactNode }) {
 
 const choca = (a: { inicio: string; fin: string }, b: { inicio: string; fin: string }) => a.inicio < b.fin && b.inicio < a.fin;
 
+/** Lo que trae una sesión siguiente: lo mismo del trabajo y lo acordado. */
+function deTrabajo(t: TrabajoAbierto) {
+  return {
+    tipo: t.tipo,
+    zona: t.zona,
+    lado: t.lado,
+    tamano: t.tamano,
+    estilo: t.estilo,
+    descripcion: t.descripcion ?? "",
+    duracion: t.minutos,
+    sesiones: Math.max(t.sesiones, t.vivas + 1),
+    valorFinal: t.valor_final,
+  };
+}
+
 /**
  * Agendar o editar una cita, en cuatro pasos: quién, cuándo, qué y cuánto.
  * Pensado para el teléfono en una mano mientras se habla por WhatsApp: lo
@@ -76,6 +93,10 @@ const choca = (a: { inicio: string; fin: string }, b: { inicio: string; fin: str
  * Las horas que chocan con otra cita del día se ven tachadas antes de
  * elegirlas. Es una ayuda: lo que de verdad impide la doble reserva es el
  * constraint de la base.
+ *
+ * Un tatuaje grande va en varias sesiones: se anota cuántas y el valor final,
+ * y cada sesión cobra su parte. Si el cliente tiene un trabajo con sesiones
+ * por agendar, se ofrece seguirlo (llega con todo lo acordado).
  */
 export function FormularioCita({
   hoy,
@@ -84,17 +105,20 @@ export function FormularioCita({
   edicion,
   precios,
   desde,
+  seguir: seguirInicial,
 }: {
   precios: Precios;
   hoy: string;
   fechaInicial: string;
   cliente?: ClienteElegido | null;
-  edicion?: { id: number; datos: DatosCita & { cliente: string } };
+  edicion?: { id: number; sesion: number; datos: DatosCita & { cliente: string } };
   /** Agendar desde una cotización de la web: llega con lo cotizado y queda unida a la cita. */
   desde?: { id: number; codigo: string | null; rango: string; datos: Partial<DatosCita> };
+  /** Agendar la siguiente sesión de un trabajo (botón de la ficha de la cita). */
+  seguir?: TrabajoAbierto | null;
 }) {
   const router = useRouter();
-  const d: Partial<DatosCita> | undefined = edicion?.datos ?? desde?.datos;
+  const d: Partial<DatosCita> | undefined = edicion?.datos ?? desde?.datos ?? (seguirInicial ? deTrabajo(seguirInicial) : undefined);
   const [cliente, setCliente] = useState<ClienteElegido | null>(clienteInicial ?? null);
   const [busqueda, setBusqueda] = useState("");
   const [sugeridos, setSugeridos] = useState<ClienteElegido[]>([]);
@@ -113,6 +137,11 @@ export function FormularioCita({
   const [abono, setAbono] = useState("");
   const [medioAbono, setMedioAbono] = useState("transferencia");
   const [notas, setNotas] = useState(d?.notas ?? "");
+  const [sesiones, setSesiones] = useState(d?.sesiones ?? 1);
+  const [valorFinal, setValorFinal] = useState(d?.valorFinal != null ? String(d.valorFinal) : "");
+  // El trabajo que esta cita continúa, y el que se ofrece al elegir un cliente que tiene uno a medias.
+  const [seguir, setSeguir] = useState<TrabajoAbierto | null>(seguirInicial ?? null);
+  const [ofrecido, setOfrecido] = useState<TrabajoAbierto | null>(null);
   const [ocupados, setOcupados] = useState<Ocupado[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -128,6 +157,39 @@ export function FormularioCita({
     }, 220);
     return () => clearTimeout(t);
   }, [busqueda, cliente]);
+
+  // ¿Le faltan sesiones de un trabajo? Se ofrece seguirlo antes de llenar todo de nuevo.
+  useEffect(() => {
+    if (edicion || seguirInicial || !cliente) return;
+    let vigente = true;
+    void trabajoAbierto(cliente.id).then((t) => vigente && setOfrecido(t));
+    return () => {
+      vigente = false;
+    };
+  }, [cliente, edicion, seguirInicial]);
+
+  /** Seguir un trabajo: llega con lo acordado y lo mismo que la sesión anterior. */
+  const aplicarTrabajo = (t: TrabajoAbierto) => {
+    const v = deTrabajo(t);
+    setSeguir(t);
+    setOfrecido(null);
+    setTipo(v.tipo);
+    setZona(v.zona ?? "");
+    setLado(v.lado ?? "");
+    setTamano(v.tamano ?? "");
+    setEstilo(v.estilo ?? "");
+    setDescripcion(v.descripcion ?? "");
+    setDuracion(v.duracion);
+    setSesiones(v.sesiones ?? 1);
+    setValorFinal(v.valorFinal != null ? String(v.valorFinal) : "");
+    setPrecio("");
+  };
+
+  // Qué sesión es esta y cuánto le toca: partes iguales del valor final, y la última cuadra lo que falta.
+  const numero = edicion ? edicion.sesion : seguir ? seguir.vivas + 1 : 1;
+  const totalFinal = Number(valorFinal.replace(/\D/g, "")) || 0;
+  const sugerido =
+    sesiones > 1 && totalFinal ? (seguir && numero >= sesiones ? Math.max(0, totalFinal - seguir.asignado) : valorDeSesion(totalFinal, sesiones, numero)) : null;
 
   // Lo ocupado de las próximas semanas, para marcar días y horas.
   const finTira = sumarDias(hoy, DIAS_TIRA - 1);
@@ -172,7 +234,11 @@ export function FormularioCita({
       tamano: tamano || null,
       estilo: estilo || null,
       descripcion,
-      precio: precio.trim() === "" ? null : Number(precio.replace(/\D/g, "")),
+      // Varias sesiones: si no se escribió lo de esta sesión, va su parte del valor final.
+      precio: precio.trim() === "" ? (sesiones > 1 ? sugerido : null) : Number(precio.replace(/\D/g, "")),
+      sesiones,
+      valorFinal: sesiones > 1 && totalFinal ? totalFinal : null,
+      trabajo: seguir?.id ?? null,
       notas,
       abono: abono.trim() === "" ? null : Number(abono.replace(/\D/g, "")),
       medioAbono,
@@ -201,6 +267,25 @@ export function FormularioCita({
   let n = 0;
   return (
     <form onSubmit={guardar} className="flex min-w-0 flex-col gap-4 lg:max-w-2xl">
+      {seguir && (
+        <div className="flex items-center gap-3 rounded-2xl border border-stencil/50 bg-stencil/10 px-4 py-3 text-[14px] leading-snug">
+          <span className="font-gotica text-[30px] leading-none text-stencil-claro">{numero}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">
+              Sesión {numero} de {Math.max(seguir.sesiones, numero)}
+            </span>
+            <span className="block text-ceniza">
+              Sigue el trabajo de {nombreDonde(seguir.zona, seguir.lado)?.toLowerCase() ?? "su tatuaje"}
+              {seguir.valor_final != null ? ` · valor final ${clp(seguir.valor_final)}` : ""}.
+            </span>
+          </span>
+          {!seguirInicial && (
+            <button type="button" onClick={() => setSeguir(null)} className="shrink-0 text-[13px] text-ceniza underline-offset-4 hover:text-piel hover:underline">
+              Es otro
+            </button>
+          )}
+        </div>
+      )}
       {desde && (
         <p className="rounded-2xl border border-stencil/50 bg-stencil/10 px-4 py-3 text-[14px] leading-snug">
           <span className="font-semibold">Desde la cotización {desde.codigo ?? "de la web"}</span>
@@ -219,7 +304,16 @@ export function FormularioCita({
                 <span className="block truncate font-semibold">{cliente.nombre}</span>
                 <span className="block text-[13px] text-ceniza">{cliente.telefono ? formatearTelefono(cliente.telefono) : "Sin teléfono"}</span>
               </span>
-              <button type="button" aria-label="Elegir otro cliente" onClick={() => setCliente(null)} className="grid size-10 place-items-center rounded-full text-ceniza hover:text-piel">
+              <button
+                type="button"
+                aria-label="Elegir otro cliente"
+                onClick={() => {
+                  setCliente(null);
+                  setOfrecido(null);
+                  if (!seguirInicial) setSeguir(null);
+                }}
+                className="grid size-10 place-items-center rounded-full text-ceniza hover:text-piel"
+              >
                 <Cerrar className="size-5" />
               </button>
             </div>
@@ -264,6 +358,19 @@ export function FormularioCita({
                   <input value={telefono} onChange={(e) => setTelefono(e.target.value)} inputMode="tel" autoComplete="off" placeholder="WhatsApp: 9 1234 5678 (opcional)" className={campo} />
                 </label>
               )}
+            </div>
+          )}
+          {ofrecido && !seguir && (
+            <div className="panel-surge mt-3 rounded-2xl border border-dashed border-stencil/60 p-3 pl-4">
+              <p className="text-[14px] leading-snug">
+                <span className="font-semibold">Tiene un trabajo a medias:</span>{" "}
+                <span className="text-ceniza">
+                  {nombreDonde(ofrecido.zona, ofrecido.lado) ?? "su tatuaje"}, van {textoSesiones(ofrecido.vivas)} de {ofrecido.sesiones}.
+                </span>
+              </p>
+              <button type="button" onClick={() => aplicarTrabajo(ofrecido)} className="mt-2 min-h-10 rounded-full border border-stencil bg-stencil/20 px-4 text-[14px] font-semibold">
+                Es la sesión {ofrecido.vivas + 1} de {ofrecido.sesiones}
+              </button>
             </div>
           )}
         </Paso>
@@ -440,10 +547,57 @@ export function FormularioCita({
 
       {/* ---------- 4. Pago ---------- */}
       <Paso n={++n} titulo="Pago" opcional>
-        <label>
-          <Etiqueta nota={rango ? `En la web: ${clp(rango.min)} a ${clp(rango.max)}` : undefined}>Valor acordado</Etiqueta>
-          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
-        </label>
+        <div>
+          <Etiqueta nota={sesiones > 1 ? `Esta es la ${numero}` : "Un tatuaje grande va en varias"}>Sesiones</Etiqueta>
+          <Deslizable>
+            {[1, 2, 3, 4, 5, 6, 8, 10].map((cantidad) => (
+              <Chip key={cantidad} activo={sesiones === cantidad} disabled={cantidad < numero} onClick={() => setSesiones(cantidad)} className="min-w-12">
+                {cantidad}
+              </Chip>
+            ))}
+            {![1, 2, 3, 4, 5, 6, 8, 10].includes(sesiones) && (
+              <Chip activo onClick={() => undefined} className="min-w-12">
+                {sesiones}
+              </Chip>
+            )}
+            <input
+              type="number"
+              min={Math.max(1, numero)}
+              max={MAX_SESIONES}
+              aria-label="Otra cantidad de sesiones"
+              placeholder="Otra"
+              onChange={(e) => {
+                const cantidad = Math.round(Number(e.target.value));
+                if (cantidad >= Math.max(1, numero) && cantidad <= MAX_SESIONES) setSesiones(cantidad);
+              }}
+              className="min-h-10 w-20 shrink-0 rounded-full border border-linea bg-transparent px-3 text-center text-[14px] tabular-nums placeholder:text-ceniza/60 focus:border-stencil focus:outline-none"
+            />
+          </Deslizable>
+        </div>
+        {sesiones > 1 ? (
+          <div className="grid grid-cols-2 gap-3">
+            <label className="min-w-0">
+              <Etiqueta>Valor final</Etiqueta>
+              <input value={valorFinal} onChange={(e) => setValorFinal(e.target.value)} inputMode="numeric" placeholder="$ total" className={`${campo} tabular-nums`} />
+            </label>
+            <label className="min-w-0">
+              <Etiqueta>Esta sesión</Etiqueta>
+              <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder={sugerido != null ? clp(sugerido) : "$"} className={`${campo} tabular-nums`} />
+            </label>
+            <p className="col-span-2 -mt-1 text-[12px] text-ceniza">
+              {totalFinal
+                ? `${textoSesiones(sesiones)} de ${textoCadaSesion(totalFinal, sesiones)}${seguir && numero >= sesiones ? `: en esta va lo que falta (${clp(sugerido ?? 0)})` : ""}. Si dejas "Esta sesión" vacía, va su parte.`
+                : rango
+                  ? `En la web cotizó ${clp(rango.min)} a ${clp(rango.max)}. El valor final es por el trabajo completo.`
+                  : "El valor final es por el trabajo completo; cada sesión cobra su parte."}
+            </p>
+          </div>
+        ) : (
+          <label>
+            <Etiqueta nota={rango ? `En la web: ${clp(rango.min)} a ${clp(rango.max)}` : undefined}>Valor acordado</Etiqueta>
+            <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
+          </label>
+        )}
         {!edicion && (
           <div>
             <Etiqueta>Abono recibido</Etiqueta>

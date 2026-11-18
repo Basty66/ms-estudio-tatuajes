@@ -349,9 +349,12 @@ export function EditarConsentimiento({ inicial }: { inicial: TextosConsentimient
 // ------------------------------------------------------------ mensajes --
 
 const MENSAJES: Array<{ clave: keyof Mensajes; titulo: string; cuando: string }> = [
-  { clave: "confirmacion", titulo: "Confirmar la hora", cuando: "Botón Confirmar de la cita, antes de la sesión." },
+  { clave: "respuestaCotizacion", titulo: "Responder una cotización", cuando: "Botón Responder en Cotizaciones: pide la referencia. Al abrir WhatsApp eliges el chat." },
+  { clave: "reservaRecibida", titulo: "Hora pedida: pedir la referencia", cuando: "En la hora pedida desde la web, para llegar al valor final y las sesiones." },
+  { clave: "propuesta", titulo: "Valor final y sesiones", cuando: "Al confirmar una hora pedida o desde una cotización: el valor, las sesiones, el abono y tus datos." },
+  { clave: "confirmacion", titulo: "Confirmar la hora", cuando: "Botón Confirmar de la cita, antes de la sesión. En un trabajo largo dice qué sesión es." },
   { clave: "recordatorio", titulo: "Recordar la hora", cuando: "Botón Recordar de la cita, el día antes." },
-  { clave: "respuestaCotizacion", titulo: "Responder una cotización", cuando: "Botón Responder en Cotizaciones: al abrir WhatsApp eliges el chat." },
+  { clave: "siguienteSesion", titulo: "Agendar la siguiente sesión", cuando: "En la cita de un trabajo en varias sesiones, y en Hoy a las 3 semanas. Tiene que llevar {sesion}." },
   { clave: "consentimiento", titulo: "Pedir el consentimiento", cuando: "Con el link para firmar. Tiene que llevar {link}." },
   { clave: "dia1", titulo: "Cuidados: día siguiente", cuando: "Aparece en Hoy el día después de un tatuaje." },
   { clave: "dia7", titulo: "Cuidados: una semana", cuando: "Aparece en Hoy a los 7 días." },
@@ -373,9 +376,13 @@ const MUESTRA: Record<string, string> = {
   cuando: "de mañana a las 15:00",
   duracion: "3 h",
   direccion: "Av. Manso 529, segundo piso, Melipilla",
-  valor: "$80.000",
-  abono: "$20.000",
-  saldo: "$60.000",
+  valor: "$100.000 esta sesión",
+  sesion: "1 de 3",
+  total: "$300.000",
+  sesiones: "3 sesiones",
+  cadaSesion: "$100.000",
+  abono: "$30.000",
+  saldo: "$70.000",
   cuidados: "tatuajes-azure.vercel.app/#cuidados",
 };
 
@@ -412,6 +419,8 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
   const [repetir, setRepetir] = useState(0);
   const valores = (clave: keyof Mensajes) => ({
     ...MUESTRA,
+    ...(clave === "propuesta" ? { valor: "$300.000" } : clave === "siguienteSesion" ? { sesion: "2 de 3" } : {}),
+    datosAbono: m.datosAbono || "Banco Estado · Cuenta RUT 12.345.678-9 · Matness · pagos@correo.cl",
     cuidados: `${origen}/#cuidados`,
     link: clave === "resena" ? resenas || "https://g.page/r/tu-link/review" : clave === "reservaRechazada" ? `${origen}/#cotiza` : `${origen}/consentimiento/8fK2…`,
   });
@@ -442,7 +451,7 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
               {abiertoEste && (
                 <div className="panel-surge grid grid-cols-1 gap-4 px-4 pb-5 sm:px-5 xl:grid-cols-2 xl:gap-6">
                   <div className="min-w-0">
-                    <Campo etiqueta="Mensaje" valor={m[clave]} cambiar={(v) => e.cambiar({ ...m, [clave]: v })} max={800} lineas={clave === "confirmacion" ? 12 : 5} />
+                    <Campo etiqueta="Mensaje" valor={m[clave]} cambiar={(v) => e.cambiar({ ...m, [clave]: v })} max={800} lineas={clave === "confirmacion" || clave === "propuesta" ? 12 : 5} />
                     <p className="mt-2 flex flex-wrap gap-1.5 text-[12px] text-ceniza">
                       {LLAVES[clave].map((k) => (
                         <button
@@ -466,6 +475,18 @@ export function EditarMensajes({ inicial, resenas, origen }: { inicial: Mensajes
           );
         })}
       </ul>
+
+      <section className="mt-6 rounded-3xl border border-linea bg-hollin/70 p-4 sm:p-5">
+        <h2 className="font-semibold">Datos para el abono</h2>
+        <p className="mt-0.5 mb-4 max-w-2xl text-[13px] text-ceniza">
+          Banco, tipo y número de cuenta, RUT, nombre y correo. Van dentro de “Valor final y sesiones” con <code className="rounded bg-tinta px-1 text-stencil-claro">{"{datosAbono}"}</code>. No
+          aparecen en la web.
+        </p>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <Campo etiqueta="Datos" valor={m.datosAbono} cambiar={(v) => e.cambiar({ ...m, datosAbono: v })} max={300} lineas={5} />
+          {!m.datosAbono && <p className="self-center text-[13px] text-[#fbbf24]">Sin datos: la propuesta se manda sin cómo transferir.</p>}
+        </div>
+      </section>
 
       <section className="mt-6 rounded-3xl border border-linea bg-hollin/70 p-4 sm:p-5">
         <h2 className="font-semibold">Tarjeta de gracias en la web</h2>

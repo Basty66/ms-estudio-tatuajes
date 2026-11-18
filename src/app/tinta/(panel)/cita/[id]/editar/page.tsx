@@ -22,6 +22,7 @@ export default async function EditarCita({ params }: { params: Promise<{ id: str
         fechaInicial={c.inicio.slice(0, 10)}
         edicion={{
           id: c.id,
+          sesion: c.sesion,
           datos: {
             cliente: c.cliente ?? "",
             tipo: c.tipo,
@@ -35,6 +36,8 @@ export default async function EditarCita({ params }: { params: Promise<{ id: str
             descripcion: c.descripcion ?? "",
             precio: c.precio,
             notas: c.notas ?? "",
+            sesiones: c.sesiones ?? 1,
+            valorFinal: c.valor_final,
           },
         }}
       />

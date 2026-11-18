@@ -35,6 +35,14 @@ export type Cita = {
   consentimiento: "firmado" | "pendiente" | null;
   /** Las alertas de salud del consentimiento firmado. */
   alertas: string[];
+  /** La primera cita del trabajo, si esta es una sesión siguiente. */
+  trabajo_id: number | null;
+  /** Cuántas sesiones se acordaron (null o 1: una sola). */
+  sesiones: number | null;
+  /** El valor final del trabajo completo; `precio` es lo de esta sesión. */
+  valor_final: number | null;
+  /** Qué sesión es, contando las vivas del trabajo por fecha. */
+  sesion: number;
 };
 
 // Columnas fijas: se escriben una vez y se usan en cada consulta de citas.
@@ -44,14 +52,25 @@ const COLUMNAS = sql.unsafe(`
   to_char(c.fin, 'YYYY-MM-DD"T"HH24:MI') AS fin,
   c.zona, c.lado, c.tamano, c.estilo, c.descripcion, c.precio, c.pagado, c.saldo, c.notas, c.creada_por, c.origen,
   to_char(c.creada_en AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD"T"HH24:MI') AS creada,
-  k.estado AS consentimiento, COALESCE(k.alertas, '{}') AS alertas
+  k.estado AS consentimiento, COALESCE(k.alertas, '{}') AS alertas,
+  c.trabajo_id, c.sesiones, c.valor_final,
+  CASE WHEN c.trabajo_id IS NULL AND COALESCE(c.sesiones, 1) <= 1 THEN 1
+       ELSE (SELECT COUNT(*)::INT FROM citas s
+             WHERE (s.id = COALESCE(c.trabajo_id, c.id) OR s.trabajo_id = COALESCE(c.trabajo_id, c.id))
+               AND s.estado IN ('solicitada', 'confirmada', 'completada') AND (s.inicio, s.id) <= (c.inicio, c.id)) END AS sesion
 `);
 
-// El consentimiento de cada cita (hay uno como máximo): va con LEFT JOIN LATERAL en cada consulta.
+// El consentimiento de cada cita: el suyo si lo tiene vigente; si no, el firmado en otra sesión del
+// mismo trabajo (vale para todo el tatuaje, con sus alertas de salud). Va con LEFT JOIN LATERAL en cada consulta.
 const CONSENTIMIENTO = sql.unsafe(`
   LEFT JOIN LATERAL (
     SELECT CASE WHEN x.firmado_en IS NOT NULL THEN 'firmado' WHEN x.vence_en > NOW() THEN 'pendiente' END AS estado, x.alertas
-    FROM consentimientos x WHERE x.cita_id = c.id
+    FROM consentimientos x
+    WHERE x.cita_id = c.id
+       OR (x.firmado_en IS NOT NULL AND x.cita_id IN (
+            SELECT s.id FROM citas s WHERE s.id = COALESCE(c.trabajo_id, c.id) OR s.trabajo_id = COALESCE(c.trabajo_id, c.id)))
+    ORDER BY (x.cita_id = c.id AND (x.firmado_en IS NOT NULL OR x.vence_en > NOW())) DESC, x.firmado_en DESC NULLS LAST
+    LIMIT 1
   ) k ON TRUE
 `);
 
@@ -293,4 +312,79 @@ export async function resumenCotizaciones(): Promise<Record<EstadoCotizacion, nu
 export async function cotizacionesSinVer(): Promise<number> {
   const [f] = (await sql`SELECT COUNT(*)::INT AS n FROM cotizaciones WHERE NOT vista`) as Array<{ n: number }>;
   return f.n;
+}
+
+// ------------------------------------------------------------- trabajos --
+
+export type SesionDeTrabajo = {
+  id: number;
+  inicio: string;
+  fin: string;
+  estado: Cita["estado"];
+  precio: number | null;
+  pagado: number;
+  saldo: number | null;
+};
+
+/** Todas las citas de un trabajo (la primera y las siguientes), canceladas incluidas, por fecha. */
+export async function sesionesDeTrabajo(raiz: number): Promise<SesionDeTrabajo[]> {
+  return (await sql`
+    SELECT id, to_char(inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio, to_char(fin, 'YYYY-MM-DD"T"HH24:MI') AS fin,
+           estado, precio, pagado, saldo
+    FROM citas_con_saldo
+    WHERE id = ${raiz} OR trabajo_id = ${raiz}
+    ORDER BY inicio, id
+  `) as SesionDeTrabajo[];
+}
+
+export type TrabajoAbierto = {
+  id: number;
+  tipo: Cita["tipo"];
+  zona: string | null;
+  lado: "izq" | "der" | null;
+  tamano: string | null;
+  estilo: string | null;
+  descripcion: string | null;
+  sesiones: number;
+  valor_final: number | null;
+  /** Sesiones vivas (pedidas, confirmadas o hechas). */
+  vivas: number;
+  /** Lo que ya tienen asignado esas sesiones: lo que falta para el valor final va en la última. */
+  asignado: number;
+  /** Minutos de la última sesión, para proponer lo mismo. */
+  minutos: number;
+};
+
+// Lo acordado de un trabajo (en su primera cita) y cuánto lleva: va en las dos consultas de abajo.
+const TRABAJO = sql.unsafe(`
+  SELECT r.id, r.tipo, r.zona, r.lado, r.tamano, r.estilo, r.descripcion, COALESCE(r.sesiones, 1) AS sesiones, r.valor_final,
+         t.vivas, t.asignado, t.minutos, r.cliente_id, cl.nombre AS cliente, cl.telefono
+  FROM citas r
+  JOIN clientes cl ON cl.id = r.cliente_id
+  CROSS JOIN LATERAL (
+    SELECT COUNT(*)::INT AS vivas, COALESCE(SUM(s.precio), 0)::INT AS asignado,
+           COALESCE((ARRAY_AGG(EXTRACT(EPOCH FROM s.fin - s.inicio)::INT / 60 ORDER BY s.inicio DESC))[1], 180) AS minutos
+    FROM citas s
+    WHERE (s.id = r.id OR s.trabajo_id = r.id) AND s.estado IN ('solicitada', 'confirmada', 'completada')
+  ) t
+`);
+
+/** El trabajo de un cliente al que todavía le faltan sesiones por agendar (el más reciente). */
+export async function trabajoAbiertoDe(clienteId: number): Promise<TrabajoAbierto | null> {
+  const [f] = (await sql`
+    ${TRABAJO}
+    WHERE r.cliente_id = ${clienteId} AND r.trabajo_id IS NULL AND r.sesiones > 1 AND t.vivas < r.sesiones
+    ORDER BY r.inicio DESC
+    LIMIT 1
+  `) as TrabajoAbierto[];
+  return f ?? null;
+}
+
+/** El trabajo de cualquier cita (la primera o una siguiente), para agendar otra sesión. */
+export async function trabajoDe(citaId: number): Promise<(TrabajoAbierto & { cliente_id: number; cliente: string; telefono: string | null }) | null> {
+  const [f] = (await sql`
+    ${TRABAJO}
+    WHERE r.id = (SELECT COALESCE(trabajo_id, id) FROM citas WHERE id = ${citaId}) AND r.tipo <> 'bloqueo'
+  `) as Array<TrabajoAbierto & { cliente_id: number; cliente: string; telefono: string | null }>;
+  return f ?? null;
 }

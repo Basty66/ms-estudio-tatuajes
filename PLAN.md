@@ -12,6 +12,12 @@ Migraciones 007, 008 y 009 aplicadas en production.
 Falta confirmar con el cliente los cupos de partida: L–V 11:00 y 16:00 (termina 20:00), sábado
 12:00 (termina 18:00), domingo cerrado. Se cambian en Web → Horario y reservas.
 
+## 0.1 Sesiones y mensajes para llegar al valor final (hecho en `v2`, falta publicar)
+
+Falta migrar production (`db/010_sesiones.sql`) y después `vercel --prod`:
+`node --env-file=.env.local scripts/migrar.mjs --produccion`. El tatuador tiene que cargar sus
+datos para transferir en Web → Mensajes de WhatsApp → Datos para el abono.
+
 ## 1. Para entregar al cliente
 
 - Dominio (nic.cl) y conectarlo en Vercel; cambiar las URLs `tatuajes-azure.vercel.app` del código.

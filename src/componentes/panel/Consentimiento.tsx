@@ -18,6 +18,9 @@ type Resumen = {
   donde: "link" | "estudio" | null;
   permite_fotos: boolean | null;
   menor: boolean;
+  /** Firmado en otra sesión del mismo trabajo: vale para esta, pero no se anula desde acá. */
+  heredado?: boolean;
+  de_sesion?: string | null;
 };
 
 const cuando = (iso: string) => `${fechaCorta(iso)}, ${hora(iso)}`;
@@ -65,8 +68,9 @@ export function ConsentimientoCita({ citaId, resumen, telefono, activa, hecha }:
             <Check className="size-5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-semibold">Firmado</span>
+            <span className="block font-semibold">{resumen.heredado ? "Firmado en otra sesión" : "Firmado"}</span>
             <span className="block truncate text-[13px] text-ceniza">
+              {resumen.heredado && resumen.de_sesion ? `Sesión del ${fechaCorta(resumen.de_sesion)} · ` : ""}
               {cuando(resumen.firmado_en)} · {resumen.donde === "estudio" ? "en el estudio" : "desde su link"}
               {resumen.menor ? " · con su representante" : ""}
             </span>
@@ -76,9 +80,19 @@ export function ConsentimientoCita({ citaId, resumen, telefono, activa, hecha }:
           </a>
         </div>
         {!resumen.permite_fotos && <p className="mt-3 text-[13px] text-[#fbbf24]">No autoriza publicar fotos del trabajo.</p>}
-        <button type="button" disabled={pendiente} onClick={anular} className="mt-3 text-[13px] text-ceniza underline-offset-4 hover:text-[#ff8a80] hover:underline disabled:opacity-40">
-          Anular y pedirlo de nuevo
-        </button>
+        {resumen.heredado ? (
+          // El de otra sesión vale para todo el trabajo y no se anula desde acá: si cambió algo de su salud, se pide uno para esta.
+          activa &&
+          !hecha && (
+            <button type="button" disabled={pendiente} onClick={() => pedir("link")} className="mt-3 text-[13px] text-ceniza underline-offset-4 hover:text-piel hover:underline disabled:opacity-40">
+              Vale para todo el trabajo. ¿Cambió algo de su salud? Pedir uno nuevo
+            </button>
+          )
+        ) : (
+          <button type="button" disabled={pendiente} onClick={anular} className="mt-3 text-[13px] text-ceniza underline-offset-4 hover:text-[#ff8a80] hover:underline disabled:opacity-40">
+            Anular y pedirlo de nuevo
+          </button>
+        )}
         {error && <p className="mt-2 text-[14px] font-semibold text-[#ff8a80]">{error}</p>}
       </div>
     );

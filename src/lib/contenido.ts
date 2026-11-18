@@ -71,6 +71,14 @@ export type Mensajes = {
   reservaNota: string;
   /** Si no se puede la hora pedida: se manda al rechazarla. */
   reservaRechazada: string;
+  /** Al recibir una hora pedida desde la web: pide la referencia para llegar al valor final y las sesiones. */
+  reservaRecibida: string;
+  /** El valor final, las sesiones y el abono, con los datos para transferir. */
+  propuesta: string;
+  /** Después de una sesión de un trabajo en varias, para dejar agendada la siguiente. */
+  siguienteSesion: string;
+  /** Banco, cuenta, RUT y correo para el abono. No es un mensaje: va dentro de la propuesta. Vacío: no se manda. */
+  datosAbono: string;
 };
 
 export type Foto = { src: string; ancho: number; alto: number; alt: string };
@@ -161,16 +169,18 @@ export const CONTENIDO_BASE: Contenido = {
       "Hola {nombre}, te confirmo tu hora en {estudio}.",
       "",
       "*Cuándo:* {fecha}",
+      "*Sesión:* {sesion}",
       "*Duración:* aprox. {duracion}",
       "*Dónde:* {direccion}",
       "*Valor:* {valor}",
+      "*Valor final del trabajo:* {total}",
       "*Abono recibido:* {abono}",
       "*Saldo el día de la sesión:* {saldo}",
       "",
       "Antes de venir: come bien, toma agua y evita el alcohol 24 h antes.",
       "Cuidados después de la sesión: {cuidados}",
     ].join("\n"),
-    respuestaCotizacion: "Hola, gracias por escribir. Vi tu cotización {codigo}: {detalle}, {rango}.\n¿Me mandas una referencia o una foto de la idea? Con eso afino el diseño y el precio, y te paso mis horas disponibles.",
+    respuestaCotizacion: "Hola, gracias por escribir. Vi tu cotización {codigo}: {detalle}, {rango}.\n¿Me mandas una referencia o una foto de la idea y de la zona? Con eso te digo el valor final y si sale en una sesión o en varias, y te paso mis horas disponibles.",
     recordatorio: "Hola {nombre}, te recuerdo tu sesión {cuando} en {direccion}.\nEl saldo es {saldo} (efectivo o transferencia).\nSi necesitas cambiar algo, avísame por acá.",
     consentimiento: "Hola {nombre}. Antes de tu sesión del {fecha}, llena y firma tu consentimiento acá. Toma dos minutos:\n{link}",
     dia1: "Hola {nombre}, ¿cómo amaneció el tatuaje? Lávalo con jabón neutro 2 o 3 veces al día y ponle una capa delgada de crema. Los cuidados, paso a paso: {cuidados}\nCualquier duda, escríbeme.",
@@ -182,6 +192,27 @@ export const CONTENIDO_BASE: Contenido = {
     reservaTitulo: "Pediste tu hora",
     reservaNota: "Queda apartada mientras te confirmo por WhatsApp con el abono.",
     reservaRechazada: "Hola {nombre}, la hora que pediste ({fecha}) no me va a alcanzar. ¿Te acomoda otra? Puedes elegirla acá: {link}",
+    reservaRecibida: [
+      "Hola {nombre}, recibí tu pedido de hora para el {fecha}.",
+      "Para darte el valor final y ver si tu tatuaje sale en una sesión o en varias, ¿me mandas una referencia o una foto de la idea y de la zona?",
+      "Con eso te paso el valor y los datos para el abono.",
+    ].join("\n"),
+    propuesta: [
+      "Hola {nombre}, ya vi tu idea. Te propongo:",
+      "",
+      "*Valor final:* {valor}",
+      "*Sesiones:* {sesiones}",
+      "*Cada sesión:* {cadaSesion}",
+      "*Duración:* aprox. {duracion} por sesión",
+      "*Abono para reservar:* {abono}",
+      "",
+      "{datosAbono}",
+      "",
+      "Cuando hagas el abono, mándame el comprobante por acá y tu hora queda confirmada.",
+    ].join("\n"),
+    siguienteSesion:
+      "Hola {nombre}, ¿cómo va sanando? Ya podemos agendar tu sesión {sesion}. ¿Qué días te acomodan? Lo ideal es dejar pasar unas 3 o 4 semanas entre sesiones para que la piel sane bien.",
+    datosAbono: "",
     laserProxima: "Hola {nombre}, ya pasaron seis semanas desde tu sesión de láser: la piel está lista para la siguiente. ¿Te agendo una hora?",
     resena: "Hola {nombre}, gracias por confiar en mí. Si te gustó el resultado, me ayudas mucho dejando una reseña en Google:\n{link}",
   },
@@ -315,12 +346,16 @@ export function normalizarMensajes(v: unknown): Mensajes {
     reservaTitulo: texto(g.reservaTitulo, 60) || base.reservaTitulo,
     reservaNota: texto(g.reservaNota, 160) || base.reservaNota,
     reservaRechazada: m("reservaRechazada"),
+    reservaRecibida: m("reservaRecibida"),
+    propuesta: m("propuesta"),
+    siguienteSesion: m("siguienteSesion"),
+    datosAbono: texto(g.datosAbono, 300),
   };
 }
 
 /** Las palabras entre llaves que entiende cada mensaje, para el editor del panel. */
 export const LLAVES: Record<keyof Mensajes, string[]> = {
-  confirmacion: ["nombre", "estudio", "fecha", "duracion", "direccion", "valor", "abono", "saldo", "cuidados"],
+  confirmacion: ["nombre", "estudio", "fecha", "sesion", "duracion", "direccion", "valor", "total", "abono", "saldo", "cuidados"],
   recordatorio: ["nombre", "cuando", "direccion", "saldo"],
   respuestaCotizacion: ["codigo", "detalle", "rango"],
   consentimiento: ["nombre", "fecha", "link"],
@@ -335,6 +370,10 @@ export const LLAVES: Record<keyof Mensajes, string[]> = {
   reservaTitulo: [],
   reservaNota: [],
   reservaRechazada: ["nombre", "fecha", "link"],
+  reservaRecibida: ["nombre", "fecha"],
+  propuesta: ["nombre", "valor", "sesiones", "cadaSesion", "duracion", "abono", "datosAbono"],
+  siguienteSesion: ["nombre", "sesion"],
+  datosAbono: [],
 };
 
 /**

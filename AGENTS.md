@@ -85,7 +85,15 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
   exacta del texto aceptado (`texto`) y el PDF se arma con ella, nunca con los textos de hoy. Se pide
   lo mínimo: no se pregunta por VIH ni hepatitis.
 - Los mensajes de WhatsApp salen de plantillas editables (`mensajes`) con `rellenar()`: una línea
-  cuya llave queda sin valor no se manda.
+  cuya llave queda sin valor no se manda. Por eso un saludo nunca depende de un dato que puede faltar
+  (sin nombre se usa `sinNombre()`; sin código, "de la web"). Los datos para transferir el abono
+  (`mensajes.datosAbono`) van solo en mensajes, nunca en la web.
+- Trabajos de varias sesiones (`src/lib/sesiones.ts`, `db/010`): cada sesión es una cita; las
+  siguientes apuntan a la primera con `trabajo_id`. Todas guardan lo acordado (`sesiones`,
+  `valor_final`) y cada una en `precio` lo que se cobra ese día (partes iguales; la última cuadra el
+  valor final), así el saldo sigue saliendo por cita. El número de sesión no se guarda: se cuenta por
+  fecha entre las vivas. El consentimiento firmado en una sesión vale para todo el trabajo, y entre
+  sesiones el seguimiento ofrece agendar la siguiente en vez de "un mes" y la reseña.
 - Cada función cubre todos los servicios: tatuaje, retoque y borrado láser (cotizador, consentimiento,
   seguimiento por WhatsApp). Los mensajes salen del WhatsApp del estudio con un enlace `wa.me`: no hay
   API de WhatsApp ni costo por mensaje.

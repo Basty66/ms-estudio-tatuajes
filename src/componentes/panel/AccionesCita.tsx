@@ -5,9 +5,13 @@ import { useState, useTransition } from "react";
 import { borrarPago, cambiarEstadoCita, confirmarReserva, rechazarReserva, registrarPago } from "@/app/tinta/_acciones/panel";
 import { duracionTexto, minutosEntre, sumarMinutos } from "@/lib/admin/fecha";
 import { reducirImagen } from "@/lib/admin/imagenes";
-import { clp } from "@/lib/admin/etiquetas";
+import { clp, nombreDonde } from "@/lib/admin/etiquetas";
+import { rellenar } from "@/lib/contenido";
+import { MAX_SESIONES, textoCadaSesion, textoSesiones, valorDeSesion, valoresPropuesta } from "@/lib/sesiones";
+import type { TrabajoAbierto } from "@/db/panel";
+import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
 import { PANEL } from "@/lib/admin/ruta";
-import { Boton } from "./Boton";
+import { Boton, claseBoton } from "./Boton";
 import { Chip, campo, Etiqueta } from "./FormularioCita";
 import { Documento, Papelera, Subir } from "./Iconos";
 
@@ -229,17 +233,46 @@ export function FilaPago({
 }
 
 /**
- * Confirmar una hora pedida desde la web: el precio final y el abono (con su
- * comprobante, si llegó). Con eso la cita pasa a confirmada y se puede
- * mandar la confirmación y el consentimiento.
+ * Confirmar una hora pedida desde la web: hasta qué hora va, el valor final y
+ * en cuántas sesiones, y el abono (con su comprobante, si llegó). Antes de
+ * confirmar se le puede mandar la propuesta por WhatsApp con lo mismo que se
+ * anota acá. Si la persona tiene un trabajo a medias, se ofrece que sea su
+ * siguiente sesión.
  */
-export function ConfirmarReserva({ citaId, inicio, fin, sugerido, rechazo }: { citaId: number; inicio: string; fin: string; sugerido: string | null; rechazo: string | null }) {
+export function ConfirmarReserva({
+  citaId,
+  inicio,
+  fin,
+  sugerido,
+  rechazo,
+  nombre,
+  telefono,
+  propuesta,
+  datosAbono,
+  abierto,
+}: {
+  citaId: number;
+  inicio: string;
+  fin: string;
+  sugerido: string | null;
+  rechazo: string | null;
+  nombre: string;
+  telefono: string | null;
+  /** La plantilla "Valor final y sesiones". */
+  propuesta: string;
+  datosAbono: string;
+  abierto: TrabajoAbierto | null;
+}) {
   const router = useRouter();
   // Parte con lo que apartaba el cupo; el tatuador lo ajusta a lo que de verdad dura.
   const [hasta, setHasta] = useState(fin.slice(11, 16));
   const termina = `${inicio.slice(0, 10)}T${hasta}`;
   const minutos = hasta > inicio.slice(11, 16) ? minutosEntre(inicio, termina) : 0;
   const atajos = [2, 3, 4, 6].map((h) => sumarMinutos(inicio, h * 60)).filter((f) => f.slice(0, 10) === inicio.slice(0, 10));
+  // Si tiene un trabajo a medias, lo más probable es que sea la siguiente sesión.
+  const [seguir, setSeguir] = useState(Boolean(abierto));
+  const [sesiones, setSesiones] = useState(1);
+  const [valorFinal, setValorFinal] = useState("");
   const [precio, setPrecio] = useState("");
   const [abono, setAbono] = useState("");
   const [medio, setMedio] = useState("transferencia");
@@ -248,6 +281,16 @@ export function ConfirmarReserva({ citaId, inicio, fin, sugerido, rechazo }: { c
   const [guardando, setGuardando] = useState(false);
   const [pendiente, iniciar] = useTransition();
 
+  const trabajo = seguir ? abierto : null;
+  const numero = trabajo ? trabajo.vivas + 1 : 1;
+  const acordadas = trabajo ? Math.max(trabajo.sesiones, numero) : sesiones;
+  const total = trabajo ? (trabajo.valor_final ?? 0) : Number(valorFinal.replace(/\D/g, "")) || 0;
+  // Lo de esta sesión: su parte del valor final (la última cuadra lo que falta), o lo que se escriba.
+  const parte = acordadas > 1 && total ? (trabajo && numero >= acordadas ? Math.max(0, total - trabajo.asignado) : valorDeSesion(total, acordadas, numero)) : null;
+  const precioFinal = precio.trim() ? Number(precio.replace(/\D/g, "")) : acordadas > 1 ? parte : total || null;
+  const montoAbono = Number(abono.replace(/\D/g, "")) || null;
+  const mensaje = rellenar(propuesta, valoresPropuesta({ nombre, valorFinal: total || null, sesiones: acordadas, abono: montoAbono, duracion: minutos > 0 ? duracionTexto(minutos) : "", datosAbono }));
+
   async function confirmar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -255,7 +298,10 @@ export function ConfirmarReserva({ citaId, inicio, fin, sugerido, rechazo }: { c
     try {
       const f = new FormData();
       f.set("cita", String(citaId));
-      f.set("precio", precio.replace(/\D/g, ""));
+      f.set("precio", precioFinal != null ? String(precioFinal) : "");
+      f.set("valorFinal", acordadas > 1 && total ? String(total) : "");
+      f.set("sesiones", String(acordadas));
+      if (trabajo) f.set("trabajo", String(trabajo.id));
       f.set("abono", abono.replace(/\D/g, ""));
       f.set("medio", medio);
       f.set("hasta", hasta);
@@ -275,6 +321,26 @@ export function ConfirmarReserva({ citaId, inicio, fin, sugerido, rechazo }: { c
 
   return (
     <form onSubmit={confirmar} className="flex flex-col gap-4">
+      {abierto && (
+        <div className="rounded-2xl border border-stencil/50 bg-stencil/10 p-3 pl-4">
+          <p className="text-[14px] leading-snug">
+            <span className="font-semibold">Tiene un trabajo a medias</span>
+            <span className="text-ceniza">
+              {" "}
+              · {nombreDonde(abierto.zona, abierto.lado) ?? "su tatuaje"}, van {textoSesiones(abierto.vivas)} de {abierto.sesiones}
+              {abierto.valor_final != null ? ` · valor final ${clp(abierto.valor_final)}` : ""}.
+            </span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Chip activo={seguir} onClick={() => setSeguir(true)}>
+              Es la sesión {abierto.vivas + 1}
+            </Chip>
+            <Chip activo={!seguir} onClick={() => setSeguir(false)}>
+              Es otro tatuaje
+            </Chip>
+          </div>
+        </div>
+      )}
       <div>
         <Etiqueta nota={minutos > 0 ? `${inicio.slice(11, 16)} a ${hasta} · ${duracionTexto(minutos)}` : "Antes de empezar, no"}>Termina</Etiqueta>
         <div className="flex flex-wrap items-center gap-2">
@@ -294,17 +360,77 @@ export function ConfirmarReserva({ citaId, inicio, fin, sugerido, rechazo }: { c
         </div>
         <p className="mt-1.5 text-[12px] text-ceniza">El cupo apartaba hasta las {fin.slice(11, 16)}. Si se alarga y pisa otro cupo libre, ese se cierra solo.</p>
       </div>
+      {!trabajo && (
+        <div>
+          <Etiqueta nota="Un tatuaje grande va en varias">Sesiones</Etiqueta>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <Chip key={n} activo={sesiones === n} onClick={() => setSesiones(n)} className="min-w-11">
+                {n}
+              </Chip>
+            ))}
+            <input
+              type="number"
+              min={1}
+              max={MAX_SESIONES}
+              aria-label="Otra cantidad de sesiones"
+              placeholder="Más"
+              onChange={(e) => {
+                const n = Math.round(Number(e.target.value));
+                if (n >= 1 && n <= MAX_SESIONES) setSesiones(n);
+              }}
+              className="min-h-10 w-20 rounded-full border border-linea bg-transparent px-3 text-center text-[14px] tabular-nums placeholder:text-ceniza/60 focus:border-stencil focus:outline-none"
+            />
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
-        <label className="min-w-0">
-          <Etiqueta>Valor final</Etiqueta>
-          <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
-        </label>
+        {trabajo ? (
+          <label className="min-w-0">
+            <Etiqueta>Esta sesión</Etiqueta>
+            <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder={parte != null ? clp(parte) : "$"} className={`${campo} tabular-nums`} />
+          </label>
+        ) : (
+          <label className="min-w-0">
+            <Etiqueta>Valor final</Etiqueta>
+            <input value={valorFinal} onChange={(e) => setValorFinal(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
+          </label>
+        )}
         <label className="min-w-0">
           <Etiqueta>Abono</Etiqueta>
           <input value={abono} onChange={(e) => setAbono(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
         </label>
       </div>
-      {sugerido && <p className="-mt-2 text-[12px] text-ceniza">En la web cotizó {sugerido}.</p>}
+      <p className="-mt-2 text-[12px] leading-snug text-ceniza">
+        {trabajo
+          ? `Sesión ${numero} de ${acordadas}${trabajo.valor_final != null ? ` · valor final ${clp(trabajo.valor_final)}` : ""}${numero >= acordadas && parte != null ? `: en esta va lo que falta` : ""}.`
+          : acordadas > 1 && total
+            ? `${textoSesiones(acordadas)} de ${textoCadaSesion(total, acordadas)}: en esta sesión se cobra ${clp(parte ?? 0)}.${sugerido ? ` En la web cotizó ${sugerido}.` : ""}`
+            : sugerido
+              ? `En la web cotizó ${sugerido}.`
+              : ""}
+      </p>
+      {!trabajo && telefono && (
+        <div className="rounded-2xl border border-linea bg-tinta/40 p-3">
+          <a
+            href={`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!total}
+            onClick={(e) => !total && e.preventDefault()}
+            className={claseBoton("linea", `min-h-11 w-full px-3 text-[14px] ${total ? "" : "pointer-events-none opacity-40"}`)}
+          >
+            <IconoWhatsapp className="size-5 shrink-0" /> Mandarle el valor y el abono
+          </a>
+          <p className="mt-2 text-[12px] leading-snug text-ceniza">
+            {!total
+              ? "Anota el valor final para armar el mensaje."
+              : datosAbono
+                ? "Va con el valor final, las sesiones, el abono y tus datos para transferir."
+                : "Va sin datos para transferir: agrégalos en Web → Mensajes de WhatsApp."}
+          </p>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {[
           ["transferencia", "Transferencia"],

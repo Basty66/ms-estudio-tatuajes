@@ -9,7 +9,7 @@ import { Check, Flecha, Telefono } from "@/componentes/panel/Iconos";
 import { IconoWhatsapp } from "@/componentes/sitio/WhatsappFlotante";
 import { leerContenido } from "@/db/contenido";
 import { consentimientoDeCita, etapasPara, fotosDeCita, seguimientosDeCita } from "@/db/consentimientos";
-import { cita as leerCita, cotizacionDeCita, pagosDeCita } from "@/db/panel";
+import { cita as leerCita, cotizacionDeCita, pagosDeCita, sesionesDeTrabajo, trabajoAbiertoDe } from "@/db/panel";
 import { clp, ESTADO, nombreDonde, nombreEstilo, nombreTamano, nombreZona, textoCotizacion, TIPO } from "@/lib/admin/etiquetas";
 import { ahoraChile, duracionTexto, fechaCorta, fechaLarga, fechaRelativa, hora, hoyChile, minutosEntre, sumarDias, sumarMinutos } from "@/lib/admin/fecha";
 import { operadorDelPanel } from "@/lib/admin/panel";
@@ -18,6 +18,7 @@ import { formatearTelefono } from "@/lib/admin/telefono";
 import { esUrgente } from "@/lib/consentimiento";
 import { rellenar } from "@/lib/contenido";
 import { ESTILOS } from "@/lib/estudio";
+import { textoSesiones } from "@/lib/sesiones";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,17 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
   await operadorDelPanel();
   const c = await leerCita(Number((await params).id) || 0);
   if (!c || c.tipo === "bloqueo") notFound();
-  const [pagos, { estudio, mensajes, reservas }, consentimiento, enviados, fotos, cotizada] = await Promise.all([
+  const raiz = c.trabajo_id ?? c.id;
+  const [pagos, { estudio, mensajes, reservas }, consentimiento, enviados, fotos, cotizada, trabajo, abierto] = await Promise.all([
     pagosDeCita(c.id),
     leerContenido(),
     consentimientoDeCita(c.id),
     seguimientosDeCita(c.id),
     fotosDeCita(c.id),
     cotizacionDeCita(c.id),
+    sesionesDeTrabajo(raiz),
+    // Una hora pedida desde la web puede ser la siguiente sesión de un trabajo que ya tiene.
+    c.estado === "solicitada" && c.cliente_id ? trabajoAbiertoDe(c.cliente_id) : null,
   ]);
   const nombre = (c.cliente ?? "").split(" ")[0];
   const cuando = `${fechaLarga(c.inicio)} a las ${hora(c.inicio)}`;
@@ -56,6 +61,18 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
   const activa = c.estado === "confirmada" || hecha;
   const manana = fechaRelativa(c.inicio).toLowerCase() === "mañana";
 
+  // El trabajo: todas sus sesiones vivas, cuántas se acordaron y si esta es la última.
+  const VIVAS = ["solicitada", "confirmada", "completada"];
+  const vivas = trabajo.filter((t) => VIVAS.includes(t.estado));
+  const acordadas = Math.max(c.sesiones ?? 1, vivas.length);
+  const enTrabajo = acordadas > 1;
+  const final = !enTrabajo || c.sesion >= acordadas;
+  const haySiguiente = vivas.some((t) => t.inicio > c.inicio);
+  const pagadoTrabajo = trabajo.reduce((t, s) => t + s.pagado, 0);
+  // Lo que se propone después: la sesión que viene, "2 de 3" (o "4" si ya se pasó de lo acordado).
+  const proxima = vivas.length + 1;
+  const textoProxima = proxima <= acordadas ? `${proxima} de ${acordadas}` : String(proxima);
+
   const valores = {
     nombre,
     estudio: estudio.nombre,
@@ -63,7 +80,9 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
     cuando: manana ? `de mañana a las ${hora(c.inicio)}` : `del ${cuando}`,
     duracion,
     direccion: `${estudio.direccion}, ${estudio.comuna}`,
-    valor: c.precio != null ? clp(c.precio) : "",
+    valor: c.precio != null ? (enTrabajo ? `${clp(c.precio)} esta sesión` : clp(c.precio)) : "",
+    sesion: enTrabajo ? `${c.sesion} de ${acordadas}` : "",
+    total: enTrabajo && c.valor_final != null ? clp(c.valor_final) : "",
     abono: c.pagado > 0 ? clp(c.pagado) : "",
     saldo: c.saldo != null && c.saldo > 0 ? clp(c.saldo) : "",
     cuidados: `${SITIO}/#cuidados`,
@@ -93,11 +112,17 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
           <div>
             <h2 className="text-[17px] font-semibold text-[#fbbf24]">Pidió esta hora desde la web</h2>
             <p className="mt-1 text-[14px] leading-relaxed text-ceniza">
-              La hora está apartada. Confírmala con cuánto dura, el valor final y el abono; si no, se libera el {fechaCorta(seLibera)} a las {hora(seLibera)}.
+              La hora está apartada. Pídele una referencia para llegar al valor final y las sesiones, y confírmala con el abono; si no, se libera el {fechaCorta(seLibera)} a
+              las {hora(seLibera)}.
             </p>
             {c.telefono && (
-              <a href={`https://wa.me/${c.telefono}`} target="_blank" rel="noopener noreferrer" className={claseBoton("linea", "mt-4 min-h-11 px-4 text-[14px]")}>
-                <IconoWhatsapp className="size-5 shrink-0" /> Escribirle para el abono
+              <a
+                href={whatsapp(c.telefono, rellenar(mensajes.reservaRecibida, { nombre, fecha: cuando }))}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={claseBoton("linea", "mt-4 min-h-11 px-4 text-[14px]")}
+              >
+                <IconoWhatsapp className="size-5 shrink-0" /> Pedirle la referencia
               </a>
             )}
           </div>
@@ -106,6 +131,11 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
             inicio={c.inicio}
             fin={c.fin}
             sugerido={sugerido}
+            nombre={nombre}
+            telefono={c.telefono}
+            propuesta={mensajes.propuesta}
+            datosAbono={mensajes.datosAbono}
+            abierto={abierto}
             rechazo={c.telefono ? whatsapp(c.telefono, rellenar(mensajes.reservaRechazada, { nombre, fecha: cuando, link: `${SITIO}/#cotiza` })) : null}
           />
         </section>
@@ -214,10 +244,18 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
               <Dato t="Zona" v={nombreDonde(c.zona, c.lado)} />
               <Dato t="Estilo" v={nombreEstilo(c.estilo)} />
               <Dato t="Tamaño" v={nombreTamano(c.tamano)} />
-              <Dato t="Valor" v={c.precio != null ? clp(c.precio) : null} />
+              <Dato t={enTrabajo ? "Esta sesión" : "Valor"} v={c.precio != null ? clp(c.precio) : null} />
               {c.descripcion && <Dato t="Diseño" v={c.descripcion} ancho />}
               {c.notas && <Dato t="Notas" v={c.notas} ancho />}
             </dl>
+            {!enTrabajo && c.tipo !== "retoque" && (c.estado === "confirmada" || hecha) && (
+              <Link href={`${PANEL}/nueva?trabajo=${c.id}`} className="mt-4 flex items-center justify-between gap-3 border-t border-linea pt-3 text-[13px] text-ceniza hover:text-piel">
+                <span>¿Necesita otra sesión para terminarlo?</span>
+                <span className="flex items-center gap-1 font-semibold text-stencil-claro">
+                  Agendar sesión 2 <Flecha className="size-4" />
+                </span>
+              </Link>
+            )}
             {cotizada && (
               <Link href={`${PANEL}/cotizaciones?q=${cotizada.codigo ?? ""}`} className="mt-4 flex items-center justify-between gap-3 border-t border-linea pt-3 text-[13px] text-ceniza hover:text-piel">
                 <span>
@@ -228,13 +266,77 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
             )}
           </Tarjeta>
 
+          {enTrabajo && (
+            <Tarjeta>
+              <TituloBloque accion={<span className="text-[13px] text-ceniza tabular-nums">{vivas.length} de {acordadas}</span>}>
+                Trabajo en {textoSesiones(acordadas)}
+              </TituloBloque>
+              {c.valor_final != null && (
+                <div className="mb-4">
+                  <div className="flex items-end justify-between gap-3 text-[14px] text-ceniza">
+                    <p>
+                      <span className="block text-[22px] leading-tight font-semibold text-piel tabular-nums">{clp(pagadoTrabajo)}</span>
+                      pagado del trabajo
+                    </p>
+                    <p className="text-right">
+                      <span className="block text-[22px] leading-tight font-semibold text-piel tabular-nums">{clp(c.valor_final)}</span>
+                      valor final
+                    </p>
+                  </div>
+                  <div aria-hidden className="mt-3 h-1.5 overflow-hidden rounded-full bg-linea">
+                    <div className="h-full rounded-full bg-stencil" style={{ width: `${c.valor_final > 0 ? Math.min(100, (pagadoTrabajo / c.valor_final) * 100) : 100}%` }} />
+                  </div>
+                </div>
+              )}
+              <ol className="flex flex-col gap-1.5">
+                {trabajo.map((t) => {
+                  const viva = VIVAS.includes(t.estado);
+                  const numero = vivas.findIndex((v) => v.id === t.id) + 1;
+                  return (
+                    <li key={t.id}>
+                      <Link
+                        href={`${PANEL}/cita/${t.id}`}
+                        aria-current={t.id === c.id ? "page" : undefined}
+                        className={`flex min-h-12 items-center gap-3 rounded-2xl border px-3 transition-colors ${
+                          t.id === c.id ? "border-stencil/60 bg-stencil/10" : "border-linea hover:border-ceniza/50"
+                        } ${viva ? "" : "opacity-50"}`}
+                      >
+                        <span className={`w-6 text-center font-gotica text-[22px] leading-none ${viva ? "text-stencil-claro" : "text-ceniza"}`}>{viva ? numero : "–"}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block text-[14px] font-semibold first-letter:uppercase ${viva ? "" : "line-through"}`}>
+                            {fechaCorta(t.inicio)} · {hora(t.inicio)}
+                          </span>
+                          <span className="block text-[12px] text-ceniza">{ESTADO[t.estado]}</span>
+                        </span>
+                        <span className="shrink-0 text-right text-[12px] text-ceniza tabular-nums">
+                          {t.precio != null ? clp(t.precio) : "Sin valor"}
+                          {t.pagado > 0 && <span className="block text-[#6ee7b7]">pagó {clp(t.pagado)}</span>}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Link href={`${PANEL}/nueva?trabajo=${raiz}`} className={claseBoton(proxima <= acordadas ? "cromo" : "linea", "min-h-11 px-3 text-[14px]")}>
+                  {proxima <= acordadas ? `Agendar sesión ${proxima}` : "Agendar otra sesión"}
+                </Link>
+                {c.telefono && !haySiguiente && proxima <= acordadas && (
+                  <a href={whatsapp(c.telefono, rellenar(mensajes.siguienteSesion, { nombre, sesion: textoProxima }))} target="_blank" rel="noopener noreferrer" className={claseBoton("linea", "min-h-11 px-3 text-[14px]")}>
+                    <IconoWhatsapp className="size-5 shrink-0" /> Proponerle la {proxima}
+                  </a>
+                )}
+              </div>
+            </Tarjeta>
+          )}
+
           {hecha && (
             <Tarjeta>
               <TituloBloque>Después de la sesión</TituloBloque>
               <ul className="flex flex-col divide-y divide-linea/60">
                 {conSeguimiento &&
                   c.telefono &&
-                  etapasPara(c.tipo).map((e) => {
+                  etapasPara(c.tipo, { final, haySiguiente, conPlan: (c.sesiones ?? 1) > 1 }).map((e) => {
                     const enviado = enviados[e.id];
                     const toca = diasDesde >= e.dia && diasDesde <= e.hasta;
                     const fecha = sumarDias(c.inicio.slice(0, 10), e.dia);
@@ -249,14 +351,20 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
                         {enviado ? (
                           <Check className="size-5 text-[#6ee7b7]" />
                         ) : (
-                          <BotonSeguimiento citaId={c.id} etapa={e.id} href={whatsapp(c.telefono!, rellenar(mensajes[e.id], valores))} enviado={false} toca={toca}>
+                          <BotonSeguimiento
+                            citaId={c.id}
+                            etapa={e.id}
+                            href={whatsapp(c.telefono!, rellenar(mensajes[e.id], { ...valores, sesion: textoProxima }))}
+                            enviado={false}
+                            toca={toca}
+                          >
                             Mandar
                           </BotonSeguimiento>
                         )}
                       </li>
                     );
                   })}
-                {c.telefono && (
+                {c.telefono && final && (
                   <li className="flex min-h-14 items-center gap-3 py-2">
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold">Reseña en Google</span>

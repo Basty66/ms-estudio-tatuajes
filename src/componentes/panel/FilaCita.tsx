@@ -40,7 +40,9 @@ export function FilaCita({ c, conFecha = false, marca: marcaDada, sinNombre = fa
   // Solo en lo que viene: en una sesión que ya pasó no hay nada que pedir.
   const falta = c.estado === "confirmada" && c.consentimiento !== "firmado" && marca !== "sin-cerrar" && c.inicio.slice(0, 10) >= hoyChile();
   const alerta = c.estado === "confirmada" && !falta && c.alertas.length > 0 ? (c.alertas.length === 1 ? c.alertas[0].split(":")[0] : `${c.alertas.length} alertas de salud`) : null;
-  const detalle = [TIPO[c.tipo], resumenTatuaje(c)].filter(Boolean).join(" · ");
+  // En un trabajo de varias sesiones, cuál es: "Sesión 2 de 3".
+  const sesion = (c.sesiones ?? 1) > 1 || c.trabajo_id ? `Sesión ${c.sesion}${c.sesiones ? ` de ${Math.max(c.sesiones, c.sesion)}` : ""}` : null;
+  const detalle = [TIPO[c.tipo], sesion, resumenTatuaje(c)].filter(Boolean).join(" · ");
   return (
     <Link
       href={`${PANEL}/cita/${c.id}`}

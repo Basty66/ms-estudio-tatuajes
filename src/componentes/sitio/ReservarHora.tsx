@@ -215,7 +215,9 @@ export function ReservarHora({
 
   const etiquetaBoton = fecha && hora ? `Pedir el ${fechaCorta(fecha)}, ${hora}` : "Elige un cupo";
   const avisar = listo
-    ? whatsappCon(`Hola, soy ${nombre.trim()}. Pedí hora para el ${listo} desde la web (${pedido.codigo}). ¿Me pasas los datos para el abono?`)
+    ? whatsappCon(
+        `Hola, soy ${nombre.trim()}. Pedí hora para el ${listo} desde la web${pedido.codigo.includes("·") ? "" : ` (${pedido.codigo})`}. Te mando una referencia de mi idea para ver el valor final y las sesiones.`,
+      )
     : "";
   const libres = elegido?.horas.length ?? 0;
 
@@ -247,7 +249,7 @@ export function ReservarHora({
             />
             <motion.div initial={{ opacity: 0, y: reducir ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.6, ease: SALIDA }} className="flex flex-col items-center">
               <p className="mt-10 max-w-sm text-center text-[14px] leading-relaxed text-ceniza">
-                Avísame por WhatsApp y te paso los datos para el abono. Ahí vemos tu diseño, cuánto dura la sesión y el valor final.
+                Escríbeme por WhatsApp con una referencia de tu idea: vemos el valor final, si sale en una sesión o en varias, y te paso los datos para el abono.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-3">
                 <a
@@ -499,7 +501,7 @@ export function ReservarHora({
                               <circle cx="12" cy="12" r="9" />
                               <path d="M12 11v5M12 8h.01" />
                             </svg>
-                            Cuánto dura la sesión y el valor final te los confirmo al ver tu diseño.
+                            El valor final, cuánto dura y si sale en una o varias sesiones te lo confirmo al ver tu diseño.
                           </p>
                         </div>
                       ) : (

@@ -194,7 +194,7 @@ export default async function PaginaHoy() {
                     <BotonSeguimiento
                       citaId={e.cita_id}
                       etapa={e.etapa}
-                      href={`https://wa.me/${e.telefono}?text=${encodeURIComponent(rellenar(mensajes[e.etapa], { nombre: e.nombre.split(" ")[0], cuidados: "https://tatuajes-azure.vercel.app/#cuidados" }))}`}
+                      href={`https://wa.me/${e.telefono}?text=${encodeURIComponent(rellenar(mensajes[e.etapa], { nombre: e.nombre.split(" ")[0], cuidados: "https://tatuajes-azure.vercel.app/#cuidados", sesion: e.proxima ?? "" }))}`}
                       enviado={false}
                       toca
                     >
