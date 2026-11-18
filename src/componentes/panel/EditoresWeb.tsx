@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatearTelefono } from "@/lib/admin/telefono";
 import type { TextosConsentimiento } from "@/lib/consentimiento";
-import { DIAS_SEMANA, horasLibres, textoDuracion, type Reservas } from "@/lib/reservas";
+import { DIAS_SEMANA, MAX_CUPOS, type Reservas } from "@/lib/reservas";
 import { LARGO, LLAVES, rellenar, type DatosEstudio, type Mensajes, type Par, type TextosCuidados, type TextosTatuador } from "@/lib/contenido";
 import { ESTILOS_PRECIO, estimar, OBJETIVOS_LASER, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Tarjeta, TituloBloque } from "./Encabezado";
@@ -514,70 +514,149 @@ function Numero({ etiqueta, valor, cambiar, unidad, min, max }: { etiqueta: stri
   );
 }
 
-export function EditarReservas({ inicial, hoy }: { inicial: Reservas; hoy: string }) {
+/** "HH:MM" a minutos y de vuelta, para sugerir el cupo siguiente. */
+const aMinutos = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
+const aHora = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+
+export function EditarReservas({ inicial }: { inicial: Reservas }) {
   const e = useEditor("reservas", inicial);
   const r = e.valor;
   const poner = (p: Partial<Reservas>) => e.cambiar({ ...r, ...p });
   const dia = (i: number, p: Partial<Reservas["dias"][number]>) => poner({ dias: r.dias.map((d, j) => (j === i ? { ...d, ...p } : d)) });
-  const hora = "min-h-11 rounded-2xl border border-linea bg-tinta/70 px-3 text-[15px] text-piel tabular-nums [color-scheme:dark] focus:border-stencil focus:outline-none disabled:opacity-30";
+  const hora = "min-h-11 rounded-2xl border border-linea bg-tinta/70 px-2 text-[15px] text-piel tabular-nums [color-scheme:dark] focus:border-stencil focus:outline-none";
 
-  // Vista previa: las horas que ofrecería la web la próxima semana para una sesión mediana, con la agenda vacía.
-  const muestra = Array.from({ length: 7 }, (_, i) => {
-    const [a, m, d] = hoy.split("-").map(Number);
-    const f = new Date(a, m - 1, d + 7 + i);
-    const fecha = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
-    return { fecha, horas: horasLibres(r, fecha, r.duraciones.mediano, [], `${hoy}T00:00`) };
-  });
+  // El cupo nuevo va 3 h después del último (o 1 h, si no cabe) y antes del término.
+  const siguiente = (d: Reservas["dias"][number]) => {
+    const ultimo = d.cupos.length ? aMinutos(d.cupos[d.cupos.length - 1]) : aMinutos("11:00") - 180;
+    return [180, 60].map((m) => ultimo + m).find((m) => m < aMinutos(d.hasta));
+  };
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start xl:gap-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] xl:items-start xl:gap-5">
         <div className="flex flex-col gap-4 xl:gap-5">
           <Tarjeta>
             <label className="flex cursor-pointer items-center justify-between gap-4">
               <span>
                 <span className="block font-semibold">Reservas en la web</span>
-                <span className="block text-[13px] text-ceniza">{r.activas ? "La gente elige día y hora después de cotizar." : "Apagadas: solo se puede pedir hora por WhatsApp."}</span>
+                <span className="block text-[13px] text-ceniza">{r.activas ? "La gente elige un cupo después de cotizar." : "Apagadas: solo se puede pedir hora por WhatsApp."}</span>
               </span>
               <input type="checkbox" checked={r.activas} onChange={(ev) => poner({ activas: ev.target.checked })} className="size-6 shrink-0 accent-[#2f6bff]" />
             </label>
           </Tarjeta>
           <Tarjeta>
-            <TituloBloque>Días y horas de atención</TituloBloque>
-            <ul className="flex flex-col gap-2">
-              {r.dias.map((d, i) => (
-                // En el teléfono el día va abreviado: con el nombre entero no cabían las dos horas.
-                <li key={DIAS_SEMANA[i]} className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
-                  <label className="flex cursor-pointer items-center gap-2.5">
-                    <input type="checkbox" checked={d.abierto} onChange={(ev) => dia(i, { abierto: ev.target.checked })} className="size-5 shrink-0 accent-[#2f6bff]" />
-                    <span className={`text-[15px] font-semibold ${d.abierto ? "" : "text-ceniza"}`}>
-                      <span aria-hidden className="sm:hidden">{DIAS_SEMANA[i].slice(0, 3)}</span>
-                      <span className="max-sm:sr-only">{DIAS_SEMANA[i]}</span>
-                    </span>
-                  </label>
-                  {d.abierto ? (
-                    <span className="flex min-w-0 items-center gap-2">
-                      <input type="time" step={1800} value={d.desde} aria-label={`${DIAS_SEMANA[i]} desde`} onChange={(ev) => dia(i, { desde: ev.target.value })} className={`${hora} min-w-0 flex-1`} />
-                      <span className="text-ceniza">a</span>
-                      <input type="time" step={1800} value={d.hasta} aria-label={`${DIAS_SEMANA[i]} hasta`} onChange={(ev) => dia(i, { hasta: ev.target.value })} className={`${hora} min-w-0 flex-1`} />
-                    </span>
-                  ) : (
-                    <span className="text-[14px] text-ceniza">Cerrado</span>
-                  )}
-                </li>
-              ))}
+            <TituloBloque>Cupos de cada día</TituloBloque>
+            <ul className="flex flex-col gap-2.5">
+              {r.dias.map((d, i) => {
+                const nuevo = siguiente(d);
+                return (
+                  <li key={DIAS_SEMANA[i]} className={`rounded-2xl border p-3 transition-colors ${d.abierto ? "border-linea bg-tinta/40" : "border-linea/50"}`}>
+                    <div className="flex min-h-11 items-center justify-between gap-3">
+                      <label className="flex cursor-pointer items-center gap-2.5">
+                        <input type="checkbox" checked={d.abierto} onChange={(ev) => dia(i, { abierto: ev.target.checked })} className="size-5 shrink-0 accent-[#2f6bff]" />
+                        <span className={`text-[15px] font-semibold ${d.abierto ? "" : "text-ceniza"}`}>{DIAS_SEMANA[i]}</span>
+                      </label>
+                      {d.abierto ? (
+                        <label className="flex items-center gap-2 text-[13px] text-ceniza">
+                          Termina
+                          <input type="time" step={1800} value={d.hasta} aria-label={`${DIAS_SEMANA[i]}, termina`} onChange={(ev) => ev.target.value && dia(i, { hasta: ev.target.value })} className={`${hora} w-24`} />
+                        </label>
+                      ) : (
+                        <span className="text-[14px] text-ceniza">Cerrado</span>
+                      )}
+                    </div>
+                    {d.abierto && (
+                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                        {d.cupos.map((c, k) => {
+                          const fuera = c >= d.hasta || d.cupos.indexOf(c) !== k;
+                          return (
+                            <span key={k} className={`flex items-center rounded-2xl border bg-tinta/70 pr-1 ${fuera ? "border-[#ff8a80]/70" : "border-linea focus-within:border-stencil"}`}>
+                              <input
+                                type="time"
+                                step={1800}
+                                value={c}
+                                aria-label={`${DIAS_SEMANA[i]}, cupo ${k + 1}`}
+                                onChange={(ev) => ev.target.value && dia(i, { cupos: d.cupos.map((x, j) => (j === k ? ev.target.value : x)) })}
+                                onBlur={() => dia(i, { cupos: [...d.cupos].sort() })}
+                                className="min-h-11 w-24 rounded-2xl bg-transparent px-2 text-[15px] text-piel tabular-nums [color-scheme:dark] focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                aria-label={`Quitar el cupo de las ${c}`}
+                                onClick={() => dia(i, { cupos: d.cupos.filter((_, j) => j !== k) })}
+                                className="grid size-8 place-items-center rounded-full text-ceniza hover:bg-linea/60 hover:text-piel"
+                              >
+                                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
+                                  <path d="M7 7l10 10M17 7 7 17" />
+                                </svg>
+                              </button>
+                            </span>
+                          );
+                        })}
+                        {d.cupos.length < MAX_CUPOS && nuevo !== undefined && (
+                          <button
+                            type="button"
+                            onClick={() => dia(i, { cupos: [...d.cupos, aHora(nuevo)] })}
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-dashed border-linea px-3.5 text-[14px] font-semibold text-ceniza hover:border-stencil/60 hover:text-piel"
+                          >
+                            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            Cupo
+                          </button>
+                        )}
+                        {d.cupos.length === 0 && <span className="text-[13px] text-[#fbbf24]">Sin cupos: la web no ofrece este día.</span>}
+                        {d.cupos.some((c, k) => c >= d.hasta || d.cupos.indexOf(c) !== k) && (
+                          <span className="w-full text-[13px] text-[#ff8a80]">Los cupos en rojo (repetidos o desde el término) no se ofrecen.</span>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </Tarjeta>
         </div>
         <div className="flex flex-col gap-4 xl:gap-5">
           <Tarjeta>
-            <TituloBloque>Cuánto dura cada sesión</TituloBloque>
-            <div className="grid grid-cols-2 gap-3">
-              {TAMANOS.map((t) => (
-                <Numero key={t.id} etiqueta={t.nombre} unidad="min" min={30} max={720} valor={r.duraciones[t.id]} cambiar={(n) => poner({ duraciones: { ...r.duraciones, [t.id]: n } })} />
-              ))}
-              <Numero etiqueta="Láser" unidad="min" min={15} max={480} valor={r.laser} cambiar={(laser) => poner({ laser })} />
-            </div>
+            <TituloBloque>Así se reparte cada día</TituloBloque>
+            <p className="-mt-1 mb-4 text-[13px] leading-snug text-ceniza">
+              Cada cupo es una hora en que puede empezar una sesión y aparta hasta el cupo siguiente. Al confirmar pones cuánto dura de verdad y el valor final: si se alarga y pisa el
+              siguiente cupo, ese se cierra solo.
+            </p>
+            <ul className="flex flex-col gap-2.5">
+              {r.dias.map((d, i) => {
+                const cupos = [...new Set(d.cupos)].filter((c) => c < d.hasta).sort();
+                const abre = cupos.length ? aMinutos(cupos[0]) : 0;
+                const largo = aMinutos(d.hasta) - abre;
+                return (
+                  <li key={DIAS_SEMANA[i]} className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-3">
+                    <span className="text-[13px] text-ceniza">{DIAS_SEMANA[i].slice(0, 3)}</span>
+                    {d.abierto && cupos.length && largo > 0 ? (
+                      <span className="flex h-8 gap-1 overflow-hidden">
+                        {cupos.map((c, k) => {
+                          const fin = aMinutos(cupos[k + 1] ?? d.hasta);
+                          return (
+                            <span
+                              key={c}
+                              style={{ flexGrow: fin - aMinutos(c) }}
+                              className="flex min-w-0 basis-0 items-center rounded-lg border border-stencil/40 bg-stencil/[0.14] px-2 text-[12px] font-semibold text-piel/90 tabular-nums"
+                            >
+                              <span className="truncate">
+                                {c}
+                                <span className="font-normal text-ceniza"> a {aHora(fin)}</span>
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </span>
+                    ) : (
+                      <span className="text-[13px] text-ceniza/60">{d.abierto ? "Sin cupos" : "Cerrado"}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </Tarjeta>
           <Tarjeta>
             <TituloBloque>Reglas</TituloBloque>
@@ -585,36 +664,8 @@ export function EditarReservas({ inicial, hoy }: { inicial: Reservas; hoy: strin
               <Numero etiqueta="Anticipación mínima" unidad="h" min={0} max={168} valor={r.anticipacion} cambiar={(anticipacion) => poner({ anticipacion })} />
               <Numero etiqueta="Se ve hacia adelante" unidad="sem." min={1} max={12} valor={r.semanas} cambiar={(semanas) => poner({ semanas })} />
               <Numero etiqueta="Plazo para confirmar" unidad="h" min={6} max={168} valor={r.vence} cambiar={(vence) => poner({ vence })} />
-              <label className="block min-w-0">
-                <span className="mb-2 block text-[13px] text-ceniza">Horas de inicio cada</span>
-                <span className="flex gap-2">
-                  {([30, 60] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      aria-pressed={r.intervalo === m}
-                      onClick={() => poner({ intervalo: m })}
-                      className={`min-h-11 flex-1 rounded-full border text-[14px] font-semibold ${r.intervalo === m ? "border-stencil bg-stencil/20 text-piel" : "border-linea text-ceniza"}`}
-                    >
-                      {m} min
-                    </button>
-                  ))}
-                </span>
-              </label>
             </div>
-            <p className="mt-3 text-[13px] leading-snug text-ceniza">Una hora pedida queda apartada {r.vence} h. Si no la confirmas con el abono, se libera sola.</p>
-          </Tarjeta>
-          <Tarjeta>
-            <TituloBloque>Así se ve la próxima semana</TituloBloque>
-            <p className="-mt-1 mb-3 text-[13px] text-ceniza">Para una sesión mediana ({textoDuracion(r.duraciones.mediano)}), con la agenda vacía.</p>
-            <ul className="flex flex-col gap-1.5 text-[14px]">
-              {muestra.map((m) => (
-                <li key={m.fecha} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
-                  <span className="text-ceniza">{DIAS_SEMANA[(new Date(m.fecha + "T12:00").getDay() + 6) % 7]}</span>
-                  <span className={`truncate tabular-nums ${m.horas.length ? "" : "text-ceniza/60"}`}>{m.horas.length ? m.horas.join(" · ") : "Sin horas"}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-3 text-[13px] leading-snug text-ceniza">Un cupo pedido queda apartado {r.vence} h. Si no lo confirmas con el abono, se libera solo.</p>
           </Tarjeta>
         </div>
       </div>

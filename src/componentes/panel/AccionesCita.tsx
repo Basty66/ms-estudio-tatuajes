@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { borrarPago, cambiarEstadoCita, confirmarReserva, rechazarReserva, registrarPago } from "@/app/tinta/_acciones/panel";
+import { duracionTexto, minutosEntre, sumarMinutos } from "@/lib/admin/fecha";
 import { reducirImagen } from "@/lib/admin/imagenes";
 import { clp } from "@/lib/admin/etiquetas";
 import { PANEL } from "@/lib/admin/ruta";
@@ -232,8 +233,13 @@ export function FilaPago({
  * comprobante, si llegó). Con eso la cita pasa a confirmada y se puede
  * mandar la confirmación y el consentimiento.
  */
-export function ConfirmarReserva({ citaId, sugerido, rechazo }: { citaId: number; sugerido: string | null; rechazo: string | null }) {
+export function ConfirmarReserva({ citaId, inicio, fin, sugerido, rechazo }: { citaId: number; inicio: string; fin: string; sugerido: string | null; rechazo: string | null }) {
   const router = useRouter();
+  // Parte con lo que apartaba el cupo; el tatuador lo ajusta a lo que de verdad dura.
+  const [hasta, setHasta] = useState(fin.slice(11, 16));
+  const termina = `${inicio.slice(0, 10)}T${hasta}`;
+  const minutos = hasta > inicio.slice(11, 16) ? minutosEntre(inicio, termina) : 0;
+  const atajos = [2, 3, 4, 6].map((h) => sumarMinutos(inicio, h * 60)).filter((f) => f.slice(0, 10) === inicio.slice(0, 10));
   const [precio, setPrecio] = useState("");
   const [abono, setAbono] = useState("");
   const [medio, setMedio] = useState("transferencia");
@@ -252,6 +258,7 @@ export function ConfirmarReserva({ citaId, sugerido, rechazo }: { citaId: number
       f.set("precio", precio.replace(/\D/g, ""));
       f.set("abono", abono.replace(/\D/g, ""));
       f.set("medio", medio);
+      f.set("hasta", hasta);
       if (archivo) {
         const reducida = await reducirImagen(archivo);
         f.set("comprobante", new File([reducida], archivo.name, { type: reducida.type || archivo.type }));
@@ -268,9 +275,28 @@ export function ConfirmarReserva({ citaId, sugerido, rechazo }: { citaId: number
 
   return (
     <form onSubmit={confirmar} className="flex flex-col gap-4">
+      <div>
+        <Etiqueta nota={minutos > 0 ? `${inicio.slice(11, 16)} a ${hasta} · ${duracionTexto(minutos)}` : "Antes de empezar, no"}>Termina</Etiqueta>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="time"
+            step={900}
+            value={hasta}
+            aria-label="Hora en que termina la sesión"
+            onChange={(e) => e.target.value && setHasta(e.target.value)}
+            className="min-h-12 w-28 rounded-2xl border border-linea bg-tinta/70 px-3 text-[16px] text-piel tabular-nums [color-scheme:dark] focus:border-stencil focus:outline-none"
+          />
+          {atajos.map((f, i) => (
+            <Chip key={f} activo={hasta === f.slice(11)} onClick={() => setHasta(f.slice(11))}>
+              {[2, 3, 4, 6][i]} h
+            </Chip>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[12px] text-ceniza">El cupo apartaba hasta las {fin.slice(11, 16)}. Si se alarga y pisa otro cupo libre, ese se cierra solo.</p>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <label className="min-w-0">
-          <Etiqueta>Precio final</Etiqueta>
+          <Etiqueta>Valor final</Etiqueta>
           <input value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="numeric" placeholder="$" className={`${campo} tabular-nums`} />
         </label>
         <label className="min-w-0">

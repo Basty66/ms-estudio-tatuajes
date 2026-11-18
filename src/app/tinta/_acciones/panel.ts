@@ -49,15 +49,16 @@ function refrescar(...rutas: string[]) {
 /** Con quién choca una hora, para decirlo con nombre y no con un código de error. */
 async function conQuienChoca(inicio: string, fin: string, salvo: number | null): Promise<string> {
   const [f] = (await sql`
-    SELECT c.tipo, cl.nombre, to_char(c.inicio, 'HH24:MI') AS desde, to_char(c.fin, 'HH24:MI') AS hasta
+    SELECT c.tipo, c.estado, cl.nombre, to_char(c.inicio, 'HH24:MI') AS desde, to_char(c.fin, 'HH24:MI') AS hasta
     FROM citas c LEFT JOIN clientes cl ON cl.id = c.cliente_id
-    WHERE c.estado IN ('confirmada', 'completada') AND c.rango && tsrange(${inicio}::TIMESTAMP, ${fin}::TIMESTAMP)
+    WHERE c.estado IN ('solicitada', 'confirmada', 'completada') AND c.rango && tsrange(${inicio}::TIMESTAMP, ${fin}::TIMESTAMP)
       AND c.id IS DISTINCT FROM ${salvo}::INT
     LIMIT 1
-  `) as Array<{ tipo: string; nombre: string | null; desde: string; hasta: string }>;
+  `) as Array<{ tipo: string; estado: string; nombre: string | null; desde: string; hasta: string }>;
   if (!f) return "Esa hora choca con otra cita.";
-  return f.tipo === "bloqueo"
-    ? `Esa hora está bloqueada (${f.desde} a ${f.hasta}).`
+  if (f.tipo === "bloqueo") return `Esa hora está bloqueada (${f.desde} a ${f.hasta}).`;
+  return f.estado === "solicitada"
+    ? `Esa hora choca con la que pidió ${f.nombre} desde la web (${f.desde} a ${f.hasta}).`
     : `Esa hora choca con la cita de ${f.nombre} (${f.desde} a ${f.hasta}).`;
 }
 
@@ -368,9 +369,19 @@ export async function confirmarReserva(formulario: FormData): Promise<Respuesta>
   const precio = precioTexto ? entero(precioTexto, 0, 50_000_000) : null;
   const abono = abonoTexto ? entero(abonoTexto, 1, 50_000_000) : null;
   const medio = formulario.get("medio") === "efectivo" ? "efectivo" : "transferencia";
+  const hasta = formulario.get("hasta");
   if (!citaId) return { ok: false, error: "Esa cita no existe." };
-  if (precioTexto && precio === null) return { ok: false, error: "El precio no es un número válido." };
+  if (precioTexto && precio === null) return { ok: false, error: "El valor no es un número válido." };
   if (abonoTexto && !abono) return { ok: false, error: "El abono no es un número válido." };
+  if (!esHora(hasta)) return { ok: false, error: "Anota a qué hora termina la sesión." };
+
+  // Cuánto dura lo decide el tatuador: la cita va de su cupo hasta la hora que anota.
+  const [pedida] = (await sql`
+    SELECT to_char(inicio, 'YYYY-MM-DD"T"HH24:MI') AS inicio FROM citas WHERE id = ${citaId} AND estado = 'solicitada'
+  `) as Array<{ inicio: string }>;
+  if (!pedida) return { ok: false, error: "Esta hora ya no está por confirmar: quizás venció o ya se confirmó." };
+  if (hasta <= pedida.inicio.slice(11)) return { ok: false, error: `La sesión tiene que terminar después de las ${pedida.inicio.slice(11)}.` };
+  const fin = `${pedida.inicio.slice(0, 10)}T${hasta}`;
 
   const archivo = formulario.get("comprobante");
   let ruta: string | null = null;
@@ -385,18 +396,25 @@ export async function confirmarReserva(formulario: FormData): Promise<Respuesta>
     }
   }
 
-  const filas = (await sql`
-    WITH cita AS (
-      UPDATE citas SET estado = 'confirmada', precio = COALESCE(${precio}::INT, precio)
-      WHERE id = ${citaId} AND estado = 'solicitada'
-      RETURNING id
-    ),
-    pago AS (
-      INSERT INTO pagos (cita_id, monto, tipo, medio, comprobante, anotado_por)
-      SELECT id, ${abono}::INT, 'abono', ${medio}, ${ruta}, ${u.nombre} FROM cita WHERE ${abono}::INT IS NOT NULL
-    )
-    SELECT id FROM cita
-  `) as Array<{ id: number }>;
+  let filas: Array<{ id: number }>;
+  try {
+    filas = (await sql`
+      WITH cita AS (
+        UPDATE citas SET estado = 'confirmada', precio = COALESCE(${precio}::INT, precio), fin = ${fin}::TIMESTAMP
+        WHERE id = ${citaId} AND estado = 'solicitada'
+        RETURNING id
+      ),
+      pago AS (
+        INSERT INTO pagos (cita_id, monto, tipo, medio, comprobante, anotado_por)
+        SELECT id, ${abono}::INT, 'abono', ${medio}, ${ruta}, ${u.nombre} FROM cita WHERE ${abono}::INT IS NOT NULL
+      )
+      SELECT id FROM cita
+    `) as Array<{ id: number }>;
+  } catch (e) {
+    if (ruta) await borrarPrivado(ruta).catch(() => undefined);
+    if (esChoqueDeHoras(e)) return { ok: false, error: await conQuienChoca(pedida.inicio, fin, citaId) };
+    throw e;
+  }
   if (filas.length === 0) {
     if (ruta) await borrarPrivado(ruta).catch(() => undefined);
     return { ok: false, error: "Esta hora ya no está por confirmar: quizás venció o ya se confirmó." };

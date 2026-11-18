@@ -1,10 +1,10 @@
 import "server-only";
 import { sql } from "@/db/conexion";
 import { ahoraChile, hoyChile, sumarDias } from "@/lib/admin/fecha";
-import { estadoDia, type EstadoDia, type Ocupado, type Reservas } from "@/lib/reservas";
+import { estadoDia, type Cupo, type EstadoDia, type Ocupado, type Reservas } from "@/lib/reservas";
 
 /**
- * Lo que necesita el calendario de la web: qué horas están tomadas y cuáles
+ * Lo que necesita el calendario de la web: qué cupos están tomados y cuáles
  * quedan libres. Las horas pedidas que nadie confirmó a tiempo se liberan
  * antes de mirar, así el calendario nunca muestra ocupado algo que ya venció.
  */
@@ -28,15 +28,19 @@ export async function ocupadosEntre(desde: string, hasta: string): Promise<Ocupa
   `) as Ocupado[];
 }
 
-export type DiaLibre = { fecha: string; estado: EstadoDia; horas: string[] };
+/** `horas`: los cupos libres, lo que se puede pedir. */
+export type DiaLibre = { fecha: string; estado: EstadoDia; cupos: Cupo[]; horas: string[] };
 
-/** Día por día, desde hoy y por las semanas que se ofrecen, las horas en que cabe una sesión de `duracion` minutos. */
-export async function disponibilidad(r: Reservas, duracion: number): Promise<DiaLibre[]> {
+/** Día por día, desde hoy y por las semanas que se ofrecen, cada cupo y si está libre. */
+export async function disponibilidad(r: Reservas): Promise<DiaLibre[]> {
   await liberarVencidas(r.vence);
   const hoy = hoyChile();
   const hasta = sumarDias(hoy, r.semanas * 7 - 1);
   const [ocupados, ahora] = [await ocupadosEntre(hoy, hasta), ahoraChile()];
   const dias: DiaLibre[] = [];
-  for (let f = hoy; f <= hasta; f = sumarDias(f, 1)) dias.push({ fecha: f, ...estadoDia(r, f, duracion, ocupados, ahora) });
+  for (let f = hoy; f <= hasta; f = sumarDias(f, 1)) {
+    const { estado, cupos } = estadoDia(r, f, ocupados, ahora);
+    dias.push({ fecha: f, estado, cupos, horas: cupos.filter((c) => c.libre).map((c) => c.hora) });
+  }
   return dias;
 }

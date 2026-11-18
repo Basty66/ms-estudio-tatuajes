@@ -93,7 +93,7 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
           <div>
             <h2 className="text-[17px] font-semibold text-[#fbbf24]">Pidió esta hora desde la web</h2>
             <p className="mt-1 text-[14px] leading-relaxed text-ceniza">
-              La hora está apartada. Confírmala con el precio final y el abono; si no, se libera el {fechaCorta(seLibera)} a las {hora(seLibera)}.
+              La hora está apartada. Confírmala con cuánto dura, el valor final y el abono; si no, se libera el {fechaCorta(seLibera)} a las {hora(seLibera)}.
             </p>
             {c.telefono && (
               <a href={`https://wa.me/${c.telefono}`} target="_blank" rel="noopener noreferrer" className={claseBoton("linea", "mt-4 min-h-11 px-4 text-[14px]")}>
@@ -103,6 +103,8 @@ export default async function FichaCita({ params }: { params: Promise<{ id: stri
           </div>
           <ConfirmarReserva
             citaId={c.id}
+            inicio={c.inicio}
+            fin={c.fin}
             sugerido={sugerido}
             rechazo={c.telefono ? whatsapp(c.telefono, rellenar(mensajes.reservaRechazada, { nombre, fecha: cuando, link: `${SITIO}/#cotiza` })) : null}
           />

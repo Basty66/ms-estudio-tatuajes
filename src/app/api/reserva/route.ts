@@ -4,20 +4,20 @@ import { leerContenido } from "@/db/contenido";
 import { liberarVencidas, ocupadosEntre } from "@/db/reservas";
 import { avisar } from "@/lib/admin/avisos";
 import { clp, nombreDonde, nombreTamano } from "@/lib/admin/etiquetas";
-import { ahoraChile, esFecha, esHora, fechaLarga, sumarMinutos } from "@/lib/admin/fecha";
+import { ahoraChile, esFecha, esHora, fechaLarga } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { normalizarTelefono } from "@/lib/admin/telefono";
 import { ESTILOS_PRECIO, estimar, estimarLaser, OBJETIVOS_LASER, TAMANOS, ZONAS, type EstiloPrecio, type ObjetivoLaser, type Tamano, type Zona } from "@/lib/precios";
-import { duracionDe, horasLibres } from "@/lib/reservas";
+import { cuposLibres, diaSemana, finDeCupo } from "@/lib/reservas";
 
 /**
  * Una hora pedida desde la web, después de cotizar.
  *
  * Es una puerta abierta a internet: todo se revisa de nuevo acá (que la hora
- * exista en el horario, que esté libre, que el teléfono sea chileno) y hay un
- * tope de 3 por hora por conexión. La cita nace "solicitada": aparta la hora
- * hasta que el tatuador la confirma o hasta que vence. La doble reserva la
- * sigue impidiendo Postgres.
+ * sea uno de los cupos del día, que esté libre, que el teléfono sea chileno) y
+ * hay un tope de 3 por hora por conexión. La cita nace "solicitada": aparta el
+ * cupo hasta que el tatuador la confirma (con cuánto dura y el valor final) o
+ * hasta que vence. La doble reserva la sigue impidiendo Postgres.
  */
 export const dynamic = "force-dynamic";
 
@@ -52,14 +52,13 @@ export async function POST(request: Request) {
   if (!telefono || !/^569\d{8}$/.test(telefono)) return error("Revisa tu WhatsApp: un celular chileno, como 9 1234 5678.");
   if (d.acepta !== true) return error("Para pedir la hora tienes que aceptar que guardemos tu nombre y WhatsApp.");
   if (!esFecha(d.fecha) || !esHora(d.hora)) return error("Elige día y hora.");
-  const duracion = duracionDe(reservas, laser ? "laser" : "tatuaje", tamano);
-  const inicio = `${d.fecha}T${d.hora}`;
-  const fin = sumarMinutos(inicio, duracion);
-
-  // Que la hora esté en el horario y libre, mirando la agenda de verdad.
+  // Que sea un cupo del día y esté libre, mirando la agenda de verdad. Aparta hasta el cupo siguiente;
+  // cuánto dura de verdad lo pone el tatuador al confirmar.
   await liberarVencidas(reservas.vence);
-  const libres = horasLibres(reservas, d.fecha, duracion, await ocupadosEntre(d.fecha, d.fecha), ahoraChile());
+  const libres = cuposLibres(reservas, d.fecha, await ocupadosEntre(d.fecha, d.fecha), ahoraChile());
   if (!libres.includes(d.hora)) return error("Esa hora ya no está disponible. Elige otra.", 409);
+  const inicio = `${d.fecha}T${d.hora}`;
+  const fin = finDeCupo(reservas.dias[diaSemana(d.fecha)], d.fecha, d.hora);
 
   // Tope por conexión: el hash cambia cada día y no identifica a nadie.
   const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "sin-ip";
@@ -98,7 +97,7 @@ export async function POST(request: Request) {
     const cuando = `${fechaLarga(inicio)} a las ${d.hora}`;
     await avisar({
       titulo: `${nombre.split(" ")[0]} pidió hora desde la web`,
-      cuerpo: `${cuando.charAt(0).toUpperCase() + cuando.slice(1)} · ${laser ? "Láser · " : ""}${nombreTamano(tamano)} · ${nombreDonde(zona, lado)}\nConfírmala con el precio y el abono.`,
+      cuerpo: `${cuando.charAt(0).toUpperCase() + cuando.slice(1)} · ${laser ? "Láser · " : ""}${nombreTamano(tamano)} · ${nombreDonde(zona, lado)}\nConfírmala con cuánto dura, el valor final y el abono.`,
       url: `${PANEL}/cita/${fila.id}`,
       tag: `reserva-${fila.id}`,
     }).catch(() => undefined);

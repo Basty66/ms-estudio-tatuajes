@@ -47,6 +47,8 @@ src/app/tinta/          Panel (ruta "secreta"; constante PANEL en src/lib/admin/
   comprobante/[...]     Entrega comprobantes del almacén privado, solo con sesión
 src/app/api/cotizacion  POST público del cotizador → guarda y avisa por push (10/h por origen)
 src/app/api/consentimiento  POST público de la firma: lo autoriza el token del link, responde el PDF
+src/app/api/disponibilidad  GET público: cada día con sus cupos y si están libres (nunca quién)
+src/app/api/reserva     POST público: aparta un cupo como cita "solicitada" y avisa por push (3/h por conexión)
 src/app/api/mantencion/avisos  Cron diario (vercel.json): sesiones de hoy y mañana, y borra
                         consentimientos vencidos (5 años) y links abandonados
 src/proxy.ts            Barrera barata del panel (en Next 16 se llama proxy, no middleware)
@@ -62,8 +64,12 @@ db/                     Migraciones SQL (scripts/migrar.mjs las aplica)
 
 ## Reglas del repo
 
-- La doble reserva la impide Postgres (`citas_sin_choque`, EXCLUDE sobre el rango). El error `23P01`
-  se traduce a "choca con la cita de X".
+- La doble reserva la impide Postgres (`citas_sin_choque`, EXCLUDE sobre el rango, también para las
+  horas "solicitadas"). El error `23P01` se traduce a "choca con la cita de X".
+- Reservas desde la web (`src/lib/reservas.ts`): el tatuador define los cupos de cada día (horas de
+  inicio) y a qué hora termina la jornada. Un cupo aparta hasta el cupo siguiente; cuánto dura de
+  verdad y el valor final los pone el tatuador al confirmar, y si se alarga y pisa otro cupo, ese se
+  cierra solo. La web nunca calcula duraciones ni precios finales: solo muestra el rango estimado.
 - El saldo no se guarda: sale de la vista `citas_con_saldo` (suma de `pagos`).
 - Las horas de las citas son hora local de Chile sin zona y viajan como texto (`YYYY-MM-DDTHH:MI`).
 - Nada que exporte un archivo `"use server"` puede mandar avisos o escribir sin sesión.

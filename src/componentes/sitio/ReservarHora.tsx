@@ -2,18 +2,21 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fechaCorta, fechaLarga, sumarMinutos } from "@/lib/admin/fecha";
-import { diaSemana, textoDuracion, type EstadoDia } from "@/lib/reservas";
+import { fechaCorta, fechaLarga } from "@/lib/admin/fecha";
+import { diaSemana, type Cupo, type EstadoDia } from "@/lib/reservas";
+import { Ornamento } from "./Ornamento";
 import { TarjetaGracias } from "./TarjetaGracias";
 
 /**
- * Elegir día y hora después de cotizar. Los días libres salen de la agenda de
- * verdad (/api/disponibilidad): lo tomado se ve tachado y no se puede elegir.
- * La hora queda apartada como "por confirmar" hasta que el estudio la
- * confirma con el abono por WhatsApp.
+ * Elegir día y cupo después de cotizar. Los cupos los define el tatuador
+ * (Web → Horario y reservas) y lo libre sale de la agenda de verdad
+ * (/api/disponibilidad): lo tomado se ve, pero no se puede elegir. El cupo
+ * queda apartado como "por confirmar" hasta que el estudio lo confirma por
+ * WhatsApp con el abono; cuánto dura y el valor final los pone el tatuador.
  *
- * Un mes a la vez y el primer día libre ya elegido: las horas se ven al tiro,
- * debajo del mes en el teléfono y al lado en el escritorio.
+ * Un mes a la vez y el primer día libre ya elegido: los cupos se ven al tiro,
+ * debajo del mes en el teléfono y al lado en el escritorio. Cada día lleva sus
+ * cupos como puntos: llenos los libres, vacíos los tomados.
  */
 export type Pedido = {
   tipo: "tatuaje" | "laser";
@@ -29,23 +32,62 @@ export type Pedido = {
   rango: string;
 };
 
-type Dia = { fecha: string; estado: EstadoDia; horas: string[] };
+type Dia = { fecha: string; estado: EstadoDia; cupos: Cupo[]; horas: string[] };
 
-/** Cómo se dice cada estado a quien no ve (y en la leyenda). */
+/** Cómo se dice cada estado a quien no ve. */
 const ESTADO_TEXTO: Record<EstadoDia, string> = {
-  libre: "horas libres",
-  pocas: "pocas horas",
+  libre: "cupos libres",
+  ultimo: "queda un cupo",
   completo: "completo",
   bloqueado: "no disponible",
   cerrado: "cerrado",
-  pronto: "sin horas",
+  pronto: "sin cupos",
 };
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+const SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const SALIDA = [0.16, 1, 0.3, 1] as const;
 
 const campo =
   "min-h-12 w-full rounded-2xl border border-linea bg-tinta/80 px-4 text-[16px] text-piel placeholder:text-ceniza/50 focus:border-stencil focus:shadow-[0_0_0_4px_rgba(47,107,255,0.18)] focus:outline-none";
+
+/** Mañana, tarde o noche: así se lee más rápido un cupo. */
+const franja = (hora: string) => (hora < "13:00" ? "Mañana" : hora < "19:00" ? "Tarde" : "Noche");
+
+/** El visto que se dibuja al marcar (cupo elegido, casilla aceptada). */
+function Visto({ marcado, className }: { marcado: boolean; className: string }) {
+  return (
+    <span aria-hidden data-marcada={marcado ? "si" : "no"} className={`grid shrink-0 place-items-center border transition-[background-color,border-color,box-shadow] duration-200 ${className}`}>
+      <svg viewBox="0 0 24 24" className="size-4 text-white" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+        <path className="visto-trazo" d="m5 12.5 4.5 4.5L19 7.5" />
+      </svg>
+    </span>
+  );
+}
+
+/** Los cupos de un día como puntos: llenos los libres, vacíos los tomados. Hasta cuatro. */
+function Puntos({ cupos, activo, completo }: { cupos: Cupo[]; activo: boolean; completo: boolean }) {
+  return (
+    <span aria-hidden className="absolute bottom-[17%] left-1/2 flex -translate-x-1/2 gap-[3px]">
+      {cupos.slice(0, 4).map((c, i) => (
+        <span
+          key={i}
+          className={`size-[5px] rounded-full ${
+            c.libre
+              ? activo
+                ? "bg-white"
+                : "bg-stencil-claro shadow-[0_0_6px_rgba(47,107,255,0.95)]"
+              : activo
+                ? "border border-white/55"
+                : completo
+                  ? "border border-[#ff8a80]/55"
+                  : "border border-ceniza/45"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
 
 export function ReservarHora({
   pedido,
@@ -59,7 +101,6 @@ export function ReservarHora({
   cerrar: () => void;
 }) {
   const [dias, setDias] = useState<Dia[] | null>(null);
-  const [duracion, setDuracion] = useState(0);
   const [mes, setMes] = useState<string | null>(null);
   const [fecha, setFecha] = useState<string | null>(null);
   const [hora, setHora] = useState<string | null>(null);
@@ -73,16 +114,15 @@ export function ReservarHora({
   const reducir = Boolean(useReducedMotion());
   const horasRef = useRef<HTMLElement>(null);
   const datosRef = useRef<HTMLElement>(null);
-  // Después de tocar un día o una hora, lo que sigue se trae a la vista.
+  // Después de tocar un día o un cupo, lo que sigue se trae a la vista.
   const seguir = useRef<"horas" | "datos" | null>(null);
 
   const cargar = () =>
-    fetch(`/api/disponibilidad?tipo=${pedido.tipo}&tamano=${pedido.tamano}`, { cache: "no-store" })
+    fetch("/api/disponibilidad", { cache: "no-store" })
       .then((r) => r.json())
-      .then((j: { dias: Dia[]; duracion: number }) => {
+      .then((j: { dias: Dia[] }) => {
         setDias(j.dias);
-        setDuracion(j.duracion);
-        // La primera vez queda elegido el primer día con horas, y su mes a la vista.
+        // La primera vez queda elegido el primer día con cupos, y su mes a la vista.
         const primero = j.dias.find((d) => d.horas.length > 0);
         if (primero) {
           setFecha((f) => f ?? primero.fecha);
@@ -105,7 +145,7 @@ export function ReservarHora({
   }, []);
 
   // Los días, agrupados por mes. El mes de hoy parte en esta semana (las pasadas no sirven y empujan
-  // las horas hacia abajo); lo anterior a hoy en la semana va apagado. Los demás parten el 1.
+  // los cupos hacia abajo); lo anterior a hoy en la semana va apagado. Los demás parten el 1.
   const meses = useMemo(() => {
     const porMes = new Map<string, Map<number, Dia>>();
     for (const d of dias ?? []) {
@@ -121,6 +161,7 @@ export function ReservarHora({
   }, [dias]);
   const indice = Math.max(0, meses.findIndex((m) => m.mes === mes));
   const visible = meses[indice];
+  const hoy = dias?.[0]?.fecha;
   const elegido = dias?.find((d) => d.fecha === fecha);
   const hayLibres = dias?.some((d) => d.horas.length > 0);
 
@@ -175,10 +216,11 @@ export function ReservarHora({
     }
   }
 
-  const etiquetaBoton = fecha && hora ? `Pedir el ${fechaCorta(fecha)}, ${hora}` : "Pedir esta hora";
+  const etiquetaBoton = fecha && hora ? `Pedir el ${fechaCorta(fecha)}, ${hora}` : "Elige un cupo";
   const avisar = listo
     ? whatsappCon(`Hola, soy ${nombre.trim()}. Pedí hora para el ${listo} desde la web (${pedido.codigo}). ¿Me pasas los datos para el abono?`)
     : "";
+  const libres = elegido?.horas.length ?? 0;
 
   return (
     <motion.div
@@ -189,7 +231,7 @@ export function ReservarHora({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-tinta/[0.88] backdrop-blur-xl sm:items-center sm:p-6"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-tinta/[0.9] backdrop-blur-xl sm:items-center sm:p-6"
       onClick={(e) => e.target === e.currentTarget && cerrar()}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -202,11 +244,13 @@ export function ReservarHora({
                 nota: textos.nota,
                 rango: `${fechaCorta(fecha!).replace(/^\w/, (l) => l.toUpperCase())} · ${hora}`,
                 extra: "",
-                detalle: `${pedido.resumen} · ${pedido.rango}`,
+                detalle: `${pedido.resumen} · estimado ${pedido.rango}`,
               }}
             />
             <motion.div initial={{ opacity: 0, y: reducir ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.6, ease: SALIDA }} className="flex flex-col items-center">
-              <p className="mt-10 max-w-sm text-center text-[14px] leading-relaxed text-ceniza">Avísame por WhatsApp y te paso los datos para el abono. Con eso tu hora queda confirmada.</p>
+              <p className="mt-10 max-w-sm text-center text-[14px] leading-relaxed text-ceniza">
+                Avísame por WhatsApp y te paso los datos para el abono. Ahí vemos tu diseño, cuánto dura la sesión y el valor final.
+              </p>
               <div className="mt-5 flex flex-wrap justify-center gap-3">
                 <a
                   href={avisar}
@@ -229,38 +273,56 @@ export function ReservarHora({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: reducir ? 0 : 30, opacity: 0 }}
             transition={{ duration: 0.5, ease: SALIDA }}
-            className="flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] border border-linea bg-hollin shadow-[0_-30px_80px_-30px_rgba(47,107,255,0.45)] sm:rounded-[28px] lg:max-w-[880px]"
+            className="relative flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[32px] border border-linea/90 bg-hollin shadow-[0_-30px_90px_-30px_rgba(47,107,255,0.5),inset_0_1px_0_rgba(255,255,255,0.05)] sm:rounded-[32px] lg:max-w-[980px]"
           >
-            <div className="flex items-start gap-3 border-b border-linea/80 px-5 pt-5 pb-4 lg:px-7">
-              <div className="min-w-0 flex-1">
-                <h2 className="font-gotica text-[34px] leading-none">Elige tu hora</h2>
-                <p className="mt-2 line-clamp-2 text-[13px] leading-snug text-ceniza">
-                  {duracion ? `Sesión de aprox. ${textoDuracion(duracion)} · ` : ""}
-                  {pedido.resumen}
-                </p>
-              </div>
-              <button type="button" onClick={cerrar} aria-label="Cerrar" className="grid size-11 shrink-0 place-items-center rounded-full border border-linea text-ceniza hover:text-piel">
-                <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" aria-hidden>
-                  <path d="M6 6l12 12M18 6 6 18" />
-                </svg>
-              </button>
-            </div>
+            {/* Luz de lámpara y filo cromado arriba, como en la portada. */}
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(70%_100%_at_30%_0%,rgba(47,107,255,0.2),transparent_70%)]" />
+            <div aria-hidden className="pointer-events-none absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(207,220,255,0.8),transparent)]" />
+            <Ornamento tipo="estrella" className="top-7 right-[4.75rem] w-8 opacity-40 sm:right-24 sm:w-10" flotar={6} ritmo={7} />
 
-            <div className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 lg:px-7 lg:py-6">
+            <header className="relative px-5 pt-3 pb-4 sm:pt-7 sm:pb-5 lg:px-8">
+              <span aria-hidden className="mx-auto mb-3 block h-1 w-10 rounded-full bg-linea sm:hidden" />
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] text-ceniza uppercase">
+                    <span className="size-1.5 rounded-full bg-stencil shadow-[0_0_8px_rgba(47,107,255,0.95)]" />
+                    Reserva{pedido.codigo.includes("·") ? "" : ` · ${pedido.codigo}`}
+                  </p>
+                  <h2 className="mt-2.5 font-gotica text-[40px] leading-[0.95] sm:text-[48px]">Elige tu hora</h2>
+                  <span aria-hidden data-prendido="si" className="neon mt-3 block w-24" />
+                </div>
+                <button type="button" onClick={cerrar} aria-label="Cerrar" className="grid size-11 shrink-0 place-items-center rounded-full border border-linea bg-tinta/40 text-ceniza transition-colors hover:border-ceniza/60 hover:text-piel">
+                  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" aria-hidden>
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </div>
+              {/* En el teléfono, una sola línea: lo de arriba no debe empujar los cupos fuera de la pantalla. */}
+              <div className="mt-4 flex gap-1.5 text-[12px] sm:flex-wrap">
+                <span className="min-w-0 truncate rounded-full border border-linea bg-tinta/60 px-3 py-1.5 text-piel/85">{pedido.resumen}</span>
+                <span className="shrink-0 rounded-full border border-stencil/40 bg-stencil/10 px-3 py-1.5 text-piel/90 tabular-nums">
+                  <span className="max-sm:hidden">Estimado </span>
+                  {pedido.rango}
+                </span>
+              </div>
+            </header>
+
+            <div className="relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain border-t border-linea/70 px-5 pt-4 pb-5 sm:pt-5 lg:px-8 lg:py-7">
               {!dias ? (
-                <div aria-hidden className="grid grid-cols-7 gap-1.5 lg:w-1/2">
-                  {Array.from({ length: 35 }, (_, i) => (
-                    <span key={i} className="aspect-square animate-pulse rounded-xl bg-linea/50" />
+                <div aria-hidden className="grid grid-cols-7 gap-1.5 lg:w-1/2 lg:pr-8">
+                  {Array.from({ length: 28 }, (_, i) => (
+                    <span key={i} className="aspect-square animate-pulse rounded-2xl bg-linea/40 motion-reduce:animate-none" />
                   ))}
                 </div>
               ) : !hayLibres || !visible ? (
-                <p className="py-6 text-center text-[15px] text-ceniza">No quedan horas libres en las próximas semanas. Escríbenos por WhatsApp y lo vemos.</p>
+                <p className="py-6 text-center text-[15px] text-ceniza">No quedan cupos libres en las próximas semanas. Escríbenos por WhatsApp y lo vemos.</p>
               ) : (
-                <div className="grid gap-6 lg:grid-cols-2 lg:gap-0">
-                  <section aria-label="Calendario" className="lg:pr-7">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 aria-live="polite" className="text-[15px] font-semibold">
-                        {MESES[Number(visible.mes.slice(5)) - 1]} <span className="text-ceniza">{visible.mes.slice(0, 4)}</span>
+                <div className="grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-0">
+                  <section aria-label="Calendario" className="lg:sticky lg:top-0 lg:self-start lg:pr-8">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h3 aria-live="polite" className="flex items-baseline gap-2.5">
+                        <span className="font-gotica text-[32px] leading-none">{MESES[Number(visible.mes.slice(5)) - 1]}</span>
+                        <span className="text-[13px] text-ceniza tabular-nums">{visible.mes.slice(0, 4)}</span>
                       </h3>
                       <div className="flex gap-2">
                         {[
@@ -273,7 +335,7 @@ export function ReservarHora({
                             aria-label={texto as string}
                             disabled={!meses[indice + (paso as number)]}
                             onClick={() => irAMes(paso as number)}
-                            className="grid size-10 place-items-center rounded-full border border-linea text-piel/85 transition-colors hover:border-stencil/60 disabled:pointer-events-none disabled:opacity-25"
+                            className="grid size-10 place-items-center rounded-full border border-linea bg-tinta/40 text-piel/85 transition-[border-color,box-shadow] hover:border-stencil/60 hover:shadow-[0_0_18px_-6px_rgba(47,107,255,0.9)] disabled:pointer-events-none disabled:opacity-25"
                           >
                             <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                               <path d={trazo as string} />
@@ -284,8 +346,8 @@ export function ReservarHora({
                     </div>
 
                     <div className="grid grid-cols-7 gap-1.5 text-center">
-                      {["L", "M", "M", "J", "V", "S", "D"].map((l, i) => (
-                        <span key={i} aria-hidden className="pb-1 text-[11px] font-semibold text-ceniza/70">
+                      {SEMANA.map((l) => (
+                        <span key={l} aria-hidden className="pb-2 text-[10px] font-semibold tracking-[0.14em] text-ceniza/70 uppercase">
                           {l}
                         </span>
                       ))}
@@ -316,41 +378,48 @@ export function ReservarHora({
                                 </span>
                               );
                             const activo = d.fecha === fecha;
+                            const esHoy = d.fecha === hoy;
                             return d.horas.length > 0 ? (
                               <button
                                 key={d.fecha}
                                 type="button"
                                 aria-pressed={activo}
-                                aria-label={`${fechaLarga(d.fecha)}: ${d.horas.length} ${d.horas.length === 1 ? "hora libre" : "horas libres"}`}
-                                title={`${d.horas.length} ${d.horas.length === 1 ? "hora libre" : "horas libres"}`}
+                                aria-current={esHoy ? "date" : undefined}
+                                aria-label={`${fechaLarga(d.fecha)}: ${d.horas.length} ${d.horas.length === 1 ? "cupo libre" : "cupos libres"}`}
+                                title={`${d.horas.length} ${d.horas.length === 1 ? "cupo libre" : "cupos libres"}`}
                                 onClick={() => {
                                   seguir.current = "horas";
                                   setFecha(d.fecha);
                                   setHora(null);
                                   setError(null);
                                 }}
-                                className={`relative grid aspect-square place-items-center rounded-xl border text-[15px] font-semibold tabular-nums transition-[background-color,border-color,box-shadow,transform] duration-200 active:scale-95 ${
-                                  activo ? "border-stencil bg-stencil text-white shadow-[0_0_20px_-4px_rgba(47,107,255,0.95)]" : "border-linea bg-tinta/60 text-piel hover:border-stencil/60"
+                                className={`relative grid aspect-square place-items-center rounded-2xl border text-[16px] font-semibold tabular-nums transition-[background-color,border-color,box-shadow,transform] duration-200 active:scale-95 ${
+                                  activo
+                                    ? "scale-[1.04] border-stencil bg-stencil text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_12px_32px_-8px_rgba(47,107,255,0.95)]"
+                                    : "border-linea bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0))] text-piel hover:border-stencil/60 hover:shadow-[0_0_22px_-8px_rgba(47,107,255,0.9)]"
                                 }`}
                               >
-                                {numero}
-                                <span aria-hidden className={`absolute bottom-1.5 size-1 rounded-full ${activo ? "bg-white" : d.estado === "pocas" ? "bg-[#fbbf24]" : "bg-stencil"}`} />
+                                <span className="-mt-1.5">{numero}</span>
+                                <Puntos cupos={d.cupos} activo={activo} completo={false} />
                               </button>
                             ) : (
                               <span
                                 key={d.fecha}
                                 role="img"
+                                aria-current={esHoy ? "date" : undefined}
                                 aria-label={`${fechaLarga(d.fecha)}: ${ESTADO_TEXTO[d.estado]}`}
                                 title={ESTADO_TEXTO[d.estado]}
-                                className={`grid aspect-square place-items-center rounded-xl text-[15px] tabular-nums ${
+                                className={`relative grid aspect-square place-items-center rounded-2xl text-[15px] tabular-nums ${
                                   d.estado === "completo"
-                                    ? "border border-sangre/30 bg-sangre/[0.07] text-[#ff8a80]/70 line-through"
+                                    ? "border border-sangre/25 bg-sangre/[0.06] text-[#ff8a80]/70"
                                     : d.estado === "bloqueado"
                                       ? "border border-linea bg-[repeating-linear-gradient(135deg,rgba(155,164,182,0.12)_0_2px,transparent_2px_7px)] text-ceniza/50"
                                       : "text-ceniza/30"
                                 }`}
                               >
-                                {numero}
+                                <span className={d.estado === "completo" || esHoy ? "-mt-1.5" : ""}>{numero}</span>
+                                {d.estado === "completo" && <Puntos cupos={d.cupos} activo={false} completo />}
+                                {esHoy && d.estado !== "completo" && <span className="absolute bottom-[12%] text-[9px] font-semibold tracking-[0.12em] text-stencil-claro/80 uppercase">hoy</span>}
                               </span>
                             );
                           })}
@@ -358,68 +427,93 @@ export function ReservarHora({
                       </AnimatePresence>
                     </div>
 
-                    {/* Qué significa cada día: así se sabe al tiro cuándo hay espacio. */}
-                    <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[12px] text-ceniza">
-                      <li className="flex items-center gap-1.5">
-                        <span className="size-2 rounded-full bg-stencil" /> Libre
+                    {/* Qué significa cada día: así se sabe al tiro dónde hay espacio. */}
+                    <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-ceniza">
+                      <li className="flex items-center gap-2">
+                        <span className="size-[6px] rounded-full bg-stencil-claro shadow-[0_0_6px_rgba(47,107,255,0.95)]" /> Cupo libre
                       </li>
-                      <li className="flex items-center gap-1.5">
-                        <span className="size-2 rounded-full bg-[#fbbf24]" /> Pocas horas
+                      <li className="flex items-center gap-2">
+                        <span className="size-[6px] rounded-full border border-ceniza/60" /> Tomado
                       </li>
-                      <li className="flex items-center gap-1.5">
-                        <span className="grid size-4 place-items-center rounded border border-sangre/30 bg-sangre/[0.07] text-[9px] text-[#ff8a80]/70 line-through">8</span> Completo
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <span className="size-4 rounded border border-linea bg-[repeating-linear-gradient(135deg,rgba(155,164,182,0.18)_0_2px,transparent_2px_5px)]" /> No disponible
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <span className="text-ceniza/40">8</span> Cerrado
+                      <li className="flex items-center gap-2">
+                        <span className="size-3.5 rounded-[5px] border border-linea bg-[repeating-linear-gradient(135deg,rgba(155,164,182,0.2)_0_2px,transparent_2px_5px)]" /> No disponible
                       </li>
                     </ul>
                   </section>
 
-                  <div className="flex flex-col gap-6 lg:border-l lg:border-linea/80 lg:pl-7">
+                  <div className="flex flex-col gap-6 lg:border-l lg:border-linea/70 lg:pl-8">
                     <section ref={horasRef} aria-live="polite" className="scroll-mt-4 scroll-mb-4">
-                      {elegido && elegido.horas.length > 0 ? (
-                        <div key={elegido.fecha} className="panel-surge">
-                          <h3 className="text-[15px] font-semibold first-letter:uppercase">{fechaLarga(elegido.fecha)}</h3>
-                          <p className="mt-0.5 mb-3 text-[13px] text-ceniza">
-                            {elegido.horas.length} {elegido.horas.length === 1 ? "hora libre" : "horas libres"} · elige a qué hora empezar
-                          </p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {elegido.horas.map((h) => (
-                              <button
-                                key={h}
-                                type="button"
-                                aria-pressed={h === hora}
-                                onClick={() => {
-                                  seguir.current = "datos";
-                                  setHora(h);
-                                  setError(null);
-                                }}
-                                className={`min-h-11 rounded-full border text-[15px] font-semibold tabular-nums transition-colors ${
-                                  h === hora ? "border-piel bg-piel text-tinta" : "border-linea text-piel/85 hover:border-ceniza/60"
-                                }`}
-                              >
-                                {h}
-                              </button>
-                            ))}
+                      {elegido && libres > 0 ? (
+                        <div key={elegido.fecha}>
+                          <div className="panel-surge flex items-end gap-3.5">
+                            <span aria-hidden className="texto-cromo font-gotica text-[58px] leading-[0.78] sm:text-[72px]">
+                              {Number(elegido.fecha.slice(8))}
+                            </span>
+                            <span className="min-w-0 pb-1">
+                              <span className="block text-[18px] font-semibold first-letter:uppercase">{fechaLarga(elegido.fecha).split(" ")[0]}</span>
+                              <span className="block text-[13px] text-ceniza">
+                                <span className="sr-only">{fechaLarga(elegido.fecha)} · </span>
+                                de {MESES[Number(elegido.fecha.slice(5, 7)) - 1].toLowerCase()} · {libres} de {elegido.cupos.length} {elegido.cupos.length === 1 ? "cupo libre" : "cupos libres"}
+                              </span>
+                            </span>
                           </div>
-                          {hora && duracion > 0 && (
-                            <p className="mt-3 text-[13px] text-ceniza">
-                              Sesión de {hora} a {sumarMinutos(`${elegido.fecha}T${hora}`, duracion).slice(11)} aprox.
-                            </p>
-                          )}
+                          <div className="mt-5 grid gap-2">
+                            {elegido.cupos.map((c, i) => {
+                              const activo = c.hora === hora;
+                              return (
+                                <button
+                                  key={c.hora}
+                                  type="button"
+                                  disabled={!c.libre}
+                                  aria-pressed={c.libre ? activo : undefined}
+                                  aria-label={`${c.hora}, ${franja(c.hora).toLowerCase()}: ${c.libre ? "libre" : "tomado"}`}
+                                  onClick={() => {
+                                    seguir.current = "datos";
+                                    setHora(c.hora);
+                                    setError(null);
+                                  }}
+                                  style={{ animationDelay: `${80 + i * 60}ms` }}
+                                  className={`panel-surge group relative flex min-h-16 items-center gap-4 overflow-hidden rounded-2xl border px-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
+                                    !c.libre
+                                      ? "cursor-not-allowed border-linea/60 bg-[repeating-linear-gradient(135deg,rgba(155,164,182,0.06)_0_2px,transparent_2px_8px)]"
+                                      : activo
+                                        ? "border-stencil bg-stencil/[0.13] shadow-[0_0_0_1px_rgba(47,107,255,0.55),0_14px_40px_-14px_rgba(47,107,255,0.95)]"
+                                        : "border-linea bg-tinta/50 hover:border-stencil/55 hover:bg-tinta/80"
+                                  }`}
+                                >
+                                  <span className={`text-[26px] font-semibold tracking-[-0.03em] tabular-nums ${c.libre ? "" : "text-ceniza/45 line-through decoration-1"}`}>{c.hora}</span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className={`block text-[13px] font-semibold ${c.libre ? "text-piel/85" : "text-ceniza/55"}`}>{franja(c.hora)}</span>
+                                    <span className={`block text-[12px] ${activo ? "text-stencil-claro" : "text-ceniza"}`}>{!c.libre ? "Tomado" : activo ? "Elegido" : "Libre"}</span>
+                                  </span>
+                                  {c.libre && (
+                                    <Visto
+                                      marcado={activo}
+                                      className={`size-7 rounded-full ${activo ? "border-stencil bg-stencil shadow-[0_0_16px_-2px_rgba(47,107,255,0.95)]" : "border-ceniza/50 group-hover:border-stencil/70"}`}
+                                    />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="mt-4 flex gap-2.5 text-[13px] leading-snug text-ceniza">
+                            <svg viewBox="0 0 24 24" className="mt-px size-4 shrink-0 text-stencil-claro" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" aria-hidden>
+                              <circle cx="12" cy="12" r="9" />
+                              <path d="M12 11v5M12 8h.01" />
+                            </svg>
+                            Cuánto dura la sesión y el valor final te los confirmo al ver tu diseño.
+                          </p>
                         </div>
                       ) : (
                         <p className="py-4 text-[14px] text-ceniza">
-                          {elegido ? "Ese día se acaba de llenar. Elige otro con punto azul." : "Toca un día con punto azul para ver sus horas."}
+                          {elegido ? "Ese día se acaba de llenar. Elige otro con cupos libres." : "Toca un día con cupos libres para verlos."}
                         </p>
                       )}
                     </section>
 
                     {hora && (
-                      <section ref={datosRef} className="panel-surge flex scroll-mb-4 flex-col gap-4 border-t border-linea pt-5">
+                      <section ref={datosRef} className="panel-surge flex scroll-mb-4 flex-col gap-4 rounded-3xl border border-linea bg-tinta/40 p-4 sm:p-5">
+                        <p className="text-[11px] font-semibold tracking-[0.22em] text-ceniza uppercase">Tus datos</p>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                           <label className="block">
                             <span className="mb-2 block text-[14px] font-semibold">Tu nombre</span>
@@ -431,7 +525,11 @@ export function ReservarHora({
                           </label>
                         </div>
                         <label className="flex cursor-pointer items-start gap-3 text-[14px] leading-snug text-piel/85">
-                          <input type="checkbox" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[#2f6bff]" />
+                          <input type="checkbox" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} className="peer sr-only" />
+                          <Visto
+                            marcado={acepta}
+                            className={`mt-px size-6 rounded-lg peer-focus-visible:shadow-[0_0_0_4px_rgba(47,107,255,0.3)] ${acepta ? "border-stencil bg-stencil shadow-[0_0_16px_-4px_rgba(47,107,255,0.9)]" : "border-ceniza/60"}`}
+                          />
                           <span>
                             Acepto que el estudio guarde mi nombre y WhatsApp para agendar.{" "}
                             <a href="/privacidad" target="_blank" rel="noopener" className="font-semibold text-stencil-claro underline decoration-stencil/40 underline-offset-4">
@@ -446,24 +544,32 @@ export function ReservarHora({
               )}
             </div>
 
-            <div className="border-t border-linea/80 bg-hollin px-5 pt-3 lg:px-7" style={{ paddingBottom: "max(0.9rem, env(safe-area-inset-bottom))" }}>
+            <div className="relative border-t border-linea/80 bg-hollin px-5 pt-3 lg:px-8 lg:pt-4" style={{ paddingBottom: "max(0.9rem, env(safe-area-inset-bottom))" }}>
               {error && (
                 <p role="alert" className="mb-2.5 text-[14px] leading-snug font-semibold text-[#ff8a80]">
                   {error}
                 </p>
               )}
               <div className="lg:flex lg:items-center lg:justify-between lg:gap-6">
-                <p className="hidden text-[13px] text-ceniza lg:block">La hora queda apartada y te confirmo por WhatsApp con el abono.</p>
+                <p className="hidden text-[13px] leading-snug text-ceniza lg:block">
+                  {fecha && hora && <span className="block font-semibold text-piel first-letter:uppercase">{`${fechaLarga(fecha)}, ${hora}`}</span>}
+                  El cupo queda apartado y te confirmo por WhatsApp con el abono.
+                </p>
                 <button
                   type="button"
                   onClick={pedir}
                   disabled={enviando || !hora}
-                  className="boton-cromo inline-flex min-h-13 w-full items-center justify-center rounded-full bg-[image:var(--acero)] px-6 text-[16px] font-semibold text-tinta shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(47,107,255,0.8)] transition-opacity disabled:opacity-40 lg:w-auto lg:min-w-80 lg:shrink-0"
+                  className="boton-cromo inline-flex min-h-13 w-full items-center justify-center gap-2.5 rounded-full bg-[image:var(--acero)] px-6 text-[16px] font-semibold text-tinta shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(47,107,255,0.8)] transition-opacity disabled:opacity-40 lg:w-auto lg:min-w-80 lg:shrink-0"
                 >
                   {enviando ? "Pidiendo…" : etiquetaBoton}
+                  {hora && !enviando && (
+                    <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  )}
                 </button>
               </div>
-              <p className="mt-2 text-center text-[12px] text-ceniza lg:hidden">La hora queda apartada y te confirmo por WhatsApp con el abono.</p>
+              <p className="mt-2 text-center text-[12px] text-ceniza lg:hidden">Queda apartado y te confirmo por WhatsApp con el abono.</p>
             </div>
           </motion.div>
         )}
