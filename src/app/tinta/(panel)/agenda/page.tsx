@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { feriado } from "@/lib/feriados";
 import { Bloquear, QuitarBloqueo } from "@/componentes/panel/Bloquear";
 import { claseBoton } from "@/componentes/panel/Boton";
 import { CambiarMes, Encabezado, Tarjeta } from "@/componentes/panel/Encabezado";
@@ -169,6 +170,7 @@ export default async function Agenda({ searchParams }: { searchParams: Promise<{
             <div className="min-w-0 flex-1">
               <h2 className="text-[20px] leading-tight font-semibold first-letter:uppercase">{fechaRelativa(dia, hoy)}</h2>
               {fechaRelativa(dia, hoy) !== fechaLarga(dia) && <p className="text-[13px] text-ceniza first-letter:uppercase">{fechaLarga(dia)}</p>}
+              {feriado(dia) && <p className="mt-1 text-[13px] font-semibold text-[#fbbf24]">Feriado: {feriado(dia)}</p>}
             </div>
             <Link href={enlace(sumarDias(dia, -1))} aria-label="Día anterior" className="grid size-10 place-items-center rounded-full border border-linea text-ceniza hover:text-piel">
               <Atras className="size-4" />

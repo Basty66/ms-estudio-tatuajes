@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { esChoqueDeHoras, sql } from "@/db/conexion";
 import { borrarPrivado, borrarFoto as borrarArchivoFoto, guardarComprobante, guardarFoto, hayPrivado, hayGaleria } from "@/lib/admin/almacen";
-import { esFecha, esHora, sumarMinutos } from "@/lib/admin/fecha";
+import { esFecha, esHora, fechaLarga, sumarMinutos } from "@/lib/admin/fecha";
 import { PANEL } from "@/lib/admin/ruta";
 import { usuarioActual } from "@/lib/admin/sesion";
 import { normalizarTelefono } from "@/lib/admin/telefono";
@@ -325,20 +325,37 @@ export async function cambiarEstadoCita(id: number, estado: string): Promise<Res
 
 /* ------------------------------------------------------------ bloqueos -- */
 
-export async function crearBloqueo(fecha: string, desde: string, hasta: string, motivo: string): Promise<Respuesta> {
+/**
+ * Bloquea un horario: un día, o varios seguidos (vacaciones, convención) con
+ * `hastaFecha`. Todo o nada: si un día choca con una cita, no se bloquea
+ * ninguno y se dice cuál.
+ */
+export async function crearBloqueo(fecha: string, desde: string, hasta: string, motivo: string, hastaFecha?: string): Promise<Respuesta> {
   const u = await operador();
   if (!u) return SIN_SESION;
+  const ultimo = hastaFecha && esFecha(hastaFecha) ? hastaFecha : fecha;
   if (!esFecha(fecha) || !esHora(desde) || !esHora(hasta) || hasta <= desde) return { ok: false, error: "Revisa el horario." };
-  const inicio = `${fecha}T${desde}`;
-  const fin = `${fecha}T${hasta}`;
+  if (ultimo < fecha) return { ok: false, error: "El último día tiene que ser después del primero." };
+  if ((Date.parse(ultimo) - Date.parse(fecha)) / 86_400_000 > 92) return { ok: false, error: "Bloquea de a tres meses como máximo." };
   try {
     await sql`
       INSERT INTO citas (tipo, inicio, fin, descripcion, creada_por)
-      VALUES ('bloqueo', ${inicio}::TIMESTAMP, ${fin}::TIMESTAMP, ${texto(motivo, 120)}, ${u.nombre})
+      SELECT 'bloqueo', d::DATE + ${desde}::TIME, d::DATE + ${hasta}::TIME, ${texto(motivo, 120)}, ${u.nombre}
+      FROM generate_series(${fecha}::DATE, ${ultimo}::DATE, INTERVAL '1 day') AS d
     `;
   } catch (e) {
-    if (esChoqueDeHoras(e)) return { ok: false, error: await conQuienChoca(inicio, fin, null) };
-    throw e;
+    if (!esChoqueDeHoras(e)) throw e;
+    // El primer día que choca, para decirlo con fecha y nombre.
+    const [f] = (await sql`
+      SELECT to_char(d::DATE, 'YYYY-MM-DD') AS dia
+      FROM generate_series(${fecha}::DATE, ${ultimo}::DATE, INTERVAL '1 day') AS d
+      WHERE EXISTS (SELECT 1 FROM citas c WHERE c.estado IN ('solicitada', 'confirmada', 'completada')
+                      AND c.rango && tsrange(d::DATE + ${desde}::TIME, d::DATE + ${hasta}::TIME))
+      ORDER BY d LIMIT 1
+    `) as Array<{ dia: string }>;
+    const dia = f?.dia ?? fecha;
+    const choque = await conQuienChoca(`${dia}T${desde}`, `${dia}T${hasta}`, null);
+    return { ok: false, error: ultimo > fecha ? `El ${fechaLarga(dia)}: ${choque.charAt(0).toLowerCase()}${choque.slice(1)} No se bloqueó ningún día.` : choque };
   }
   refrescar(`${PANEL}/agenda`);
   return { ok: true };

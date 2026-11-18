@@ -4,15 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { crearBloqueo, quitarBloqueo } from "@/app/tinta/_acciones/panel";
 import { Boton } from "./Boton";
-import { campo, Etiqueta } from "./FormularioCita";
+import { Chip, campo, Etiqueta } from "./FormularioCita";
 import { Bloqueo, Cerrar } from "./Iconos";
 
-/** Bloquear un horario: día libre, trámite, convención. Nadie puede agendar encima. */
+/** Bloquear un horario: día libre, trámite, convención o vacaciones (varios días). Nadie puede agendar encima. */
 export function Bloquear({ fecha }: { fecha: string }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [desde, setDesde] = useState("10:00");
   const [hasta, setHasta] = useState("20:00");
+  const [varios, setVarios] = useState(false);
+  const [hastaFecha, setHastaFecha] = useState(fecha);
+  const todoElDia = desde === "00:00" && hasta === "23:59";
   const [motivo, setMotivo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pendiente, iniciar] = useTransition();
@@ -32,13 +35,36 @@ export function Bloquear({ fecha }: { fecha: string }) {
         e.preventDefault();
         setError(null);
         iniciar(async () => {
-          const r = await crearBloqueo(fecha, desde, hasta, motivo);
+          const r = await crearBloqueo(fecha, desde, hasta, motivo, varios ? hastaFecha : undefined);
           if (!r.ok) return setError(r.error);
           setAbierto(false);
           router.refresh();
         });
       }}
     >
+      <div className="flex flex-wrap gap-2">
+        <Chip activo={!varios} onClick={() => setVarios(false)}>
+          Este día
+        </Chip>
+        <Chip activo={varios} onClick={() => setVarios(true)}>
+          Varios días
+        </Chip>
+        <Chip
+          activo={todoElDia}
+          onClick={() => {
+            setDesde(todoElDia ? "10:00" : "00:00");
+            setHasta(todoElDia ? "20:00" : "23:59");
+          }}
+        >
+          Todo el día
+        </Chip>
+      </div>
+      {varios && (
+        <label>
+          <Etiqueta nota="Vacaciones, convención…">Hasta el día</Etiqueta>
+          <input type="date" min={fecha} value={hastaFecha} onChange={(e) => e.target.value && setHastaFecha(e.target.value)} className={`${campo} [color-scheme:dark]`} />
+        </label>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <label>
           <Etiqueta>Desde</Etiqueta>

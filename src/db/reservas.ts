@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "@/db/conexion";
 import { ahoraChile, hoyChile, sumarDias } from "@/lib/admin/fecha";
+import { feriado } from "@/lib/feriados";
 import { estadoDia, type Cupo, type EstadoDia, type Ocupado, type Reservas } from "@/lib/reservas";
 
 /**
@@ -29,7 +30,7 @@ export async function ocupadosEntre(desde: string, hasta: string): Promise<Ocupa
 }
 
 /** `horas`: los cupos libres, lo que se puede pedir. */
-export type DiaLibre = { fecha: string; estado: EstadoDia; cupos: Cupo[]; horas: string[] };
+export type DiaLibre = { fecha: string; estado: EstadoDia; cupos: Cupo[]; horas: string[]; feriado?: string };
 
 /** Día por día, desde hoy y por las semanas que se ofrecen, cada cupo y si está libre. */
 export async function disponibilidad(r: Reservas): Promise<DiaLibre[]> {
@@ -40,7 +41,7 @@ export async function disponibilidad(r: Reservas): Promise<DiaLibre[]> {
   const dias: DiaLibre[] = [];
   for (let f = hoy; f <= hasta; f = sumarDias(f, 1)) {
     const { estado, cupos } = estadoDia(r, f, ocupados, ahora);
-    dias.push({ fecha: f, estado, cupos, horas: cupos.filter((c) => c.libre).map((c) => c.hora) });
+    dias.push({ fecha: f, estado, cupos, horas: cupos.filter((c) => c.libre).map((c) => c.hora), ...(estado === "feriado" ? { feriado: feriado(f) ?? "" } : {}) });
   }
   return dias;
 }

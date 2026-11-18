@@ -33,7 +33,7 @@ export type Pedido = {
   rango: string;
 };
 
-type Dia = { fecha: string; estado: EstadoDia; cupos: Cupo[]; horas: string[] };
+type Dia = { fecha: string; estado: EstadoDia; cupos: Cupo[]; horas: string[]; feriado?: string };
 
 /** Cómo se dice cada estado a quien no ve. */
 const ESTADO_TEXTO: Record<EstadoDia, string> = {
@@ -42,6 +42,7 @@ const ESTADO_TEXTO: Record<EstadoDia, string> = {
   completo: "completo",
   bloqueado: "no disponible",
   cerrado: "cerrado",
+  feriado: "feriado",
   pronto: "sin cupos",
 };
 
@@ -407,8 +408,8 @@ export function ReservarHora({
                                 key={d.fecha}
                                 role="img"
                                 aria-current={esHoy ? "date" : undefined}
-                                aria-label={`${fechaLarga(d.fecha)}: ${ESTADO_TEXTO[d.estado]}`}
-                                title={ESTADO_TEXTO[d.estado]}
+                                aria-label={`${fechaLarga(d.fecha)}: ${d.feriado ? `feriado, ${d.feriado}` : ESTADO_TEXTO[d.estado]}`}
+                                title={d.feriado ? `Feriado: ${d.feriado}` : ESTADO_TEXTO[d.estado]}
                                 className={`relative grid aspect-square place-items-center rounded-2xl text-[15px] tabular-nums ${
                                   d.estado === "completo"
                                     ? "border border-sangre/25 bg-sangre/[0.06] text-[#ff8a80]/70"

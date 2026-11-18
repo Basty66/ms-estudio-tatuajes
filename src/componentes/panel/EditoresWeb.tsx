@@ -4,6 +4,8 @@ import { useState } from "react";
 import { formatearTelefono } from "@/lib/admin/telefono";
 import type { TextosConsentimiento } from "@/lib/consentimiento";
 import { DIAS_SEMANA, MAX_CUPOS, type Reservas } from "@/lib/reservas";
+import { feriadosDe } from "@/lib/feriados";
+import { fechaCorta } from "@/lib/admin/fecha";
 import { LARGO, LLAVES, rellenar, type DatosEstudio, type Mensajes, type Par, type TextosCuidados, type TextosTatuador } from "@/lib/contenido";
 import { ESTILOS_PRECIO, estimar, OBJETIVOS_LASER, pesos, TAMANOS, ZONAS, type EstiloPrecio, type Precios, type Tamano, type Zona } from "@/lib/precios";
 import { Tarjeta, TituloBloque } from "./Encabezado";
@@ -12,6 +14,7 @@ import { TarjetaGracias } from "@/componentes/sitio/TarjetaGracias";
 import { Boton } from "./Boton";
 import { campo } from "./FormularioCita";
 import { DobleVisto, Externo, Flecha } from "./Iconos";
+import { DOMINIO } from "@/lib/sitio";
 
 // ------------------------------------------------------------- estudio --
 
@@ -383,7 +386,7 @@ const MUESTRA: Record<string, string> = {
   cadaSesion: "$100.000",
   abono: "$30.000",
   saldo: "$70.000",
-  cuidados: "tatuajes-azure.vercel.app/#cuidados",
+  cuidados: `${DOMINIO}/#cuidados`,
 };
 
 /** *negrita*, _cursiva_ y ~tachado~, como los muestra WhatsApp. */
@@ -546,6 +549,12 @@ export function EditarReservas({ inicial }: { inicial: Reservas }) {
   const dia = (i: number, p: Partial<Reservas["dias"][number]>) => poner({ dias: r.dias.map((d, j) => (j === i ? { ...d, ...p } : d)) });
   const hora = "min-h-11 rounded-2xl border border-linea bg-tinta/70 px-2 text-[15px] text-piel tabular-nums [color-scheme:dark] focus:border-stencil focus:outline-none";
 
+  // Los feriados que caen en las semanas que ofrece la web.
+  const hoyLocal = new Date();
+  const desdeF = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, "0")}-${String(hoyLocal.getDate()).padStart(2, "0")}`;
+  const limiteF = new Date(hoyLocal.getTime() + r.semanas * 7 * 86_400_000).toISOString().slice(0, 10);
+  const proximosFeriados = [...feriadosDe(hoyLocal.getFullYear()), ...feriadosDe(hoyLocal.getFullYear() + 1)].filter(([f]) => f >= desdeF && f <= limiteF);
+
   // El cupo nuevo va 3 h después del último (o 1 h, si no cabe) y antes del término.
   const siguiente = (d: Reservas["dias"][number]) => {
     const ultimo = d.cupos.length ? aMinutos(d.cupos[d.cupos.length - 1]) : aMinutos("11:00") - 180;
@@ -687,6 +696,26 @@ export function EditarReservas({ inicial }: { inicial: Reservas }) {
               <Numero etiqueta="Plazo para confirmar" unidad="h" min={6} max={168} valor={r.vence} cambiar={(vence) => poner({ vence })} />
             </div>
             <p className="mt-3 text-[13px] leading-snug text-ceniza">Un cupo pedido queda apartado {r.vence} h. Si no lo confirmas con el abono, se libera solo.</p>
+          </Tarjeta>
+          <Tarjeta>
+            <label className="flex cursor-pointer items-center justify-between gap-4">
+              <span>
+                <span className="block font-semibold">Cerrar los feriados</span>
+                <span className="block text-[13px] text-ceniza">{r.cerrarFeriados ? "La web no ofrece cupos esos días." : "Los feriados se atienden como cualquier día."}</span>
+              </span>
+              <input type="checkbox" checked={r.cerrarFeriados} onChange={(ev) => poner({ cerrarFeriados: ev.target.checked })} className="size-6 shrink-0 accent-[#2f6bff]" />
+            </label>
+            {proximosFeriados.length > 0 && (
+              <ul className={`mt-3 flex flex-col gap-1 text-[13px] ${r.cerrarFeriados ? "" : "opacity-50"}`}>
+                {proximosFeriados.map(([f, nombre]) => (
+                  <li key={f} className="flex justify-between gap-3">
+                    <span className="first-letter:uppercase tabular-nums">{fechaCorta(f)}</span>
+                    <span className="truncate text-ceniza">{nombre}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-3 text-[12px] leading-snug text-ceniza">Las elecciones y los feriados regionales no van: bloquéalos en la agenda.</p>
           </Tarjeta>
         </div>
       </div>

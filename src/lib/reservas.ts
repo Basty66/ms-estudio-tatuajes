@@ -1,4 +1,5 @@
 import { sumarMinutos } from "@/lib/admin/fecha";
+import { feriado } from "@/lib/feriados";
 
 /**
  * Reservas desde la web: los cupos de cada día y las reglas para pedir hora.
@@ -29,6 +30,8 @@ export type Reservas = {
   semanas: number;
   /** Horas que una hora pedida queda apartada sin confirmar. */
   vence: number;
+  /** Los feriados nacionales no se ofrecen (src/lib/feriados.ts). */
+  cerrarFeriados: boolean;
 };
 
 export const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] as const;
@@ -46,6 +49,7 @@ export const RESERVAS_BASE: Reservas = {
   anticipacion: 24,
   semanas: 6,
   vence: 48,
+  cerrarFeriados: true,
 };
 
 const esHoraValida = (v: unknown): v is string => typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
@@ -70,6 +74,7 @@ export function normalizarReservas(v: unknown): Reservas {
     anticipacion: entre(g.anticipacion, 0, 168, b.anticipacion),
     semanas: entre(g.semanas, 1, 12, b.semanas),
     vence: entre(g.vence, 6, 168, b.vence),
+    cerrarFeriados: typeof g.cerrarFeriados === "boolean" ? g.cerrarFeriados : b.cerrarFeriados,
   };
 }
 
@@ -93,15 +98,17 @@ export function finDeCupo(dia: DiaAtencion, fecha: string, cupo: string): string
  *   completo:       se atiende, pero los cupos ya se tomaron
  *   bloqueado:      el tatuador lo bloqueó
  *   cerrado:        ese día de la semana no se atiende
+ *   feriado:        es feriado y el estudio los cierra
  *   pronto:         ya no alcanza la anticipación (hoy, mañana temprano)
  */
-export type EstadoDia = "libre" | "ultimo" | "completo" | "bloqueado" | "cerrado" | "pronto";
+export type EstadoDia = "libre" | "ultimo" | "completo" | "bloqueado" | "cerrado" | "feriado" | "pronto";
 
 export type Cupo = { hora: string; libre: boolean };
 
 export function estadoDia(r: Reservas, fecha: string, ocupados: Ocupado[], ahora: string): { estado: EstadoDia; cupos: Cupo[] } {
   const dia = r.dias[diaSemana(fecha)];
   if (!dia?.abierto || dia.cupos.length === 0) return { estado: "cerrado", cupos: [] };
+  if (r.cerrarFeriados && feriado(fecha)) return { estado: "feriado", cupos: [] };
   const libres = cuposLibres(r, fecha, ocupados, ahora);
   const cupos = dia.cupos.map((hora) => ({ hora, libre: libres.includes(hora) }));
   if (libres.length > 0) return { estado: libres.length === 1 && dia.cupos.length > 1 ? "ultimo" : "libre", cupos };
@@ -119,7 +126,7 @@ export function estadoDia(r: Reservas, fecha: string, ocupados: Ocupado[], ahora
  */
 export function cuposLibres(r: Reservas, fecha: string, ocupados: Ocupado[], ahora: string): string[] {
   const dia = r.dias[diaSemana(fecha)];
-  if (!dia?.abierto) return [];
+  if (!dia?.abierto || (r.cerrarFeriados && feriado(fecha))) return [];
   const desdeMinimo = sumarMinutos(ahora, r.anticipacion * 60);
   return dia.cupos.filter((cupo) => {
     const inicio = `${fecha}T${cupo}`;
