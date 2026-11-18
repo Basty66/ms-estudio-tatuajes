@@ -51,8 +51,8 @@ const SALIDA = [0.16, 1, 0.3, 1] as const;
 const campo =
   "min-h-12 w-full rounded-2xl border border-linea bg-tinta/80 px-4 text-[16px] text-piel placeholder:text-ceniza/50 focus:border-stencil focus:shadow-[0_0_0_4px_rgba(47,107,255,0.18)] focus:outline-none";
 
-/** Mañana, tarde o noche: así se lee más rápido un cupo. */
-const franja = (hora: string) => (hora < "13:00" ? "Mañana" : hora < "19:00" ? "Tarde" : "Noche");
+/** Mañana, mediodía, tarde o noche: así se lee más rápido un cupo. */
+const franja = (hora: string) => (hora < "12:00" ? "Mañana" : hora < "14:00" ? "Mediodía" : hora < "19:00" ? "Tarde" : "Noche");
 
 /** El visto que se dibuja al marcar (cupo elegido, casilla aceptada). */
 function Visto({ marcado, className }: { marcado: boolean; className: string }) {
